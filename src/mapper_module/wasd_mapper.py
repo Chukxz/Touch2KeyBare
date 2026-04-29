@@ -214,26 +214,51 @@ class WASDMapper():
 
     def apply_keys(self, sector, sprint):
         target_mask = self.sector_to_state[sector]
+    
+        # 1. Identify which directional keys to change
         to_release = self.current_mask & ~target_mask
         to_press = target_mask & ~self.current_mask
 
+        # 2. Release directional keys no longer needed
         for k in to_release: 
             if k.value > 0:
                 self.interception_bridge.key_up(self.state_value_to_key[k.value])
 
+        # 3. Handle Sprint (Shift)
+        # Ensure sprint only triggers if we are actually moving (target_mask != NONE)
+        # and typically only if moving forward (W)
+        is_moving_forward = bool(target_mask & State.W)
+        should_sprint = sprint and is_moving_forward
+
         if self.sprint_key_code is not None:
-            if self.sprinting and not sprint:
+            if self.sprinting and not should_sprint:
                 self.interception_bridge.key_up(self.sprint_key_code)
                 self.sprinting = False
-            elif not self.sprinting and sprint:
+            elif not self.sprinting and should_sprint:
                 self.interception_bridge.key_down(self.sprint_key_code)
                 self.sprinting = True
 
+        # 4. Press new directional keys
         for k in to_press:
             if k.value > 0:
                 self.interception_bridge.key_down(self.state_value_to_key[k.value])
 
         self.current_mask = target_mask
+
+
+            if self.sprint_key_code is not None:
+                if self.sprinting and not sprint:
+                    self.interception_bridge.key_up(self.sprint_key_code)
+                    self.sprinting = False
+                elif not self.sprinting and sprint:
+                    self.interception_bridge.key_down(self.sprint_key_code)
+                    self.sprinting = True
+
+            for k in to_press:
+                if k.value > 0:
+                    self.interception_bridge.key_down(self.state_value_to_key[k.value])
+
+            self.current_mask = target_mask
 
     def process_touch(self, action, touch_event:TouchEvent, is_visible:bool):
         if action == PRESSED:
