@@ -86,7 +86,7 @@ EMULATORS = {
     },
     "Tenstore Android Connect": {
         "window_title": "Call of Duty",
-        "sprint_key": "EQUAL",
+        "sprint_key": "LSHIFT",
         "toggle_key": "LCTRL"
     }
 }

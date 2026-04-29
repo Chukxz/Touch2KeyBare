@@ -51,12 +51,10 @@ class WASDMapper():
             4: State.A,                      # 4: Left
             5: State.W | State.A,            # 5: Up-Left
             6: State.W,                      # 6: Up
-            7: State.W | State.D,            # 7: Up-Right
-            8: State.NONE                    # 8: No input
+            7: State.W | State.D             # 7: Up-Right
         }
 
         self.state_value_to_key = {
-            0: self.sprint_key_code,
             1: self.KEY_W,
             2: self.KEY_A,
             4: self.KEY_S,
@@ -89,7 +87,7 @@ class WASDMapper():
 
 
     def update_config(self):
-        print(f"\n[WASDMapper] - Reloading config...")
+        print(f"[WASDMapper] Reloading config...")
         try:
             with self.config.config_lock:
                 # Get Joystick Settings (Deadzone, Hysteresis)
@@ -106,11 +104,11 @@ class WASDMapper():
                 self.recalc_thresholds()
                 
         except Exception as e:
-            print(f"\n[WASDMapper] - Joystick config error: {e}.")
+            print(f"[Error] Joystick config error: {e}")
 
     def updateMouseWheel(self):
         with self.config.config_lock:
-            print(f"\n[WASDMapper] - Updating mousewheel radius...")
+            print(f"[WASDMapper] Updating mousewheel radius...")
             self.raw_inner_radius, d_radius = self.json_loader.get_mouse_wheel_info()
             self.raw_outer_radius = self.raw_inner_radius + d_radius
             
@@ -137,9 +135,9 @@ class WASDMapper():
         dz_px = effective_inner * self.deadzone
         self.deadzone_sq = dz_px * dz_px
         
-        print(f"\n[WASDMapper] - Shared Sensitivity: {sens}x.")
-        print(f"\n[WASDMapper] - Walk Distance: {dz_px:.1f}px (was {self.raw_inner_radius * self.deadzone:.1f}px).")
-        print(f"\n[WASDMapper] - Sprint Distance: {effective_inner:.1f}px (was {self.raw_inner_radius:.1f}px).")
+        print(f"[WASD] Shared Sensitivity: {sens}x")
+        print(f"       Walk Distance: {dz_px:.1f}px (was {self.raw_inner_radius * self.deadzone:.1f}px)")
+        print(f"       Sprint Distance: {effective_inner:.1f}px (was {self.raw_inner_radius:.1f}px)")
 
     def on_wasd_block(self):
         if self.mapper.wasd_block > 0:
@@ -196,10 +194,8 @@ class WASDMapper():
         # Uses the SENSITIVITY-SCALED threshold
         sprint = False
         if self.sprint_key_code is not None:
-            if new_sector in [5, 6, 7]:
-                if dist_sq > self.effective_inner_sq:
-                    sprint = True
-                    new_sector = 8  # Map to sprint sector
+            if dist_sq > self.effective_inner_sq:
+                sprint = True
 
         self.apply_keys(new_sector, sprint)
 
@@ -220,21 +216,22 @@ class WASDMapper():
         target_mask = self.sector_to_state[sector]
         to_release = self.current_mask & ~target_mask
         to_press = target_mask & ~self.current_mask
-        
+
         for k in to_release: 
             if k.value > 0:
                 self.interception_bridge.key_up(self.state_value_to_key[k.value])
-            if k.value == 0 and self.sprint_key_code is not None and self.sprinting and not sprint:
+
+        if self.sprint_key_code is not None:
+            if self.sprinting and not sprint:
                 self.interception_bridge.key_up(self.sprint_key_code)
                 self.sprinting = False
+            elif not self.sprinting and sprint:
+                self.interception_bridge.key_down(self.sprint_key_code)
+                self.sprinting = True
 
         for k in to_press:
             if k.value > 0:
                 self.interception_bridge.key_down(self.state_value_to_key[k.value])
-            if k.value == 0 and self.sprint_key_code is not None and not self.sprinting and sprint:
-                self.interception_bridge.key_down(self.sprint_key_code)
-                print(self.sprint_key_code)
-                self.sprinting = True
 
         self.current_mask = target_mask
 
