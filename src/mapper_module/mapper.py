@@ -80,7 +80,7 @@ class Mapper():
             self.device_width = self.json_loader.width
             self.device_height = self.json_loader.height
             self.dpi = self.json_loader.dpi
-            print(f"[INFO] Mapping from Device synced to Resolution: {self.device_width}x{self.device_height}, DPI: {self.dpi}")
+            print(f"\n[MAPPER] - Mapping from Device synced to Resolution: {self.device_width}x{self.device_height}, DPI: {self.dpi}.")
             
     # Window Management
     
@@ -98,9 +98,9 @@ class Mapper():
         hwnd = ctypes.windll.user32.FindWindowW(None, window_title)
         if hwnd != 0:
             class_name = self.get_window_class_name(hwnd)
-            print(f"[INFO] Found window '{window_title}' (Class: {class_name}).")
+            print(f"\n[MAPPER] - Found window '{window_title}' (Class: {class_name}).")
         else:
-            _str = f"[INFO] Window class name could not be gotten for window: '{window_title}'."
+            _str = f"\n[MAPPER] - Window class name could not be gotten for window: '{window_title}'."
             raise RuntimeError(_str)            
         return class_name
 
@@ -147,7 +147,7 @@ class Mapper():
                 self.mapper_event_dispatcher.dispatch(MapperEvent(action="ON_MENU_MODE_TOGGLE", is_visible=is_visible))
                 
         except Exception:
-            print("Could not check cursor visibility.")
+            print("\n[MAPPER] - Could not check cursor visibility.")
                 
         return {
             'hwnd': hwnd,
@@ -172,7 +172,7 @@ class Mapper():
                     new_info = self.get_window_info(current_hwnd)
                                         
                     if self.window_lost:
-                        print(f"[INFO] Acquired game window!")
+                        print(f"\n[MAPPER] - Acquired game window!")
                                             
                     # ATOMIC SWAP: Only hold lock to update the dict reference
                     with self.lock:
@@ -182,7 +182,7 @@ class Mapper():
                 else:
                     # WINDOW IS LOST: Handle scanning                        
                     if not self.window_lost:
-                        print("[WARNING] Game window lost! Scanning for new window...")
+                        print("\n[MAPPER] - Game window lost! Scanning for new window...")
                         with self.lock:
                             self.window_lost = True
                             self.game_window_info = None
@@ -200,7 +200,7 @@ class Mapper():
                         with self.lock:
                             self.game_window_info = discovered_info
                             self.window_lost = False
-                        print("[INFO] New window handle bound.")
+                        print("\n[MAPPER] - New window handle bound.")
                             
                     except RuntimeError:
                         self.game_window_info = None
@@ -208,7 +208,7 @@ class Mapper():
                         pass
                     
             except Exception as e:
-                print(f"[ERROR] Window tracking error: {e}")
+                print(f"\n[MAPPER] - Window tracking error: {e}.")
             
             # Dynamic Sleep: Constant from utils
             sleep_time = LONG_DELAY if self.window_lost else self.window_update_interval
@@ -232,7 +232,7 @@ class Mapper():
                 target_info = info
         
         if target_info is None:
-            _str = f"No visible window found for class: '{self.game_window_class_name}'."
+            _str = f"\n[MAPPER] - No visible window found for class: '{self.game_window_class_name}'."
             raise RuntimeError(_str)
         
         return target_info
@@ -266,6 +266,6 @@ class Mapper():
             if pps == 0: status = "IDLE/DISCONNECTED"
             block_indicator = f"[BLOCK ON ({self.wasd_block})]" if self.wasd_block > 0 else "[OPEN]"
 
-            print(f"[Monitor] Rate: {pps:>5.1f} Hz | Status: {status:<15} | WASD: {block_indicator:<12}")
+            print(f"\n[MAPPER] - Rate: {pps:>5.1f} Hz | Status: {status:<15} | WASD: {block_indicator:<12}")
 
 

@@ -32,7 +32,7 @@ class InterceptionBridge:
         self.k_proc.start()
         self.m_proc.start()
         
-        print(f"[Bridge] Dual Engine Started. K-PID: {self.k_proc.pid} | M-PID: {self.m_proc.pid}")
+        print(f"\n[BRIDGE] - Dual Engine Started. K-PID: {self.k_proc.pid} (Keyboard) | M-PID: {self.m_proc.pid} (Mouse).")
 
     # Keyboard API
     def key_down(self, code): self.k_queue.put((code, 0))
@@ -58,7 +58,7 @@ class InterceptionBridge:
 
     def release_all(self):
         """Sends 'UP' signals for all critical keys and mouse buttons."""
-        print("[Bridge] Emergency Release: Clearing all input states...")
+        print("\n[BRIDGE] - Emergency Release: Clearing all input states...")
         with self.bridge_lock:
             maintain_bridge_health(self)
             
@@ -71,4 +71,4 @@ class InterceptionBridge:
             for code in unique_codes:
                 self.k_queue.put((code, 1))
             
-        print("[Bridge] Release signals dispatched.")
+        print("[BRIDGE] - Release signals dispatched.")

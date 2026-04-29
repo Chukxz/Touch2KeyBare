@@ -30,7 +30,7 @@ class JSONLoader():
         self.load_json()
         
         # REGISTER HOTKEY
-        print("[INFO] Press F5 to hot reload json data (always reloads config).")
+        print("\n[JSONLOADER] - Press F5 to hot reload json data (always reloads config).")
         keyboard.add_hotkey('f5', self.reload)
 
     def get_mouse_wheel_info(self):
@@ -40,7 +40,7 @@ class JSONLoader():
         system_config = self.config.get('system')
         if not system_config or 'json_path' not in system_config:
             create_default_toml()
-            raise RuntimeError("JSON path not found or misconfigured (json_path).")
+            raise RuntimeError("\n[JSONLOADER] - JSON path not found or misconfigured (json_path).")
 
         current_path = system_config['json_path']
         self.json_data = self.process_json(current_path)
@@ -57,10 +57,10 @@ class JSONLoader():
             current_file_time = os.path.getmtime(new_path)
                 
             if new_path != old_path:
-                print(f"[Update] Layout path changed: '{old_path}' -> '{new_path}'")
+                print(f"\n[JSONLOADER] - Layout path changed: '{old_path}' -> '{new_path}'.")
                 need_reload = True
             elif current_file_time != last_timestamp:
-                print(f"[Update] JSON file modification detected: '{new_path}'")
+                print(f"\n[JSONLOADER] - JSON file modification detected: '{new_path}'.")
                 need_reload = True
         
         return need_reload, current_file_time
@@ -78,7 +78,7 @@ class JSONLoader():
         system_config = self.config.get('system')
         if not system_config:
             create_default_toml()
-            raise RuntimeError("'system' section not found in configuration")
+            raise RuntimeError("\n[JSONLOADER] - 'system' section not found in configuration.")
 
         current_path = system_config.get('json_path')
         
@@ -90,22 +90,22 @@ class JSONLoader():
                     
         if need_reload:
             try:
-                print("[System] Parsing new JSON...")
+                print("\n[JSONLOADER] - Parsing new JSON...")
                 new_data = self.process_json(current_path)
                 
                 with self.config.config_lock:
-                    print("[System] Applying new layout...")
+                    print("\n[JSONLOADER] - Applying new layout...")
                     self.json_data = new_data
                     self.last_loaded_json_path = current_path
                     self.last_loaded_json_timestamp = current_file_time
                 self.mapper_event_dispatcher.dispatch(MapperEvent(action="ON_JSON_RELOAD"))
                     
-                print("[System] Layout swapped safely. Game resumed.")
+                print("\n[JSONLOADER] - Layout swapped safely. Game resumed.")
             except Exception as e:
-                print(f"[Error] Failed to reload JSON layout: {e}")
+                print(f"\n[JSONLOADER] - Failed to reload JSON layout: {e}.")
         
         else:
-            print("JSON hot reloading skipped as no file or file path changes were detected.")
+            print("\n[JSONLOADER] - JSON hot reloading skipped as no file or file path changes were detected.")
         
         self.config.reload_config()            
         
@@ -113,14 +113,14 @@ class JSONLoader():
         normalized_zones = {}
         
         if not os.path.exists(json_file_path):
-            _str = f"Error: File '{json_file_path}' not found."
+            _str = f"\n[JSONLOADER] - Error: File '{json_file_path}' not found."
             raise RuntimeError(_str)
 
         with open(json_file_path, mode='r', encoding='utf-8') as f:
             try:
                 data = json.load(f)
             except json.JSONDecodeError as e:
-                _str = f"Invalid JSON syntax in '{json_file_path}': {e}"
+                _str = f"\n[JSONLOADER] - Invalid JSON syntax in '{json_file_path}': {e}."
                 raise RuntimeError(_str)
 
         try:
@@ -132,7 +132,7 @@ class JSONLoader():
             self.mouse_wheel_radius = metadata["mouse_wheel_radius"]
             self.sprint_distance = metadata["sprint_distance"]
         except:
-            raise RuntimeError(f"Error loading json file")
+            raise RuntimeError(f"\n[JSONLOADER] - Error loading json file.")
 
         self.width = screen_width
         self.height = screen_height
@@ -171,7 +171,7 @@ class JSONLoader():
                 normalized_zones[scancode] = zone_data
                 
             except (ValueError, KeyError) as e:
-                print(f"Skipping invalid item: {scancode} with name: {zone_data['name']}. Error: {e}")
+                print(f"\n[JSONLOADER] - Skipping invalid item: {scancode} with name: {zone_data['name']}. Error: {e}.")
                 continue
         
         update_toml(w=self.width, h=self.height, dpi=self.dpi, mouse_wheel_radius=self.mouse_wheel_radius, sprint_distance=self.sprint_distance, strict=True)

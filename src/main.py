@@ -7,7 +7,7 @@ import threading
 import time
 from mapper_module.utils import (
     DEFAULT_ADB_RATE_CAP, SHORT_DELAY,
-    PPS, EMULATORS, ADB_EXE, UP,
+    PPS, EMULATORS, ADB_EXE,
     DEF_EMULATOR_ID, TouchEvent,
     set_high_priority, stop_process,
     maintain_bridge_health
@@ -16,7 +16,7 @@ from mapper_module.utils import (
 from mapper_module import (
     MapperEventDispatcher, 
     AppConfig, 
-    JSONLoader, 
+    JSONLoader,
     TouchReader, 
     InterceptionBridge, 
     Mapper, 
@@ -62,36 +62,82 @@ def process_touch_event(action, touch_event: TouchEvent):
         
     if touch_event.is_wasd:
         wasd_mapper.process_touch(action, touch_event, is_visible)
+
+
+def construct_titles_dict(emulators):
+    titles_dict = {}
+    n = 0
+    for emulator, value in emulators.items():
+        titles_dict[value['window_title']] = {"name": emulator, "id": n}
+        n+=1
+    
+    return titles_dict
+
+
+def enum_callback(hwnd, results):
+    if win32gui.IsWindowVisible(hwnd):
+        title = win32gui.GetWindowText(hwnd)
+        if title:
+            results[hwnd] = title
         
 
 def select_emulator():
-    print("Touch2Key Emulator Selector")
+    print("\n[MAIN] - Touch2Key Emulator Selector")
     emulators_list = list(EMULATORS.keys())
     emulators_len = len(emulators_list)
     
     if emulators_len == 0:
         return None
 
-    print("Supported Emulators:")
+    print("\n[MAIN] - Supported Emulators:")
     for id, name in enumerate(emulators_list):
-        print(f"ID: [{id}] Name: {name}")
+        print(f"    ID: [{id}] Name: {name}")
+        
+
+    current_windows = {}
+    win32gui.EnumWindows(enum_callback, current_windows)
+    titles_dict = construct_titles_dict(EMULATORS)
+    titles = list(titles_dict.keys())
+    
+    emulator_id = DEF_EMULATOR_ID
+    
+    if current_windows:
+        i = 0
+        
+        for hwnd in current_windows:
+            window_title = current_windows[hwnd]
+            
+            if window_title in titles:
+                if i == 0:
+                    print(f"\nEmulators detected:")
+                    emulator_id = None
+                    
+                if emulator_id is None:
+                    emulator_id = titles_dict[window_title]["id"]
+                    
+                emulator = titles_dict[window_title]["name"]
+                
+                if emulator_id == titles_dict[window_title]["id"]:
+                    print(f"    {emulator} - Selected automatically as default")
+                else:
+                    print(f"    {emulator}")
+                
+                i+=1
 
     try:
-        choice = input(f"Select Emulator ID [Default {emulators_list[DEF_EMULATOR_ID]}]: ").strip()
-        if not choice:
-            emulator_id = DEF_EMULATOR_ID
-        else:
-            emulator_id = int(choice)
-            # Boundary Check
-            if not (0 <= emulator_id < emulators_len):
-                print(f"[!] ID {emulator_id} out of range. Using default.")
-                emulator_id = DEF_EMULATOR_ID
+        choice = input(f"\nSelect Emulator ID [Default - {emulators_list[emulator_id]}]: ").strip()
+        tmp = emulator_id
+        emulator_id = int(choice)
+        # Boundary Check
+        if not (0 <= emulator_id < emulators_len):
+            print(f"ID {emulator_id} out of range. Using default...")
+            emulator_id = tmp
+            
     except ValueError:
-        print("[!] Invalid input. Using defaults.")
-        emulator_id = DEF_EMULATOR_ID
-
+        print("Invalid input. Using default...")
+    
     emulator_name = emulators_list[emulator_id]
-    print(f"[Config] {emulator_name} selected.")
+    print(f"\n[MAIN] - '{emulator_name}' selected.")
     return EMULATORS[emulator_name]
    
     
@@ -103,28 +149,28 @@ def main():
     # We leave this on default cores (usually all but the last)
     set_high_priority(os.getpid(), "Main Loop")
 
-    print("[System] Initializing Dual-Engine Mapper... Press 'ESC' to Stop.")
-    print(f"ADB Executable File Path: {ADB_EXE}")
+    print("\n[MAIN] - Initializing Dual-Engine Mapper... Press 'ESC' to Stop.")
+    print(f"\n[MAIN] - ADB Executable File Path: {ADB_EXE}.")
     
     emulator = select_emulator()
     if emulator is None:
-        print("No emulators supported. Exiting")
+        print("\n[MAIN] - No emulators supported. Exiting...")
         return
     
     try:
         # Rate Cap (The actual hardware limit)
-        rate_input = input(f"Enter ADB rate cap [Default {DEFAULT_ADB_RATE_CAP}, Min 60, Blank for Default]: ").strip()
+        rate_input = input(f"\nEnter ADB rate cap [Default {DEFAULT_ADB_RATE_CAP}, Min 60, Blank for Default]: ").strip()
         rate_cap = max(60.0, float(rate_input)) if rate_input else DEFAULT_ADB_RATE_CAP
 
         # PPS Threshold (The notification trigger)
-        pps_input = input(f"Enter target PPS for health alerts [Default {PPS}, Range 30-120]: ").strip()
+        pps_input = input(f"Enter target Alert Threshold for health alerts [Default {PPS}, Range 30-120]: ").strip()
         pps = max(30.0, min(120.0, float(pps_input))) if pps_input else PPS
 
     except ValueError:
-        print("[!] Invalid input. Using defaults.")
+        print("Invalid input. Using defaults...")
         rate_cap, pps = DEFAULT_ADB_RATE_CAP, PPS
 
-    print(f"[Config] ADB Cap: {rate_cap}Hz | Alert Threshold: {pps}PPS")
+    print(f"\n[MAIN] - ADB Cap: {rate_cap}Hz | Alert Threshold: {pps}PPS.")
 
     mapper_event_dispatcher = MapperEventDispatcher()
     config = AppConfig(mapper_event_dispatcher)
@@ -161,21 +207,21 @@ def shutdown():
         return
     is_shutting_down = True 
     
-    print("\n[System] 'ESC' detected. Cleaning up...")
+    print("\n[MAIN] - 'ESC' detected. Cleaning up...")
     
     # Clean up keys on both processes through the bridge
     try:
-        print("Exiting all spawned threads...")
+        print("[MAIN] - Exiting all spawned threads...")
         touch_reader.stop()
         mapper_logic.running = False
         interception_bridge.release_all()
-        print("Stopping Mouse and Keyboard child processes...")
+        print("[MAIN] - Stopping Mouse and Keyboard child processes...")
         stop_process(interception_bridge.k_proc)
         stop_process(interception_bridge.m_proc)
     except:
         pass
 
-    print("[System] Shutdown complete. Goodbye.")
+    print("[MAIN] - Shutdown complete. Goodbye.")
     os._exit(0)
 
 if __name__ == "__main__":

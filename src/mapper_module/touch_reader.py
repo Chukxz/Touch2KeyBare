@@ -178,10 +178,10 @@ class TouchReader():
                 self.scale_x = self.width / self.json_width
                 self.scale_y = self.height / self.json_height
         
-                print(f"[INFO] Auto-Scaling Active: X={self.scale_x:.2f}, Y={self.scale_y:.2f}")
+                print(f"\n[TOUCHREADER] - Auto-Scaling Active: X={self.scale_x:.2f}, Y={self.scale_y:.2f}.")
 
             except Exception as e:
-                print(f"[ERROR] Config update failed: {e}")
+                print(f"\n[TOUCHREADER] - Config update failed: {e}.")
                 return
             
         with self.rotation_lock:
@@ -263,17 +263,17 @@ class TouchReader():
         if self.device is None:
             self.device = get_adb_device() # Raises runtime error if no eligible adb device is found
         if not is_device_online(self.device):
-            raise RuntimeError(f"{self.device} is not online.")
+            raise RuntimeError(f"\n[JSONLOADER] - {self.device} is not online.")
         self.device_touch_event = self.find_touch_device_event()
         if self.device_touch_event is None:
-            raise RuntimeError("No touchscreen device found via ADB.")
-        print(f"[INFO] Using touchscreen device: {self.device_touch_event}")
+            raise RuntimeError("\n[JSONLOADER] - No touchscreen device found via ADB.")
+        print(f"\n[TOUCHREADER] - Using touchscreen device: {self.device_touch_event}.")
             
         # Physical Device Specs
         res = get_screen_size(self.device)
         if res is None:
             self.running = False
-            raise RuntimeError("Detected resolution invalid.")
+            raise RuntimeError("\n[JSONLOADER] - Detected resolution invalid.")
         self.width, self.height = res
             
         # Get Configured Specs
@@ -282,7 +282,7 @@ class TouchReader():
         self.scale_x = self.width / self.json_width
         self.scale_y = self.height / self.json_height
         
-        print(f"[INFO] Auto-Scaling Active: X={self.scale_x:.2f}, Y={self.scale_y:.2f}")
+        print(f"\n[TOUCHREADER] - Auto-Scaling Active: X={self.scale_x:.2f}, Y={self.scale_y:.2f}.")
           
 
     def get_touches(self):
@@ -298,7 +298,7 @@ class TouchReader():
                     self.device = None
                 if not self.touch_lost:
                     self.touch_lost = True
-                    print(f"[ERROR] {e}. ADB Device disconnected. Attempting to connect...")
+                    print(f"\n[TOUCHREADER] - Error: {e}. ADB Device disconnected. Attempting to connect...")
                 
                 time.sleep(LONG_DELAY)
                 continue
@@ -362,7 +362,7 @@ class TouchReader():
                         self.handle_sync()
                         
             except Exception as e:
-                print(f"[ERROR] ADB Stream interrupted: '{e}'. Restarting...")
+                print(f"\n[TOUCHREADER] - ADB Stream interrupted: {e}. Restarting...")
                 self.handle_sync(True)
                 self.mouse_slot = None
                 self.wasd_slot = None

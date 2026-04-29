@@ -57,7 +57,7 @@ class KeyMapper():
         with self.events_lock:
             self.active_zones = temp_zones
 
-        print(f"[KeyMapper] Hot-path ready: {len(self.active_zones)} zones active.")
+        print(f"\n[KEYMAPPER] - Hot-path ready: {len(self.active_zones)} zones active.")
 
     def send_key_event(self, scancode, down=True):
         """Dispatches input to Interception Bridge"""    

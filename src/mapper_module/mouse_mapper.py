@@ -31,7 +31,7 @@ class MouseMapper():
 
     def update_config(self):
         """Pre-calculates sensitivity to keep the touch_pressed loop lean."""
-        print(f"[Info] MouseMapper syncing sensitivity...")
+        print(f"\n[MOUSEMAPPER] - Syncing sensitivity...")
         try:
             with self.config.config_lock:
                 mouse_cfg = self.config.config_data.get('mouse', {})
@@ -43,16 +43,16 @@ class MouseMapper():
                 if dev_w > 0:
                     resolution_ratio = pc_w / dev_w
                 else:
-                    print("[Error] Device width is not a positive integer. Defaulting ratio to 1.0")
+                    print("\n[MOUSEMAPPER] - Device width is not a positive integer. Defaulting ratio to 1.0.")
                     resolution_ratio = 1.0
 
                 self.scaling_factor = base_sens * resolution_ratio
                 
-                print(f"[Mouse] Sync: PC width ({pc_w}px) / Phone width ({dev_w}px) = Ratio ({resolution_ratio:.2f})")
-                print(f"[Mouse] Final Scaling Factor: {self.scaling_factor:.4f} (User Sensitivity: {base_sens}x)")
+                print(f"\n[MOUSEMAPPER] - Sync: PC width ({pc_w}px) / Phone width ({dev_w}px) = Ratio ({resolution_ratio:.2f}).")
+                print(f"\n[MOUSEMAPPER] - Final Scaling Factor: {self.scaling_factor:.4f} (User Sensitivity: {base_sens}x).")
 
         except Exception as e:
-            print(f"[Error] Mouse config update failed: {e}")
+            print(f"\n[MOUSEMAPPER] - Mouse config update failed: {e}.")
             self.scaling_factor = 1.0
 
     def touch_down(self, touch_event:TouchEvent, is_visible:bool):

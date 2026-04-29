@@ -84,11 +84,13 @@ EMULATORS = {
         "sprint_key": None,
         "toggle_key": "LCTRL",
     },
-    # "BlueStacks": {
-    #     "window_title": "BlueStacks App Player",
-    #     "sprint_key": "LSHIFT",
-    # }
+    "Tenstore Android Connect": {
+        "window_title": "Call of Duty",
+        "sprint_key": "EQUAL",
+        "toggle_key": "LCTRL"
+    }
 }
+        
 
 PORT = '5555'
 
@@ -254,14 +256,14 @@ class MapperEventDispatcher:
         if event_type in self.callback_registry:
             self.callback_registry[event_type].append(func)
         else:
-            print(f"[Warning] Attempted to register unknown event: {event_type}")
+            print(f"\n[UTILITY] - Attempted to register unknown event: {event_type}.")
     
     def unregister_callback(self, event_type:EVENT_TYPE, func):
         if event_type in self.callback_registry:
             if func in self.callback_registry[event_type]:
                 self.callback_registry[event_type].remove(func)
             else:
-                print(f"[Warning] Function {func.__name__} was not registered for {event_type}")
+                print(f"\n[UTILITY] - Function {func.__name__} was not registered for {event_type}.")
 
     def dispatch(self, event_object: MapperEvent):       
         registry_key = event_object.action
@@ -279,7 +281,7 @@ def get_adb_device():
     real = [d.split()[0] for d in out[1:] if "device" in d and not d.startswith("emulator-")]
 
     if not real:
-        raise RuntimeError("No real device detected")
+        raise RuntimeError("\n[UTILITY] - No real device detected.")
     else:
         return real[0]
     
@@ -329,8 +331,7 @@ def wireless_connect(device:str|None=None, continous=True):
             except RuntimeError:
                 if continous:
                     if not error_1:
-                        print("No adb devices detected.")
-                        print("Retrying...")
+                        print("\n[UTILITY] - No adb devices detected. Retrying...")
                         error_1 = True
                     time.sleep(SHORT_DELAY)
                     continue
@@ -344,19 +345,19 @@ def wireless_connect(device:str|None=None, continous=True):
             socket = [s.split()[-1] for s in routes if "dev ap0" in s or "dev wlan0" in s]
             
             if not socket:
-                raise RuntimeError(f"No sockets found for device: {device}")
+                raise RuntimeError(f"\n[UTILITY] - No sockets found for device: {device}.")
             socket_path = socket[0] + ":" + PORT
 
             if device == socket_path:
-                print(f"Connected successfully to device: {socket_path}.")
+                print(f"\n[UTILITY] - Connected successfully to device: {socket_path}.")
             else:
                 subprocess.run([ADB_EXE, "-s", device, "tcpip", PORT])
                 final = subprocess.check_output([ADB_EXE,  "-s", device, "connect", socket_path]).decode().splitlines()[0] # If there's an error its supposed to be raised here.
                 
                 if "(10065)" in final: # Default fallback if no errors were raised in previous line
-                    raise RuntimeError(f"cannot connect to {socket_path}: A socket operation was attempted to an unreachable host. (10065)")
+                    raise RuntimeError(f"\n[UTILITY] - Cannot connect to {socket_path}: A socket operation was attempted to an unreachable host (10065).")
             
-                print(f"Connected successfully to device: {device} on socket: {socket_path}, device now set to: {socket_path}.")
+                print(f"\n[UTILITY] - Connected successfully to device: {device} on socket: {socket_path}, device now set to: {socket_path}.")
                 
             if continous:
                 running = False
@@ -366,8 +367,7 @@ def wireless_connect(device:str|None=None, continous=True):
         except Exception as e:
             if continous:
                 if not error_2:
-                    print(e)
-                    print("Retrying...")
+                    print(f"\n[UTILITY] - Error connecting, retrying...")
                     error_2 = True
                 time.sleep(SHORT_DELAY)
                 continue
@@ -413,7 +413,7 @@ def is_in_rect(px:float, py:float, left:float, right:float, top:float, bottom:fl
 
 def create_default_toml():
     """Wipes the existing settings.toml and creates a fresh default configuration."""
-    print(f"Resetting '{TOML_PATH}' to default (Minimally Viable Version).")
+    print(f"\n[UTILITY] - Resetting '{TOML_PATH}' to default (Minimally Viable Version).")
     
     # Create the TOML structure in memory
     doc = tomlkit.document()
@@ -443,9 +443,9 @@ def create_default_toml():
         # Opening with "w" automatically clears (truncates) the file before writing
         with open(TOML_PATH, "w", encoding="utf-8") as f:
             tomlkit.dump(doc, f)
-        print(f"[System] Successfully reset and created settings.toml at '{TOML_PATH}'")
+        print(f"\n[UTILITY] - Successfully reset and created settings.toml at '{TOML_PATH}'.")
     except Exception as e:
-        print(f"[Error] Failed to create settings.toml: {e}")
+        print(f"\n[UTILITY] - Failed to create settings.toml: {e}.")
 
 def update_toml(w=None, h=None, dpi=None, image_path=None, json_path=None, mouse_wheel_radius=None, sprint_distance=None, strict=False):
     try:
@@ -478,13 +478,13 @@ def update_toml(w=None, h=None, dpi=None, image_path=None, json_path=None, mouse
     except Exception as e:
         if os.path.exists(TOML_PATH):
             os.replace(TOML_PATH, TOML_PATH + ".bak")
-            print(f"[System] Settings were corrupted and reset. Backup created.")
+            print("\n[UTILITY] - Settings were corrupted and reset. Backup created.")
         create_default_toml()
-        print("Resetting to defaults...")
+        print("\n[UTILITY] - Resetting to defaults...")
         if strict:
             raise e
         else:
-            print(f"[ERROR] Could not update Toml: {e}")
+            print(f"\n[UTILITY] - Could not update Toml: {e}.")
 
 def get_rotation(device):
     rotation = 0
@@ -518,11 +518,11 @@ def set_high_priority(pid, label, priority_level=psutil.HIGH_PRIORITY_CLASS):
     try:
         p = psutil.Process(pid)
         p.nice(priority_level)
-        p.cpu_affinity(list(range(psutil.cpu_count())))
-        
-        print(f"[Priority] {label} set to HIGH (Floating Affinity)")
+        p.cpu_affinity(list(range(psutil.cpu_count() or 1)))
+    
+        print(f"\n[UTILITY] - {label} set to HIGH (Floating Affinity).")
     except Exception as e:
-        print(f"[Priority] Warning: {e}")
+        print(f"\n[UTILITY] - Warning: {e}.")
         
 
 # Worker: Keyboard (Isolated)
@@ -551,7 +551,7 @@ def keyboard_worker(k_queue:Queue):
         except Exception:
             # This triggers if k_queue.get(timeout=15.0) times out
             if pressed_keys:
-                print(f"[Watchdog] Keyboard worker timeout. Releasing {len(pressed_keys)} keys.")
+                print(f"\n[UTILITY] - Keyboard worker timeout. Releasing {len(pressed_keys)} keys.")
                 for code in list(pressed_keys):
                     k_ctx.send(k_handle, KeyStroke(code, 1))
                 pressed_keys.clear()
@@ -643,7 +643,7 @@ def mouse_worker(m_queue:Queue):
                 _sleep(0.001)
 
         except Exception: # Timeout
-            print("[Watchdog] Mouse worker timeout. Releasing buttons.")
+            print("\n[UTILITY] - Mouse worker timeout. Releasing buttons.")
             if left_down:
                 m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, LEFT_BUTTON_UP, 0, 0, 0))
                 left_down = False
@@ -659,7 +659,7 @@ def mouse_worker(m_queue:Queue):
 def maintain_bridge_health(bridge: InterceptionBridge):
     # Check Keyboard Worker
     if not bridge.k_proc.is_alive():
-        print(f"\n[CRITICAL] {_datetime.now().strftime('%H:%M:%S')} - Keyboard Worker Died!")
+        print(f"\n[UTILITY] - Keyboard Worker Died: {_datetime.now().strftime('%H:%M:%S')}!")
         bridge.k_proc = multiprocessing.Process(target=keyboard_worker, name="Keyboard Worker", args=(bridge.k_queue,), daemon=True)
         bridge.k_proc.start()
         # Re-apply High Priority to the new PID
@@ -673,7 +673,7 @@ def maintain_bridge_health(bridge: InterceptionBridge):
 
     # Check Mouse Worker
     if not bridge.m_proc.is_alive():
-        print(f"\n[CRITICAL] {_datetime.now().strftime('%H:%M:%S')} - Mouse Worker Died!")
+        print(f"\n[UTILITY] - Mouse Worker Died: {_datetime.now().strftime('%H:%M:%S')}!")
         bridge.m_proc = multiprocessing.Process(target=mouse_worker, name="Mouse Worker", args=(bridge.m_queue,), daemon=True)
         bridge.m_proc.start()
         set_high_priority(bridge.m_proc.pid, "Revived Mouse")
@@ -687,7 +687,7 @@ def maintain_bridge_health(bridge: InterceptionBridge):
 
 def stop_process(process:Process):
     if process.is_alive():
-        print(f"Closing {process.name}...")
+        print(f"[UTILITY] - Closing {process.name}...")
         process.terminate()
         time.sleep(1.0)
         if process.is_alive():
