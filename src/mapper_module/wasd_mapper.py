@@ -225,10 +225,8 @@ class WASDMapper():
                 self.interception_bridge.key_up(self.state_value_to_key[k.value])
 
         # 3. Handle Sprint (Shift)
-        # Ensure sprint only triggers if we are actually moving (target_mask != NONE)
-        # and typically only if moving forward (W)
-        is_moving_forward = bool(target_mask & State.W)
-        should_sprint = sprint and is_moving_forward
+        # Ensure sprint only triggers if we are actually moving
+        should_sprint = sprint and target_mask
 
         if self.sprint_key_code is not None:
             if self.sprinting and not should_sprint:
@@ -244,21 +242,6 @@ class WASDMapper():
                 self.interception_bridge.key_down(self.state_value_to_key[k.value])
 
         self.current_mask = target_mask
-
-
-            if self.sprint_key_code is not None:
-                if self.sprinting and not sprint:
-                    self.interception_bridge.key_up(self.sprint_key_code)
-                    self.sprinting = False
-                elif not self.sprinting and sprint:
-                    self.interception_bridge.key_down(self.sprint_key_code)
-                    self.sprinting = True
-
-            for k in to_press:
-                if k.value > 0:
-                    self.interception_bridge.key_down(self.state_value_to_key[k.value])
-
-            self.current_mask = target_mask
 
     def process_touch(self, action, touch_event:TouchEvent, is_visible:bool):
         if action == PRESSED:
