@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-
-# TODO: Add visual cursor cues
-
-
 import matplotlib
 matplotlib.use("qt5agg")
 import matplotlib.pyplot as plt
