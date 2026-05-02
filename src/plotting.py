@@ -66,10 +66,38 @@ DEFAULT_MEDIUM_LINE_WIDTH = 2
 DEFAULT_LARGE_LINE_WIDTH = 3
 
 
+
+from PyQt5.QtCore import Qt
+
+class CursorManager:
+    def __init__(self, canvas):
+        self.canvas = canvas
+        # Map application states to PyQt5 cursor shapes
+        self.state_map = {
+            "IDLE": Qt.ArrowCursor,
+            "COLLECTING": Qt.CrossCursor,
+            "WAITING_FOR_KEY": Qt.PointingHandCursor,
+            "DELETING": Qt.ForbiddenCursor,
+            "NAMING": Qt.IBeamCursor,
+            "CONFIRM_DELETE_ALL": Qt.WaitCursor,
+            "CONFIRM_EXIT": Qt.WaitCursor
+        }
+
+    def set_state_cursor(self, state):
+        """Sets the cursor based on the predefined state map."""
+        shape = self.state_map.get(state, Qt.ArrowCursor)
+        self.canvas.setCursor(shape)
+
+    def set_custom_cursor(self, shape):
+        """Allows manual override for specific UI interactions."""
+        self.canvas.setCursor(shape)
+        
+
 class Draggable:
     def __init__(self, entry_id:int, is_shape:bool, plotter_ref:Plotter):
         self.entry_id = entry_id
         self.plotter = plotter_ref
+        self.cursor_manager = plotter_ref.cursor_manager
         self.min_move_distance = 3
         if is_shape:
             self.artist_id = "shape_" + str(entry_id)
@@ -108,7 +136,7 @@ class Draggable:
     def indicate_current_draggable_id(self):
         curr_id = self.plotter.current_draggable_id
         if curr_id is None:
-            return
+            return        
         
         if curr_id.startswith('label_'):
             draggable_artist = self.plotter.label_drag_managers.get(self.entry_id)
@@ -127,7 +155,9 @@ class Draggable:
                 draggable_artist.shape_artist.set_linewidth(DEFAULT_LARGE_LINE_WIDTH)
                 self.plotter.update_title(f"Current Artist: {curr_id} (ID: {self.entry_id}) | Click to Drag or Resize | Arrows to Nudge | {HELP_STR}", True)
             self.plotter.current_draggable = draggable_artist
-                
+            
+        self.cursor_manager.set_custom_cursor(Qt.SizeAllCursor)
+
     def clean_up_current_draggable_id(self):    
         self.indicate_current_draggable_id()
 
@@ -256,6 +286,7 @@ class DraggableLabel(Draggable):
         
     def on_release(self, event):
         self.partial_release()
+        self.cursor_manager.set_state_cursor(self.plotter.state)
         
         if self.plotter.current_draggable_id is None and self.plotter.draggables_ids:
             self.plotter.current_draggable_id = self.select_current_draggable_id()
@@ -788,6 +819,7 @@ class DraggableShape(Draggable):
 
     def on_release(self, event):      
         self.partial_release()
+        self.cursor_manager.set_state_cursor(self.plotter.state)
         
         if self.plotter.current_draggable_id is None and self.plotter.draggables_ids:
             self.plotter.current_draggable_id = self.select_current_draggable_id()
@@ -870,7 +902,8 @@ class Plotter:
         
         # Initiate Parameters
         self.fig, self.ax = plt.subplots()
-                
+        self.cursor_manager = CursorManager(self.fig.canvas)
+
         self.points = []          
         self.point_artists = []
         self.mode = None          
@@ -983,6 +1016,7 @@ class Plotter:
             self.fig.canvas.draw_idle()
         else:
             self.fig.canvas.draw()
+        self.cursor_manager.set_state_cursor(self.state)
 
     def clear_visuals(self):
         for artist in self.point_artists:
@@ -993,6 +1027,7 @@ class Plotter:
     def reset_state(self):
         self.clear_visuals()
         self.state = IDLE
+                                             
         self.mode = None
         self.points = []
         self.input_buffer = ""
@@ -1225,7 +1260,7 @@ class Plotter:
                     line.set_visible(False)
                 self.fig.canvas.draw_idle()
 
-        if self.state == IDLE and not self.drawn:
+        if self.state == IDLE and not self.drawn and event.button is None and event.inaxes == self.ax:
             hovering_now = None
                         
             if self.ignore_current_draggable_id_n > 0:
@@ -1258,11 +1293,12 @@ class Plotter:
                         self.current_draggable_id = curr_id
                         manager.indicate_current_draggable_id()
                         self.fire_on_motion = False
-                        
+                                        
             else:
                 self.partial_release_all()                            
                 state_str = "VISIBLE" if self.show_overlays else "HIDDEN"
                 self.update_title(f"OVERLAYS: {state_str} | {DEF_STR}", True)
+                # self.cursor_manager.set_state_cursor(IDLE)
     
     def partial_release_all(self):
         for draggable in self.label_drag_managers.values():
@@ -1273,7 +1309,7 @@ class Plotter:
         self.current_draggable_id = None
         self.fig.canvas.draw_idle()
 
-    def on_click(self, event):
+    def on_click(self, event):       
         if self.state == IDLE:
             self.ignore_current_draggable_id_n = 0
             

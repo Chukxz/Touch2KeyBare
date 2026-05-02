@@ -5,6 +5,7 @@ import os
 import win32gui
 import threading
 import time
+import ctypes
 from mapper_module.utils import (
     DEFAULT_ADB_RATE_CAP, SHORT_DELAY,
     PPS, EMULATORS, ADB_EXE,
@@ -57,6 +58,7 @@ def process_touch_event(action, touch_event: TouchEvent):
     
     if touch_event.is_mouse:
         mouse_mapper.process_touch(action, touch_event, local_visible)
+        return # CRITICAL: This prevents the finger from hitting buttons/WASD
         
     key_mapper.process_touch(action, touch_event, local_visible)
         
@@ -224,7 +226,25 @@ def shutdown():
     print("[MAIN] - Shutdown complete. Goodbye.")
     os._exit(0)
 
+
+def check_single_instance(instance_name="Touch2Key_Engine"):
+    # Create a unique name. Adding 'Global\' makes it visible across user sessions.
+    mutex_name = f"Global\\{instance_name}"
+    
+    # We use CreateMutex. If it already exists, GetLastError returns 183.
+    handle = ctypes.windll.kernel32.CreateMutexW(None, False, mutex_name)
+    if ctypes.windll.kernel32.GetLastError() == 183:
+        # Silently exit or log a quiet message
+        return False, None
+    return True, handle
+
 if __name__ == "__main__":
+    # Attempt to grab the Mutex
+    success, mutex_handle = check_single_instance()
+    if not success:
+        print("[MAIN] - Another instance of Touch2Key is already running. Exiting this instance.")
+        os._exit(0)
+    
     try:
         main()
     except KeyboardInterrupt:

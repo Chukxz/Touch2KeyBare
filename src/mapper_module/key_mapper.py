@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-import time
 import threading
 from .utils import (
     RECT, CIRCLE, M_LEFT, M_RIGHT, M_MIDDLE,
@@ -39,7 +38,8 @@ class KeyMapper():
         """Pre-processes JSON into a high-speed iteration list."""        
         temp_zones = []
         # Get raw data from the loader
-        raw_data = self.mapper.json_loader.json_data
+        with self.config.config_lock:
+            raw_data = self.mapper.json_loader.json_data.copy()
         
         for scancode, value in raw_data.items():
             # Filter out ignored functional codes

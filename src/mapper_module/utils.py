@@ -420,6 +420,7 @@ def create_default_toml():
     
     # [system] - Core paths and hardware baseline
     system = tomlkit.table()
+    system.add("left_handed", False)
     system.add("hud_image_path", "")
     system.add("json_path", "")
     system.add("json_dev_res", [2400, 1080]) # Default fallback resolution

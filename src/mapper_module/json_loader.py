@@ -30,8 +30,8 @@ class JSONLoader():
         self.load_json()
         
         # REGISTER HOTKEY
-        print("\n[JSONLOADER] - Press F5 to hot reload json data (always reloads config).")
-        keyboard.add_hotkey('f5', self.reload)
+        print("\n[JSONLOADER] - Press F8 to hot reload json data (always reloads config).")
+        keyboard.add_hotkey('f8', self.reload)
 
     def get_mouse_wheel_info(self):
         return self.mouse_wheel_radius, self.sprint_distance

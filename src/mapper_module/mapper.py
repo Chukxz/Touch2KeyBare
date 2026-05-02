@@ -93,7 +93,7 @@ class Mapper():
         """Gets the game window classname."""
         if window_title is None:
             raise ValueError("Window_title must be provided.")
-
+    
         class_name = None            
         hwnd = ctypes.windll.user32.FindWindowW(None, window_title)
         if hwnd != 0:

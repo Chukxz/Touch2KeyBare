@@ -17,7 +17,9 @@ if TYPE_CHECKING:
     from .config import AppConfig
     from .utils import MapperEventDispatcher
     from .bridge import InterceptionBridge
+    
 
+    
 class TouchReader():
     def __init__(self, config:AppConfig, dispatcher:MapperEventDispatcher, interception_bridge: InterceptionBridge, rate_cap:float):
         self.config = config
@@ -82,7 +84,7 @@ class TouchReader():
         if self.is_visible:            
             eligible_finger = []
             for slot, data in list(self.slots.items()):
-                if data['tid'] != -1 and data['start_x'] and ['start_y'] is not None:
+                if data['tid'] != -1 and data['start_x'] is not None and data['start_y'] is not None:
                     eligible_finger.append((slot, data['timestamp']))
                     
             self.last_mouse_slot = self.mouse_slot
@@ -93,15 +95,19 @@ class TouchReader():
 
         eligible_mouse = []
         eligible_wasd = []
+            
+        is_left_handed = self.config.get('system').get('left_handed', False)
 
         for slot, data in list(self.slots.items()):
-            if data['tid'] != -1 and data['start_x'] and ['start_y'] is not None:
-                # Check which side the finger started on
-                if data['start_x'] >= self.side_limit:
+            if data['tid'] != -1 and data['start_x'] is not None and data['start_y'] is not None:
+                # Determine if the finger is on the 'Primary' or 'Secondary' side
+                is_on_left = data['start_x'] < self.side_limit
+                
+                if is_on_left == is_left_handed:
                     eligible_mouse.append((slot, data['timestamp']))
                 else:
                     eligible_wasd.append((slot, data['timestamp']))
-        
+                    
 
         # Use the finger with the earliest timestamp (oldest) for each role
         self.last_mouse_slot = self.mouse_slot
