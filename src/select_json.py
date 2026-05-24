@@ -20,21 +20,21 @@ def select_json_profile():
     )
 
     if not file_path:
-        print("[!] Selection cancelled.")
+        print("[INFO] Selection cancelled.")
         root.destroy()
         return
 
     root.destroy()
         
     if not os.path.exists(file_path):
-        print(f"Error: File '{file_path}' not found.")
+        print(f"[ERROR] File '{file_path}' not found.")
         return
 
     with open(file_path, mode='r', encoding='utf-8') as f:
         try:
             json.load(f)
         except json.JSONDecodeError as e:
-            print(f"Invalid JSON syntax in '{file_path}': {e}")
+            print(f"[ERROR] Invalid JSON syntax in '{file_path}': {e}")
             return
 
     update_toml(image_path="", json_path=file_path, strict=True)
