@@ -38,7 +38,7 @@ class Mapper():
     # EnumWindows callback type definition
     EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
 
-    def __init__(self, json_loader:JSONLoader, touch_reader:TouchReader, interception_bridge:InterceptionBridge, pps:int, emulator:dict[str, str | None]):
+    def __init__(self, json_loader:JSONLoader, touch_reader:TouchReader, interception_bridge:InterceptionBridge, pps:float, emulator:dict[str, str | None]):
         set_dpi_awareness()
         self.enumWindowsProc = Mapper.EnumWindowsProc
 

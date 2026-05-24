@@ -68,12 +68,7 @@ class AppConfig:
         with self.config_lock:
             system_config = self.get('system')
             current_value = system_config.get('left_handed', False)
-
-        new_value = not current_value
-        self.load_config()
-        
-        with self.config_lock:
-            system_config = self.get('system')
+            new_value = not current_value
             system_config['left_handed'] = new_value
             self.config_data['system'] = system_config
         
@@ -88,5 +83,5 @@ class AppConfig:
         # Notify listeners of config change
         self.mapper_event_dispatcher.dispatch(MapperEvent(action="ON_CONFIG_RELOAD"))
 
-    def get(self, key, default={}):
-        return self.config_data.get(key, default)
+    def get(self, key, default=None):
+        return self.config_data.get(key, default if default is not None else {})
