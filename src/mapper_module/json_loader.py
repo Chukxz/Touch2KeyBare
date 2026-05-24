@@ -6,6 +6,7 @@ import os
 import time
 import keyboard
 import win32gui
+import threading
 from .utils import (
     MapperEvent, CIRCLE, RECT, RELOAD_DELAY,
     create_default_toml, update_toml
@@ -24,6 +25,7 @@ class JSONLoader():
         self.last_loaded_json_path = None
         self.last_loaded_json_timestamp = 0
         self.json_data = {}
+        self.json_lock = threading.Lock()
         self.last_reload_time = 0
         
         # Load immediately
@@ -93,7 +95,7 @@ class JSONLoader():
                 print("\n[JSONLOADER] - Parsing new JSON...")
                 new_data = self.process_json(current_path)
                 
-                with self.config.config_lock:
+                with self.json_lock:
                     print("\n[JSONLOADER] - Applying new layout...")
                     self.json_data = new_data
                     self.last_loaded_json_path = current_path
@@ -131,8 +133,8 @@ class JSONLoader():
             self.dpi = metadata["dpi"]
             self.mouse_wheel_radius = metadata["mouse_wheel_radius"]
             self.sprint_distance = metadata["sprint_distance"]
-        except:
-            raise RuntimeError(f"\n[JSONLOADER] - Error loading json file.")
+        except (KeyError, TypeError) as e:
+            raise RuntimeError(f"\n[JSONLOADER] - Error loading json file: {e}.")
 
         self.width = screen_width
         self.height = screen_height
