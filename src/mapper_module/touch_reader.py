@@ -28,6 +28,7 @@ class TouchReader():
 
         # State Tracking
         self.device = None
+        self.device_touch_event = None
         self.slots = {}
         self.active_touches = 0
         self.max_slots = self.get_max_slots()
@@ -135,7 +136,7 @@ class TouchReader():
                         with self.config.config_lock:
                             self.device = dev
                             self.configure_device() 
-                    except:
+                    except Exception:
                         with self.config.config_lock:
                             self.device = None
                     else:
@@ -165,7 +166,7 @@ class TouchReader():
                     if "ABS_MT_POSITION_X" in txt and "INPUT_PROP_DIRECT" in txt: return dev
                 for dev, txt in devices.items():
                     if "ABS_MT_POSITION_X" in txt: return dev
-            except: pass
+            except Exception: pass
         
         else:
             print(f"\n[TOUCHREADER] - ADB not configured properly. Check ADB_EXE path and device connection.")
@@ -179,7 +180,7 @@ class TouchReader():
                 for line in result.stdout.splitlines():
                     if "ABS_MT_SLOT" in line and "max" in line:
                         return int(line.split("max")[1].strip().split(',')[0]) + 1
-            except: pass
+            except Exception: pass
             
         else:
             print(f"\n[TOUCHREADER] - ADB not configured properly. Check ADB_EXE path and device connection.")
@@ -223,7 +224,7 @@ class TouchReader():
                             self.rotation = int(m.group(1)) % 4
                             self.update_matrix()
                         break
-            except: pass
+            except Exception: pass
             time.sleep(self.rotation_poll_interval)
     
     def update_matrix(self):
@@ -400,6 +401,7 @@ class TouchReader():
                 time.sleep(SHORT_DELAY)
                 if not self.wireless_thread.is_alive():
                     self.wireless_thread = threading.Thread(target=self.connect_wirelessly, daemon=True)
+                    self.wireless_thread.start()
 
     def handle_sync(self, lift_up=False):
         now = time.perf_counter()
@@ -444,7 +446,7 @@ class TouchReader():
                             is_wasd=(slot == w_s),
                             )
                         self.touch_event_processor(action, touch_event) 
-                    except: pass                     
+                    except Exception: pass                     
 
             if data['state'] == DOWN: 
                 data['state'] = PRESSED
