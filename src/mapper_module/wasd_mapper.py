@@ -34,7 +34,7 @@ class WASDMapper():
             try:
                 scancode_value = SCANCODES[sprint_key]
                 self.sprint_key_code = int(scancode_value, 16) if isinstance(scancode_value, str) else int(scancode_value)
-            except:
+            except (KeyError, ValueError, TypeError):
                 self.sprint_key_code = None
 
         # Pre-convert scancodes
@@ -78,16 +78,16 @@ class WASDMapper():
         self.sensitivity = 1.0
 
         # Init (Order matters: MouseWheel -> Config -> Recalc)
-        self.updateMouseWheel() 
+        self.update_mouse_wheel() 
         self.update_config()
 
         self.mapper_event_dispatcher.register_callback("ON_CONFIG_RELOAD", self.update_config)
-        self.mapper_event_dispatcher.register_callback("ON_JSON_RELOAD", self.updateMouseWheel)
+        self.mapper_event_dispatcher.register_callback("ON_JSON_RELOAD", self.update_mouse_wheel)
         self.mapper_event_dispatcher.register_callback("ON_WASD_BLOCK", self.on_wasd_block)
 
 
     def update_config(self):
-        print(f"[WASDMapper] Reloading config...")
+        print(f"[WASDMAPPER] - Reloading config...")
         try:
             with self.config.config_lock:
                 # Get Joystick Settings (Deadzone, Hysteresis)
@@ -104,11 +104,11 @@ class WASDMapper():
                 self.recalc_thresholds()
                 
         except Exception as e:
-            print(f"[Error] Joystick config error: {e}")
+            print(f"[WASDMAPPER] - Joystick config error: {e}")
 
-    def updateMouseWheel(self):
+    def update_mouse_wheel(self):
         with self.config.config_lock:
-            print(f"[WASDMapper] Updating mousewheel radius...")
+            print(f"[WASDMAPPER] - Updating mousewheel radius...")
             self.raw_inner_radius, d_radius = self.json_loader.get_mouse_wheel_info()
             self.raw_outer_radius = self.raw_inner_radius + d_radius
             
@@ -135,9 +135,9 @@ class WASDMapper():
         dz_px = effective_inner * self.deadzone
         self.deadzone_sq = dz_px * dz_px
         
-        print(f"[WASD] Shared Sensitivity: {sens}x")
-        print(f"       Walk Distance: {dz_px:.1f}px (was {self.raw_inner_radius * self.deadzone:.1f}px)")
-        print(f"       Sprint Distance: {effective_inner:.1f}px (was {self.raw_inner_radius:.1f}px)")
+        print(f"[WASDMAPPER] - Shared Sensitivity: {sens}x")
+        print(f"       - Walk Distance: {dz_px:.1f}px (was {self.raw_inner_radius * self.deadzone:.1f}px)")
+        print(f"       -Sprint Distance: {effective_inner:.1f}px (was {self.raw_inner_radius:.1f}px)")
 
     def on_wasd_block(self):
         if self.mapper.wasd_block > 0:
