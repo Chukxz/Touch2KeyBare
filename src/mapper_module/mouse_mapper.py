@@ -36,20 +36,21 @@ class MouseMapper():
             with self.config.config_lock:
                 mouse_cfg = self.config.config_data.get('mouse', {})
                 base_sens = mouse_cfg.get('sensitivity', 1.0)
-                
+            
+            with self.mapper.lock:                
                 pc_w = self.mapper.screen_w
-                dev_w = self.mapper.json_loader.width
+                dev_w = self.mapper.device_width
 
-                if dev_w > 0:
-                    resolution_ratio = pc_w / dev_w
-                else:
-                    print("\n[MOUSEMAPPER] - Device width is not a positive integer. Defaulting ratio to 1.0.")
-                    resolution_ratio = 1.0
+            if dev_w > 0:
+                resolution_ratio = pc_w / dev_w
+            else:
+                print("\n[MOUSEMAPPER] - Device width is not a positive integer. Defaulting ratio to 1.0.")
+                resolution_ratio = 1.0
 
-                self.scaling_factor = base_sens * resolution_ratio
-                
-                print(f"\n[MOUSEMAPPER] - Sync: PC width ({pc_w}px) / Phone width ({dev_w}px) = Ratio ({resolution_ratio:.2f}).")
-                print(f"\n[MOUSEMAPPER] - Final Scaling Factor: {self.scaling_factor:.4f} (User Sensitivity: {base_sens}x).")
+            self.scaling_factor = base_sens * resolution_ratio
+            
+            print(f"\n[MOUSEMAPPER] - Sync: PC width ({pc_w}px) / Phone width ({dev_w}px) = Ratio ({resolution_ratio:.2f}).")
+            print(f"\n[MOUSEMAPPER] - Final Scaling Factor: {self.scaling_factor:.4f} (User Sensitivity: {base_sens}x).")
 
         except Exception as e:
             print(f"\n[MOUSEMAPPER] - Mouse config update failed: {e}.")

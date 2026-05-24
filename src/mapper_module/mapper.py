@@ -203,8 +203,9 @@ class Mapper():
                         print("\n[MAPPER] - New window handle bound.")
                             
                     except RuntimeError:
-                        self.game_window_info = None
-                        # Game isn't open yet, just keep waiting
+                        with self.lock:
+                            self.game_window_info = None
+                            # Game isn't open yet, just keep waiting
                         pass
                     
             except Exception as e:
