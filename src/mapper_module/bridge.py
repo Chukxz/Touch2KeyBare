@@ -42,12 +42,12 @@ class InterceptionBridge:
     def mouse_move_rel(self, dx, dy):
         try:
             self.m_queue.put_nowait(("move_rel", (dx, dy)))
-        except: pass # Drop move if flooded
+        except Exception: pass # Drop move if flooded
 
     def mouse_move_abs(self, x, y):
         abs_x = int((x * 65535) / self.screen_w)
         abs_y = int((y * 65535) / self.screen_h)
-        self.m_queue.put(("move_abs", (abs_x, abs_y)))
+        self.m_queue.put(("move_abs", (abs_x, abs_y)), timeout=0.1)
 
     def left_click_down(self): self.m_queue.put(("button", LEFT_BUTTON_DOWN))
     def left_click_up(self): self.m_queue.put(("button", LEFT_BUTTON_UP))
