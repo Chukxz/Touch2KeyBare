@@ -111,9 +111,9 @@ class Draggable:
         
         if self.plotter.last_artist_id in self.plotter.draggables_ids:
             if self.plotter.iter_count >= 2:
-                l = len(self.plotter.draggables_ids)
+                total = len(self.plotter.draggables_ids)
                 i = self.plotter.draggables_ids.index(self.plotter.last_artist_id)
-                n = (i + 1) % l
+                n = (i + 1) % total
                 self.plotter.iter_count = 0
                 current_draggable_id = self.plotter.draggables_ids[n]
             else:
@@ -1871,7 +1871,7 @@ class Plotter:
                 self.saved_mouse_wheel = True
                 
             elif self.mode == RECT:
-                print(f"[!] ERROR: Mouse Wheel can only be assigned to '{CIRCLE}' not '{RECT} shapes.")
+                print(f"[!] ERROR: Mouse Wheel can only be assigned to '{CIRCLE}' not '{RECT}' shapes.")
                 return saved, uid
         
         elif interception_key == SPRINT_DISTANCE_CODE:
@@ -1913,7 +1913,7 @@ class Plotter:
                 self.sprint_artist_id = uid
                 
             elif self.mode == RECT:
-                print(f"[!] ERROR: Sprint Button can only be assigned to '{CIRCLE}' not '{RECT} shapes.")
+                print(f"[!] ERROR: Sprint Button can only be assigned to '{CIRCLE}' not '{RECT}' shapes.")
                 return saved, uid
         
         entry = {

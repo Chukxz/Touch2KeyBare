@@ -27,8 +27,6 @@ from mapper_module import (
 )
 
 
-FOREGROUND_WINDOW = win32gui.GetForegroundWindow()
-
 interception_bridge = None
 touch_reader = None
 mapper_logic = None
@@ -144,6 +142,8 @@ def select_emulator():
    
     
 def main():
+FOREGROUND_WINDOW = win32gui.GetForegroundWindow()
+
     global mouse_mapper, key_mapper, wasd_mapper, interception_bridge, mapper_logic, touch_reader
     keyboard.add_hotkey('esc', shutdown)
 
@@ -220,7 +220,7 @@ def shutdown():
         print("[MAIN] - Stopping Mouse and Keyboard child processes...")
         stop_process(interception_bridge.k_proc)
         stop_process(interception_bridge.m_proc)
-    except:
+    except Exception:
         pass
 
     print("[MAIN] - Shutdown complete. Goodbye.")
