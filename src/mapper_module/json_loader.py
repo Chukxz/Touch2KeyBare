@@ -40,14 +40,16 @@ class JSONLoader():
         system_config = self.config.get('system')
         if not system_config or 'json_path' not in system_config:
             create_default_toml()
-            raise RuntimeError("\n[JSONLOADER] - JSON path not found or misconfigured (json_path).")
+            raise RuntimeError("\n[JSONLOADER] - JSON path not found or misconfigured.")
 
         current_path = system_config['json_path']
-        self.json_data = self.process_json(current_path)
-        
-        self.last_loaded_json_path = current_path
-        if os.path.exists(current_path):
-            self.last_loaded_json_timestamp = os.path.getmtime(current_path)
+        new_data = self.process_json(current_path)
+
+        with self.config.config_lock:
+            self.json_data = new_data
+            self.last_loaded_json_path = current_path
+            if os.path.exists(current_path):
+                self.last_loaded_json_timestamp = os.path.getmtime(current_path)
 
     def should_reload(self, old_path, new_path, last_timestamp):
         need_reload = False
