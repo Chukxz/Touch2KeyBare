@@ -16,11 +16,10 @@ from pathlib import Path
 import platform
 from mapper_module.utils import (
     CIRCLE, RECT, SCANCODES, DEF_DPI, IMAGES_FOLDER, JSONS_FOLDER,
-    TOML_PATH, MOUSE_WHEEL_CODE, SPRINT_DISTANCE_CODE, select_image_file,
+    TOML_PATH, MOUSE_WHEEL_CODE, SPRINT_DISTANCE_CODE, IDLE, select_image_file,
     set_dpi_awareness, rotate_resolution, update_toml, get_vibrant_random_color
 )
 
-IDLE = "IDLE"
 COLLECTING = "COLLECTING"
 WAITING_FOR_KEY = "WAITING_FOR_KEY"
 DELETING = "DELETING"
@@ -61,9 +60,6 @@ DEFAULT_SMALL_LINE_WIDTH = 1.5
 DEFAULT_MEDIUM_LINE_WIDTH = 2
 DEFAULT_LARGE_LINE_WIDTH = 3
 
-
-
-from PyQt5.QtCore import Qt
 
 class CursorManager:
     def __init__(self, canvas):
