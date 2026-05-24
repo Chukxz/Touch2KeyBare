@@ -41,7 +41,7 @@ class KeyMapper():
         with self.config.config_lock:
             raw_data = self.mapper.json_loader.json_data.copy()
         
-        for scancode, value in raw_data.items():
+        for scancode, value in raw_data:
             # Filter out ignored functional codes
             if value.get('name') in self.ignored_names:
                 continue

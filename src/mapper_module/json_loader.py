@@ -110,7 +110,7 @@ class JSONLoader():
         self.config.reload_config()            
         
     def process_json(self, json_file_path):
-        normalized_zones = {}
+        normalized_zones = []
         
         if not os.path.exists(json_file_path):
             _str = f"\n[JSONLOADER] - Error: File '{json_file_path}' not found."
@@ -168,7 +168,7 @@ class JSONLoader():
                     zone_data['val3'] = float(item['val3'])
                     zone_data['val4'] = float(item['val4'])
                 
-                normalized_zones[scancode] = zone_data
+                normalized_zones.append((scancode, zone_data))
                 
             except (ValueError, KeyError) as e:
                 print(f"\n[JSONLOADER] - Skipping invalid item: {scancode} with name: {zone_data['name']}. Error: {e}.")
