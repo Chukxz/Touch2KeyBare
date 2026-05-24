@@ -72,7 +72,7 @@ class InterceptionBridge:
             self.m_queue.put(("button", RIGHT_BUTTON_UP), timeout=0.2)
         except Exception: pass
 
-     def middle_click_down(self): 
+    def middle_click_down(self): 
         try:
             self.m_queue.put(("button", MIDDLE_BUTTON_DOWN), timeout=0.2)
         except Exception: pass
