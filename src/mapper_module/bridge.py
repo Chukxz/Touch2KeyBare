@@ -48,38 +48,38 @@ class InterceptionBridge:
         abs_x = int((x * 65535) / self.screen_w)
         abs_y = int((y * 65535) / self.screen_h)
         try:
-            self.m_queue.put(("move_abs", (abs_x, abs_y)), timeout=0.1)
+            self.m_queue.put_nowait(("move_abs", (abs_x, abs_y)))
         except Exception:
             pass  # Queue full, drop the absolute move
 
     def left_click_down(self): 
         try:
-            self.m_queue.put(("button", LEFT_BUTTON_DOWN), timeout=0.2)
+            self.m_queue.put(("button", LEFT_BUTTON_DOWN), timeout=0.05)
         except Exception: pass
 
     def left_click_up(self): 
         try:
-            self.m_queue.put(("button", LEFT_BUTTON_UP), timeout=0.2)
+            self.m_queue.put(("button", LEFT_BUTTON_UP), timeout=0.05)
         except Exception: pass
 
     def right_click_down(self): 
         try:
-            self.m_queue.put(("button", RIGHT_BUTTON_DOWN), timeout=0.2)
+            self.m_queue.put(("button", RIGHT_BUTTON_DOWN), timeout=0.05)
         except Exception: pass
 
     def right_click_up(self): 
         try:
-            self.m_queue.put(("button", RIGHT_BUTTON_UP), timeout=0.2)
+            self.m_queue.put(("button", RIGHT_BUTTON_UP), timeout=0.05)
         except Exception: pass
 
     def middle_click_down(self): 
         try:
-            self.m_queue.put(("button", MIDDLE_BUTTON_DOWN), timeout=0.2)
+            self.m_queue.put(("button", MIDDLE_BUTTON_DOWN), timeout=0.05)
         except Exception: pass
 
     def middle_click_up(self): 
         try:
-            self.m_queue.put(("button", MIDDLE_BUTTON_UP), timeout=0.2)
+            self.m_queue.put(("button", MIDDLE_BUTTON_UP), timeout=0.05)
         except Exception: pass
 
     def release_all(self):
