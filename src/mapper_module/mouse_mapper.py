@@ -77,6 +77,8 @@ class MouseMapper():
         The 'Hot Path'. This code runs hundreds of times per second.
         Optimized to minimize branching and float operations.
         """
+        # prev_x or prev_y can be none if the ADB connection was lost and the touch points were reset. In that case, we need to re-anchor before calculating deltas.
+        # Treat it as a fresh touch down, which will also reset the accumulators and prevent a large jump in the first movement packet after reconnection.
         if self.prev_x is None or self.prev_y is None:
             self.touch_down(touch_event, is_visible)
             return
