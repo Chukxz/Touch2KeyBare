@@ -281,17 +281,17 @@ class TouchReader():
         if self.device is None:
             self.device = get_adb_device() # Raises runtime error if no eligible adb device is found
         if not is_device_online(self.device):
-            raise RuntimeError(f"\n[JSONLOADER] - {self.device} is not online.")
+            raise RuntimeError(f"\n[TOUCHREADER] - {self.device} is not online.")
         self.device_touch_event = self.find_touch_device_event()
         if self.device_touch_event is None:
-            raise RuntimeError("\n[JSONLOADER] - No touchscreen device found via ADB.")
+            raise RuntimeError("\n[TOUCHREADER] - No touchscreen device found via ADB.")
         print(f"\n[TOUCHREADER] - Using touchscreen device: {self.device_touch_event}.")
             
         # Physical Device Specs
         res = get_screen_size(self.device)
         if res is None:
             self.running = False
-            raise RuntimeError("\n[JSONLOADER] - Detected resolution invalid.")
+            raise RuntimeError("\n[TOUCHREADER] - Detected resolution invalid.")
         self.width, self.height = res
             
         # Get Configured Specs

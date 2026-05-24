@@ -137,7 +137,7 @@ class Mapper():
         
         # Check Cursor Visibility
         try:
-            flags, hcursor, pos = win32gui.GetCursorInfo()
+            flags, hcursor, pos = win32gui.GetCursorInfo() # type: ignore
             # 0x00000001 is CURSOR_SHOWING
             is_visible = True if (flags & 1) else False
             
