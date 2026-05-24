@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from .utils import MapperEventDispatcher
     from .bridge import InterceptionBridge
     
-
+    
     
 class TouchReader():
     def __init__(self, config:AppConfig, dispatcher:MapperEventDispatcher, interception_bridge: InterceptionBridge, rate_cap:float):
@@ -143,36 +143,47 @@ class TouchReader():
                             self.update_matrix()
 
     def find_touch_device_event(self):
-        try:
-            result = subprocess.run(
-                [ADB_EXE, "-s", self.device, "shell", "getevent", "-lp"],
-                capture_output=True, text=True, timeout=2
-            )
-            lines = result.stdout.splitlines()
-            current_device, block, devices = None, [], {}
-            for line in lines:
-                if line.startswith("add device"):
-                    if current_device: devices[current_device] = "\n".join(block)
-                    block = []
-                    current_device = line.split(":")[1].strip()
-                else: 
-                    block.append(line)
-            if current_device: devices[current_device] = "\n".join(block)
+        if not ADB_EXE is None and not self.device is None:                
+            try:                
+                result = subprocess.run(
+                    [ADB_EXE, "-s", self.device, "shell", "getevent", "-lp"],
+                    capture_output=True, text=True, timeout=2
+                )
+                
+                lines = result.stdout.splitlines()
+                current_device, block, devices = None, [], {}
+                for line in lines:
+                    if line.startswith("add device"):
+                        if current_device: devices[current_device] = "\n".join(block)
+                        block = []
+                        current_device = line.split(":")[1].strip()
+                    else: 
+                        block.append(line)
+                if current_device: devices[current_device] = "\n".join(block)
 
-            for dev, txt in devices.items():
-                if "ABS_MT_POSITION_X" in txt and "INPUT_PROP_DIRECT" in txt: return dev
-            for dev, txt in devices.items():
-                if "ABS_MT_POSITION_X" in txt: return dev
-        except: pass
+                for dev, txt in devices.items():
+                    if "ABS_MT_POSITION_X" in txt and "INPUT_PROP_DIRECT" in txt: return dev
+                for dev, txt in devices.items():
+                    if "ABS_MT_POSITION_X" in txt: return dev
+            except: pass
+        
+        else:
+            print(f"\n[TOUCHREADER] - ADB not configured properly. Check ADB_EXE path and device connection.")
+            
         return None
 
     def get_max_slots(self):
-        try:
-            result = subprocess.run([ADB_EXE, "-s", self.device, "shell", "getevent", "-p", self.device_touch_event], capture_output=True, text=True)
-            for line in result.stdout.splitlines():
-                if "ABS_MT_SLOT" in line and "max" in line:
-                    return int(line.split("max")[1].strip().split(',')[0]) + 1
-        except: pass
+        if not ADB_EXE is None and not self.device is None and not self.device_touch_event is None:
+            try:
+                result = subprocess.run([ADB_EXE, "-s", self.device, "shell", "getevent", "-p", self.device_touch_event], capture_output=True, text=True)
+                for line in result.stdout.splitlines():
+                    if "ABS_MT_SLOT" in line and "max" in line:
+                        return int(line.split("max")[1].strip().split(',')[0]) + 1
+            except: pass
+            
+        else:
+            print(f"\n[TOUCHREADER] - ADB not configured properly. Check ADB_EXE path and device connection.")
+            
         return 10
 
     def update_config(self):
@@ -315,63 +326,74 @@ class TouchReader():
             
             self.touch_lost = False
 
-            self.process = subprocess.Popen(
-                [ADB_EXE, "-s", self.device, "shell", "getevent", "-l", self.device_touch_event],
-                stdout=subprocess.PIPE, text=True, bufsize=0 
-            )
+            if not ADB_EXE is None and not self.device is None and not self.device_touch_event is None:    
+                self.process = subprocess.Popen(
+                    [ADB_EXE, "-s", self.device, "shell", "getevent", "-l", self.device_touch_event],
+                    stdout=subprocess.PIPE, text=True, bufsize=0 
+                )
+                
+                if self.process.stdout is None:
+                    print(f"\n[TOUCHREADER] - Failed to read from ADB process stdout.")
+                    self.process = None
+                    time.sleep(LONG_DELAY)
+                    continue
 
-            try:
-                for line in self.process.stdout:                    
-                    if not self.running: break
-                    
-                    if "ABS_MT" not in line and "SYN_REPORT" not in line:
-                        continue
-                    
-                    parts = line.split()
-                    code, val_str = parts[-2], parts[-1]
-                    
-                    if "ABS_MT_SLOT" == code:
-                        current_slot = int(val_str, 16)
-                        self.ensure_slot(current_slot)
+                try:
+                    for line in self.process.stdout:                    
+                        if not self.running: break
                         
-                    elif "ABS_MT_TRACKING_ID" == code:
-                        tid = self.parse_hex_signed(val_str)
-                        self.ensure_slot(current_slot)
-                        prev_id = self.slots[current_slot]['tid']
-                        self.slots[current_slot]['tid'] = tid
+                        if "ABS_MT" not in line and "SYN_REPORT" not in line:
+                            continue
                         
-                        if tid >= 0 and prev_id == -1:
-                            self.slots[current_slot].update({
-                                'state': DOWN, 
-                                'start_x': None, 'start_y': None,
-                                'timestamp': time.monotonic_ns()
-                            })
-                        elif tid == -1:
-                            self.slots[current_slot]['state'] = UP
+                        parts = line.split()
+                        code, val_str = parts[-2], parts[-1]
+                        
+                        if "ABS_MT_SLOT" == code:
+                            current_slot = int(val_str, 16)
+                            self.ensure_slot(current_slot)
                             
-                    elif "ABS_MT_POSITION_X" == code:
-                        val = int(val_str, 16)
-                        self.slots[current_slot]['x'] = val                        
-                        if self.slots[current_slot]['start_x'] is None:
-                            tmp = self.rotate_norm_coordinates(val, self.slots[current_slot]['start_y'])
-                            self.slots[current_slot]['start_x'], self.slots[current_slot]['start_y'] = tmp
+                        elif "ABS_MT_TRACKING_ID" == code:
+                            tid = self.parse_hex_signed(val_str)
+                            self.ensure_slot(current_slot)
+                            prev_id = self.slots[current_slot]['tid']
+                            self.slots[current_slot]['tid'] = tid
                             
-                    elif "ABS_MT_POSITION_Y" == code:
-                        val = int(val_str, 16)
-                        self.slots[current_slot]['y'] = val                        
-                        if self.slots[current_slot]['start_y'] is None:
-                            tmp = self.rotate_norm_coordinates(self.slots[current_slot]['start_x'], val)
-                            self.slots[current_slot]['start_x'], self.slots[current_slot]['start_y'] = tmp
-                    
+                            if tid >= 0 and prev_id == -1:
+                                self.slots[current_slot].update({
+                                    'state': DOWN, 
+                                    'start_x': None, 'start_y': None,
+                                    'timestamp': time.monotonic_ns()
+                                })
+                            elif tid == -1:
+                                self.slots[current_slot]['state'] = UP
+                                
+                        elif "ABS_MT_POSITION_X" == code:
+                            val = int(val_str, 16)
+                            self.slots[current_slot]['x'] = val                        
+                            if self.slots[current_slot]['start_x'] is None:
+                                tmp = self.rotate_norm_coordinates(val, self.slots[current_slot]['start_y'])
+                                self.slots[current_slot]['start_x'], self.slots[current_slot]['start_y'] = tmp
+                                
+                        elif "ABS_MT_POSITION_Y" == code:
+                            val = int(val_str, 16)
+                            self.slots[current_slot]['y'] = val                        
+                            if self.slots[current_slot]['start_y'] is None:
+                                tmp = self.rotate_norm_coordinates(self.slots[current_slot]['start_x'], val)
+                                self.slots[current_slot]['start_x'], self.slots[current_slot]['start_y'] = tmp
+                        
 
-                    elif "SYN_REPORT" == code:
-                        self.handle_sync()
-                        
-            except Exception as e:
-                print(f"\n[TOUCHREADER] - ADB Stream interrupted: {e}. Restarting...")
-                self.handle_sync(True)
-                self.mouse_slot = None
-                self.wasd_slot = None
+                        elif "SYN_REPORT" == code:
+                            self.handle_sync()
+                            
+                except Exception as e:
+                    print(f"\n[TOUCHREADER] - ADB Stream interrupted: {e}. Restarting...")
+                    self.handle_sync(True)
+                    self.mouse_slot = None
+                    self.wasd_slot = None
+            
+            else:
+                print(f"\n[TOUCHREADER] - ADB not configured properly. Check ADB_EXE path and device connection.")
+                time.sleep(LONG_DELAY)
                         
             if self.running:
                 self.stop_process()

@@ -314,12 +314,11 @@ def is_device_online(device:str):
         res = subprocess.run([ADB_EXE, "-s", device, "get-state"], 
                             capture_output=True, text=True, timeout=1)
         return "device" in res.stdout
-    except:
+    except Exception:
         return False
 
-def wireless_connect(device:str|None=None, continous=True):
+def wireless_connect(device:str|None=None, continuous=True):
     running = True
-    device = None
     error_1 = False
     error_2 = False
     
@@ -329,7 +328,7 @@ def wireless_connect(device:str|None=None, continous=True):
                 device = get_adb_device()
                 
             except RuntimeError:
-                if continous:
+                if continuous:
                     if not error_1:
                         print("\n[UTILITY] - No adb devices detected. Retrying...")
                         error_1 = True
@@ -359,13 +358,13 @@ def wireless_connect(device:str|None=None, continous=True):
             
                 print(f"\n[UTILITY] - Connected successfully to device: {device} on socket: {socket_path}, device now set to: {socket_path}.")
                 
-            if continous:
+            if continuous:
                 running = False
             else:
                 return False, socket_path
                     
         except Exception as e:
-            if continous:
+            if continuous:
                 if not error_2:
                     print(f"\n[UTILITY] - Error connecting, retrying...")
                     error_2 = True
@@ -382,7 +381,7 @@ def set_dpi_awareness():
     except Exception:
         try:
             ctypes.windll.user32.SetProcessDPIAware()
-        except: pass
+        except Exception: pass
 
 def select_image_file(base_dir:str|None = None):
     # Create a root window and hide it immediately
@@ -497,7 +496,7 @@ def get_rotation(device):
             if m:
                 rotation = int(m.group(1)) % 4
                 break
-    except: pass
+    except Exception: pass
 
     return rotation
 
@@ -629,7 +628,7 @@ def mouse_worker(m_queue:Queue):
                         else:
                             pending_task = (next_task, next_data)
                             break 
-                    except: 
+                    except Exception: 
                         break
 
                 if acc_dx != 0 or acc_dy != 0:
@@ -669,7 +668,7 @@ def maintain_bridge_health(bridge: InterceptionBridge):
         while not bridge.k_queue.empty():
             try:
                 bridge.k_queue.get_nowait()
-            except: 
+            except Exception: 
                 break
 
     # Check Mouse Worker
@@ -682,7 +681,7 @@ def maintain_bridge_health(bridge: InterceptionBridge):
         while not bridge.m_queue.empty():
             try: 
                 bridge.m_queue.get_nowait()
-            except: 
+            except Exception: 
                 break
 
 

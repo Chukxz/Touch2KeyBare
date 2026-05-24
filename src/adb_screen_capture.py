@@ -3,6 +3,11 @@ import datetime
 from pathlib import Path
 from PIL import Image
 
+# TODO: Resolve ADB paths dynamically instead of relying on system PATH.
+# TODO: Clean up Android temp file in finally block.
+# TODO: Move input() calls out of capture function into parameters.
+# TODO: add timeout to subprocess calls to prevent hanging if device disconnects.
+
 from mapper_module.utils import (
     IMAGES_FOLDER, TOML_PATH, get_adb_device,
     get_screen_size, get_dpi, get_rotation, update_toml
