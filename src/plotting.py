@@ -30,7 +30,7 @@ HELP_STR = "F1(Help)"
 DEF_STR = \
     "MODE: IDLE | F3(Load JSON) | F5(Load Image) | F12(Save) | Esc(Exit)\n\
     F6(Circle) | F7(Rect) | F8(Cancel) | Del(Delete) | F2(Delete All) | F9(List Current Shapes in Terminal)\n\
-    F4(Toggle Artist Visibility) | F11(Sprint Threshold) | F12(Mouse Wheel)\n\
+    F4(Toggle Artist Visibility) | [(Sprint Threshold) | ](Mouse Wheel)\n\
     Arrows: Nudge | Shift+Arrows: Fast Nudge | Double Click: Change Selected Artist"
 
 SPECIAL_MAP = {
@@ -1395,15 +1395,15 @@ class Plotter:
                 self.change_image()
             if event.key == 'f6':
                 self.start_mode(CIRCLE, 3)
-            elif event.key == 'f7':
+            if event.key == 'f7':
                 self.start_mode(RECT, 4)
-            elif event.key == 'f9':
+            if event.key == 'f9':
                 self.print_data()
-            elif event.key == 'f12':
+            if event.key == 'f12':
                 self.enter_naming_mode()
-            elif event.key == 'delete':
+            if event.key == 'delete':
                 self.enter_delete_mode()
-            elif event.key == 'escape':
+            if event.key == 'escape':
                 self.state = CONFIRM_EXIT
                 self.update_title("[EXIT?] Press ENTER to Quit or Any other key to Cancel.")
 
@@ -1441,6 +1441,7 @@ class Plotter:
         
         for uid in list(self.shapes.keys()):
             self.delete_entry(uid)
+        self.count = 0
         self.reset_state()
         print("[+] All shapes deleted.")
         
@@ -1640,8 +1641,10 @@ class Plotter:
                 if self.mode == CIRCLE and cx and cy and r:
                     if interception_key == MOUSE_WHEEL_CODE:
                         fc = (DEFAULT_MOUSE_WHEEL_FACE_COLOR) # Bright Cyan/Teal
+                        interception_key = "MOUSE_WHEEL"
                     elif interception_key == SPRINT_DISTANCE_CODE:
                         fc = DEFAULT_SPRINT_DISTANCE_FACE_COLOR # Bright Red
+                        interception_key = "SPRINT_DISTANCE"                      
                     else:
                         fc = get_vibrant_random_color(DEFAULT_FACE_COLOR_ALPHA)
                     # Add shape artist
@@ -1660,22 +1663,25 @@ class Plotter:
                     self.shape_drag_managers[entry_id] = DraggableShape(entry_id, self, CIRCLE)
                     
                 elif self.mode == RECT and cx and cy and bb:
-                    fc = get_vibrant_random_color(DEFAULT_FACE_COLOR_ALPHA)
-                    (x1, y1), (x2, y2) = bb
-                    # Add shape artist
-                    shape_artist = plt.Rectangle((x1, y1), x2-x1, y2-y1, fill=True, lw=2, fc=fc, ec=DEFAULT_EDGE_COLOR)
-                    shape_artist.set_visible(self.show_overlays)
-                    self.ax.add_patch(shape_artist)
-                    self.shapes_artists[entry_id] = shape_artist
-                    # Add label artist
-                    label_artist = self.label(cx, cy, interception_key, fc)
-                    label_artist.set_visible(self.show_overlays)
-                    self.ax.add_artist(label_artist)
-                    self.labels_artists[entry_id] = label_artist
-                    # Make the label draggable
-                    self.label_drag_managers[entry_id] = DraggableLabel(entry_id, self)
-                    # Make the shape draggable
-                    self.shape_drag_managers[entry_id] = DraggableShape(entry_id, self, RECT)                   
+                    if interception_key == MOUSE_WHEEL_CODE or interception_key == SPRINT_DISTANCE_CODE:
+                        print(f"[!] Warning: Special keys like '{interception_key}' should be bound to CIRCLE shapes for better visualization. Consider re-binding this key to a circle shape.")
+                    else:
+                        fc = get_vibrant_random_color(DEFAULT_FACE_COLOR_ALPHA)
+                        (x1, y1), (x2, y2) = bb
+                        # Add shape artist
+                        shape_artist = plt.Rectangle((x1, y1), x2-x1, y2-y1, fill=True, lw=2, fc=fc, ec=DEFAULT_EDGE_COLOR)
+                        shape_artist.set_visible(self.show_overlays)
+                        self.ax.add_patch(shape_artist)
+                        self.shapes_artists[entry_id] = shape_artist
+                        # Add label artist
+                        label_artist = self.label(cx, cy, interception_key, fc)
+                        label_artist.set_visible(self.show_overlays)
+                        self.ax.add_artist(label_artist)
+                        self.labels_artists[entry_id] = label_artist
+                        # Make the label draggable
+                        self.label_drag_managers[entry_id] = DraggableLabel(entry_id, self)
+                        # Make the shape draggable
+                        self.shape_drag_managers[entry_id] = DraggableShape(entry_id, self, RECT)                   
 
     # Naming / Saving Logic
     def enter_naming_mode(self):
@@ -1793,7 +1799,7 @@ class Plotter:
         
         try:
             if (not self.saved_mouse_wheel) or (not self.saved_sprint_distance):
-                print("[!] ERROR: Mouse wheel or sprint distance not configured.")
+                print("[!] Error: Mouse wheel or sprint distance not configured.")
                 self.update_title(f"Error saving: {file_path.name} | {HELP_STR}")
                 return
 
@@ -1871,17 +1877,17 @@ class Plotter:
                 self.saved_mouse_wheel = True
                 
             elif self.mode == RECT:
-                print(f"[!] ERROR: Mouse Wheel can only be assigned to '{CIRCLE}' not '{RECT}' shapes.")
+                print(f"[!] Error: Mouse Wheel can only be assigned to '{CIRCLE}' not '{RECT}' shapes.")
                 return saved, uid
         
         elif interception_key == SPRINT_DISTANCE_CODE:
             if self.mode == CIRCLE:
                 if not self.saved_mouse_wheel:
-                    print(f"[!] ERROR: Mouse Wheel not assigned yet. Please assign it first.")
+                    print(f"[!] Error: Mouse Wheel not assigned yet. Please assign it first.")
                     return saved, uid
                     
                 if self.saved_sprint_distance:                    
-                    print(f"[!] ERROR: Sprint Threshold already assigned. Overwriting previous assignment.")
+                    print(f"[!] Error: Sprint Threshold already assigned. Overwriting previous assignment.")
                     for k, v in self.shapes.items():
                         if v['key_name'] == SPRINT_DISTANCE_CODE:
                             uid = k
@@ -1905,7 +1911,7 @@ class Plotter:
                 actual_dist = self.euclidean_distance(cx, cy, self.mouse_wheel_cx, self.mouse_wheel_cy)
                 # STRICT CHECK: Ensure Sprint is actually outside the Joystick
                 if actual_dist <= self.mouse_wheel_radius:
-                    print(f"[!] ERROR: Sprint point must be OUTSIDE the joystick radius!")
+                    print(f"[!] Error: Sprint point must be OUTSIDE the joystick radius!")
                     return False, uid
 
                 self.sprint_distance = actual_dist
@@ -1913,7 +1919,7 @@ class Plotter:
                 self.sprint_artist_id = uid
                 
             elif self.mode == RECT:
-                print(f"[!] ERROR: Sprint Button can only be assigned to '{CIRCLE}' not '{RECT}' shapes.")
+                print(f"[!] Error: Sprint Distance can only be assigned to '{CIRCLE}' not '{RECT}' shapes.")
                 return saved, uid
         
         entry = {
