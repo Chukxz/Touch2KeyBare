@@ -7,14 +7,13 @@ from ctypes import wintypes
 import threading
 import win32gui
 from .utils import (
-    DEF_DPI, LONG_DELAY, WINDOW_UPDATE_INTERVAL,
-    MapperEvent, set_dpi_awareness, rotate_resolution
+    DEF_DPI, LONG_DELAY, WINDOW_UPDATE_INTERVAL, SCANCODES,
+    MapperEvent, rotate_resolution
     )
 
 if TYPE_CHECKING:
     from .json_loader import JSONLoader
     from .touch_reader import TouchReader
-    from .bridge import InterceptionBridge
 
 MAX_CLASS_NAME = 256
 
@@ -38,8 +37,7 @@ class Mapper():
     # EnumWindows callback type definition
     EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
 
-    def __init__(self, json_loader:JSONLoader, touch_reader:TouchReader, interception_bridge:InterceptionBridge, pps:float, emulator:dict[str, str | None]):
-        set_dpi_awareness()
+    def __init__(self, json_loader:JSONLoader, touch_reader:TouchReader, interception_bridge, pps:float, emulator:dict[str, str]):
         self.enumWindowsProc = Mapper.EnumWindowsProc
 
         # Setup Dependencies
@@ -50,6 +48,7 @@ class Mapper():
         self.interception_bridge = interception_bridge
         self.emulator = emulator
         self.window_title = emulator['window_title']
+        self.toggle_key_scancode = SCANCODES[emulator["toggle_key"]]
         self.pps = pps
         self.event_count = 0
         self.last_pulse_time = time.perf_counter()
@@ -245,6 +244,7 @@ class Mapper():
         
         rot_dev_w, rot_dev_h = rotate_resolution(self.device_width, self.device_height, rot)
         return (x / rot_dev_w) * self.screen_w, (y / rot_dev_h) * self.screen_h
+
     
     def dp_to_px(self, dp):
         return dp * (self.dpi / DEF_DPI)

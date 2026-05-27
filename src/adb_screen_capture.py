@@ -3,17 +3,12 @@ import datetime
 from pathlib import Path
 from PIL import Image
 
-# TODO: Resolve ADB paths dynamically instead of relying on system PATH.
-# TODO: Clean up Android temp file in finally block.
-# TODO: Move input() calls out of capture function into parameters.
-# TODO: add timeout to subprocess calls to prevent hanging if device disconnects.
-
 from mapper_module.utils import (
-    IMAGES_FOLDER, TOML_PATH, get_adb_device,
+    IMAGES_FOLDER, TOML_PATH, ADB_EXE, get_adb_device,
     get_screen_size, get_dpi, get_rotation, update_toml
 )
 
-def capture_android_screen():
+def capture_android_screen(nickname=None, custom_img_folder_name=None, custom_img_name=None):
     device_id = get_adb_device()
     res = get_screen_size(device_id)
     if res is None:
@@ -21,10 +16,6 @@ def capture_android_screen():
 
     dpi = get_dpi(device_id)
     timestamp = datetime.datetime.now().strftime("hud_%Y%m%d_%H%M%S")
-
-    nickname = input("Enter device nickname [Default 'Device', Blank for Default]: ").strip()
-    custom_img_folder_name = input("Enter image folder name [Default 'Image', Blank for Default]: ").strip()
-    custom_img_name = input("Enter image name prefix [Default '', Blank for Default]: ").strip()
 
     nick_clean = nickname.replace(" ", "_") if nickname else "Device"
     img_folder_clean = custom_img_folder_name.replace(" ", "_") if custom_img_folder_name else "Image"
@@ -41,13 +32,22 @@ def capture_android_screen():
         print(f"[PROCESS] Capturing {res[0]}x{res[1]} screen...")
         android_tmp = '/data/local/tmp/temp_cap.png'
 
-        subprocess.run(['adb', '-s', device_id, 'shell', 'screencap', '-p', android_tmp], check=True)
-        subprocess.run(['adb', '-s', device_id, 'pull', android_tmp, str(full_save_path)], check=True)
-        subprocess.run(['adb', '-s', device_id, 'shell', 'rm', android_tmp], check=True)
+        subprocess.run([ADB_EXE, '-s', device_id, 'shell', 'screencap', '-p', android_tmp], check=True, timeout=30)
+        subprocess.run([ADB_EXE, '-s', device_id, 'pull', android_tmp, str(full_save_path)], check=True, timeout=20)
 
-    except subprocess.CalledProcessError as e:
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         print(f"[ERROR] ADB failure: {e}")
         return
+    
+    finally:
+        # Wrap the cleanup in its own try/except so a disconnected device doesn't crash the script here
+        try:
+            # We don't strictly need check=True here since failure just means the file isn't deleted
+            subprocess.run([ADB_EXE, '-s', device_id, 'shell', 'rm', android_tmp], timeout=5, stderr=subprocess.DEVNULL)
+        except subprocess.TimeoutExpired:
+            print("[WARNING] Cleanup timed out. Device likely disconnected.")
+        except Exception as e:
+            print(f"[WARNING] Cleanup failed: {e}")
     
     try:
         with Image.open(full_save_path) as img:
@@ -67,4 +67,8 @@ def capture_android_screen():
         print(f"[ERROR] Toml update failed: {e}")
 
 if __name__ == "__main__":
-    capture_android_screen()
+    nickname = input("Enter device nickname [Default 'Device', Blank for Default]: ").strip()
+    custom_img_folder_name = input("Enter image folder name [Default 'Image', Blank for Default]: ").strip()
+    custom_img_name = input("Enter image name prefix [Default '', Blank for Default]: ").strip()
+    
+    capture_android_screen(nickname, custom_img_folder_name, custom_img_name)

@@ -5,7 +5,9 @@ import json
 import os
 import time
 import keyboard
-import win32gui
+
+from mapper_module.platform import get_platform
+
 from .utils import (
     MapperEvent, CIRCLE, RECT, RELOAD_DELAY,
     create_default_toml, update_toml
@@ -15,7 +17,10 @@ if TYPE_CHECKING:
     from .config import AppConfig
 
 class JSONLoader():
-    def __init__(self, config:AppConfig, foreground_window:int):
+    def __init__(self, config:AppConfig, foreground_window):
+        _, WindowMgrClass, _, _ = get_platform()
+        self.window_manager = WindowMgrClass()
+        
         self.config = config
         self.mapper_event_dispatcher = config.mapper_event_dispatcher
         self.foreground_window = foreground_window
@@ -71,8 +76,8 @@ class JSONLoader():
         current_time = time.time()
         if current_time - self.last_reload_time < RELOAD_DELAY:
             return
-        
-        if not win32gui.GetForegroundWindow() == self.foreground_window:
+
+        if not self.window_manager.get_foreground_window() == self.foreground_window:
             return
         
         self.last_reload_time = current_time

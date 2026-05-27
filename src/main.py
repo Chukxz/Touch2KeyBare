@@ -2,16 +2,17 @@ from __future__ import annotations
 
 import keyboard
 import os
-import win32gui
 import threading
 import time
 import ctypes
+import platform
+
+from mapper_module.platform import get_platform
+
 from mapper_module.utils import (
     DEFAULT_ADB_RATE_CAP, SHORT_DELAY,
-    PPS, EMULATORS, ADB_EXE,
-    DEF_EMULATOR_ID, TouchEvent,
-    set_high_priority, stop_process,
-    maintain_bridge_health
+    PPS, EMULATORS, ADB_EXE, DEF_EMULATOR_ID,
+    TouchEvent, stop_process
 )
 
 from mapper_module import (
@@ -19,22 +20,23 @@ from mapper_module import (
     AppConfig,
     JSONLoader,
     TouchReader,
-    InterceptionBridge,
     Mapper,
     MouseMapper,
     KeyMapper,
     WASDMapper,
 )
 
-
 def check_single_instance(instance_name="Touch2Key_Engine"):
-    """Create a unique named mutex to prevent duplicate instances."""
-    mutex_name = f"Global\\{instance_name}"
-    handle = ctypes.windll.kernel32.CreateMutexW(None, False, mutex_name)
-    if ctypes.windll.kernel32.GetLastError() == 183:
-        return False, None
-    return True, handle
-
+    """Create a unique mutex to prevent duplicate instances (Cross-Platform safe)."""
+    if platform.system() == "Windows":
+        mutex_name = f"Global\\{instance_name}"
+        handle = ctypes.windll.kernel32.CreateMutexW(None, False, mutex_name)
+        if ctypes.windll.kernel32.GetLastError() == 183:
+            return False, None
+        return True, handle
+    else:
+        # Fallback for Linux/macOS. Advanced implementation would use fcntl lockfiles.
+        return True, None
 
 def construct_titles_dict(emulators: dict) -> dict:
     titles_dict = {}
@@ -45,14 +47,7 @@ def construct_titles_dict(emulators: dict) -> dict:
     return titles_dict
 
 
-def enum_callback(hwnd, results: dict):
-    if win32gui.IsWindowVisible(hwnd):
-        title = win32gui.GetWindowText(hwnd)
-        if title:
-            results[hwnd] = title
-
-
-def select_emulator() -> dict | None:
+def select_emulator(window_manager) -> dict | None:
     print("\n[MAIN] - Touch2Key Emulator Selector")
     emulators_list = list(EMULATORS.keys())
     emulators_len = len(emulators_list)
@@ -64,8 +59,8 @@ def select_emulator() -> dict | None:
     for id, name in enumerate(emulators_list):
         print(f"    ID: [{id}] Name: {name}")
 
-    current_windows = {}
-    win32gui.EnumWindows(enum_callback, current_windows)
+    # Use the abstracted window manager instead of win32gui
+    current_windows = window_manager.enum_windows()
     titles_dict = construct_titles_dict(EMULATORS)
     titles = list(titles_dict.keys())
 
@@ -73,8 +68,7 @@ def select_emulator() -> dict | None:
 
     if current_windows:
         i = 0
-        for hwnd in current_windows:
-            window_title = current_windows[hwnd]
+        for hwnd, window_title in current_windows.items():
             if window_title in titles:
                 if i == 0:
                     print(f"\nEmulators detected:")
@@ -108,9 +102,17 @@ def select_emulator() -> dict | None:
 
 
 class Engine:
-    def __init__(self):
-        self.foreground_window: int = win32gui.GetForegroundWindow()
-        self.interception_bridge: InterceptionBridge | None = None
+    def __init__(self):   
+        BridgeClass, WindowMgrClass, SysConfigClass, _ = get_platform()
+        
+        self.window_manager = WindowMgrClass()
+        self.bridge_class = BridgeClass(self.window_manager)
+        self.system_config = SysConfigClass()
+        
+        self.foreground_window = self.window_manager.get_foreground_window()
+        self.system_config.set_dpi_awareness()
+        self.system_config.set_timer_resolution()
+    
         self.touch_reader: TouchReader | None = None
         self.mapper_logic: Mapper | None = None
         self.mouse_mapper: MouseMapper | None = None
@@ -123,13 +125,14 @@ class Engine:
     def set_is_visible(self, _is_visible: bool):
         with self.lock:
             self.is_visible = _is_visible
-            assert self.interception_bridge is not None
             assert self.mouse_mapper is not None
             assert self.key_mapper is not None
             assert self.wasd_mapper is not None
-            with self.interception_bridge.bridge_lock:
-                maintain_bridge_health(self.interception_bridge)
-            self.mouse_mapper.touch_up()
+            
+            with self.bridge_class.bridge_lock:
+                self.bridge_class.health_check()
+                
+            self.mouse_mapper.touch_up(None, self.is_visible)
             self.key_mapper.release_all()
             self.wasd_mapper.touch_up()
 
@@ -154,13 +157,13 @@ class Engine:
     def start(self):
         keyboard.add_hotkey('esc', self.shutdown)
 
-        # Elevate Main Process (ADB Parsing & Logic)
-        set_high_priority(os.getpid(), "Main Loop")
+        # Elevate Main Process (ADB Parsing & Logic) using abstracted config
+        self.system_config.set_high_priority(os.getpid(), "Main Loop")
 
         print("\n[MAIN] - Initializing Dual-Engine Mapper... Press 'ESC' to Stop.")
         print(f"\n[MAIN] - ADB Executable File Path: {ADB_EXE}.")
 
-        emulator = select_emulator()
+        emulator = select_emulator(self.window_manager)
         if emulator is None:
             print("\n[MAIN] - No emulators supported. Exiting...")
             return
@@ -181,20 +184,17 @@ class Engine:
         mapper_event_dispatcher = MapperEventDispatcher()
         config = AppConfig(mapper_event_dispatcher)
 
-        # Initialize Bridge (spawns TWO processes: k_proc and m_proc)
-        self.interception_bridge = InterceptionBridge()
+        if hasattr(self.bridge_class, 'm_proc'):
+            self.system_config.set_high_priority(self.bridge_class.m_proc.pid, "Mouse")
 
-        if hasattr(self.interception_bridge, 'm_proc'):
-            set_high_priority(self.interception_bridge.m_proc.pid, "Mouse")
-
-        if hasattr(self.interception_bridge, 'k_proc'):
-            set_high_priority(self.interception_bridge.k_proc.pid, "Keyboard")
+        if hasattr(self.bridge_class, 'k_proc'):
+            self.system_config.set_high_priority(self.bridge_class.k_proc.pid, "Keyboard")
 
         time.sleep(SHORT_DELAY)
 
         json_loader = JSONLoader(config, self.foreground_window)
-        self.touch_reader = TouchReader(config, mapper_event_dispatcher, self.interception_bridge, rate_cap)
-        self.mapper_logic = Mapper(json_loader, self.touch_reader, self.interception_bridge, pps, emulator)
+        self.touch_reader = TouchReader(config, mapper_event_dispatcher, self.bridge_class, rate_cap)
+        self.mapper_logic = Mapper(json_loader, self.touch_reader, self.bridge_class, pps, emulator)
 
         self.mouse_mapper = MouseMapper(self.mapper_logic)
         self.key_mapper = KeyMapper(self.mapper_logic)
@@ -207,7 +207,8 @@ class Engine:
         keyboard.wait()
 
     def shutdown(self):
-        if not win32gui.GetForegroundWindow() == self.foreground_window:
+        # Use abstracted window manager to check active window
+        if self.window_manager.get_foreground_window() != self.foreground_window:
             return
 
         if self.is_shutting_down:
@@ -222,11 +223,15 @@ class Engine:
                 self.touch_reader.stop()
             if self.mapper_logic is not None:
                 self.mapper_logic.running = False
-            if self.interception_bridge is not None:
-                self.interception_bridge.release_all()
+            if self.bridge_class is not None:
+                self.bridge_class.release_all()
+                
+                # Cleanup child processes safely if they exist in the OS-specific implementation
                 print("[MAIN] - Stopping Mouse and Keyboard child processes...")
-                stop_process(self.interception_bridge.k_proc)
-                stop_process(self.interception_bridge.m_proc)
+                if hasattr(self.bridge_class, 'k_proc'):
+                    stop_process(self.bridge_class.k_proc)
+                if hasattr(self.bridge_class, 'm_proc'):
+                    stop_process(self.bridge_class.m_proc)
         except Exception:
             pass
 

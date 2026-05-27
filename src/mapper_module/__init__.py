@@ -11,7 +11,6 @@ from .utils import (
 from .config import AppConfig
 from .json_loader import JSONLoader
 from .touch_reader import TouchReader
-from .bridge import InterceptionBridge
 from .mapper import Mapper
 from .mouse_mapper import MouseMapper
 from .key_mapper import KeyMapper
@@ -28,7 +27,6 @@ __all__ = [
     'AppConfig',
     'JSONLoader',
     'TouchReader',
-    'InterceptionBridge',
     'Mapper',
     'MouseMapper',
     'KeyMapper',

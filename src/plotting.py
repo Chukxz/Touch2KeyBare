@@ -13,11 +13,13 @@ from tkinter import filedialog
 import json
 import datetime
 from pathlib import Path
-import platform
+
+from mapper_module.platform import get_platform
+
 from mapper_module.utils import (
     CIRCLE, RECT, SCANCODES, DEF_DPI, IMAGES_FOLDER, JSONS_FOLDER,
     TOML_PATH, MOUSE_WHEEL_CODE, SPRINT_DISTANCE_CODE, IDLE, select_image_file,
-    set_dpi_awareness, rotate_resolution, update_toml, get_vibrant_random_color
+    rotate_resolution, update_toml, get_vibrant_random_color
 )
 
 COLLECTING = "COLLECTING"
@@ -26,11 +28,11 @@ DELETING = "DELETING"
 CONFIRM_DELETE_ALL = "CONFIRM_DELETE_ALL"
 CONFIRM_EXIT = "CONFIRM_EXIT"
 NAMING = "NAMING"
-HELP_STR = "F1(Help)"
+HELP_STR = "F1 (Help)"
 DEF_STR = \
-    "MODE: IDLE | F3(Load JSON) | F5(Load Image) | F12(Save) | Esc(Exit)\n\
-    F6(Circle) | F7(Rect) | F8(Cancel) | Del(Delete) | F2(Delete All) | F9(List Current Shapes in Terminal)\n\
-    F4(Toggle Artist Visibility) | [(Sprint Threshold) | ](Mouse Wheel)\n\
+    "MODE: IDLE | F3 (Load JSON) | F5 (Load Image) | F12 (Save) | Esc (Exit)\n\
+    F6 (Circle) | F7 (Rect) | F8 (Cancel) | Del (Delete) | F2 (Delete All) | F9 (List Current Shapes in Terminal)\n\
+    F4 (Toggle Artist Visibility) | [ (Sprint Threshold) | ] (Mouse Wheel)\n\
     Arrows: Nudge | Shift+Arrows: Fast Nudge | Double Click: Change Selected Artist"
 
 SPECIAL_MAP = {
@@ -166,7 +168,7 @@ class Draggable:
 
 class DraggableLabel(Draggable):
     def __init__(self, entry_id:int, plotter_ref:Plotter):
-        super().__init__(entry_id, False, plotter_ref)        
+        super().__init__(entry_id, False, plotter_ref)
         self.label_artist = self.plotter.labels_artists[entry_id]
         self.shape_artist = self.plotter.shapes_artists[entry_id]
         self.canvas = self.label_artist.figure.canvas
@@ -847,9 +849,14 @@ class DraggableShape(Draggable):
         
 class Plotter:
     def __init__(self, image_path=None):
-        # DPI Awareness MUST be first to ensure coordinates match the screen
-        set_dpi_awareness()
-        self.mapping = self.set_specific_key_mapping()
+        # Unpack the system configuration and mapping classes dynamically
+        _, _, SysConfigClass, MappingClass = get_platform()
+        
+        # Platform-independent environment setup
+        self.system_config = SysConfigClass()
+        self.system_config.set_dpi_awareness()
+        
+        self.mapping = MappingClass()
 
         # SMART PATH DETECTION
         base_images_folder = Path(IMAGES_FOLDER)
@@ -905,7 +912,7 @@ class Plotter:
         self.labels_artists: dict[int, plt.Text] = {}
         self.label_drag_managers: dict[int, DraggableLabel] = {}
         self.shape_drag_managers: dict[int, DraggableShape] = {}
-                       
+                        
         self.init_params_helper()
         self.update_image_params(img)
         self.ax.imshow(img)
@@ -919,6 +926,7 @@ class Plotter:
         self.fig.canvas.mpl_connect("motion_notify_event", self.on_mouse_move)
         self.fig.canvas.mpl_connect("key_press_event", self.on_key_press)
         self.fig.canvas.mpl_connect("button_press_event", self.on_click)
+        self.fig.canvas.mpl_connect("resize_event", self.on_resize)
 
         if json_file_str:
             json_path = Path(json_file_str)
@@ -1019,7 +1027,7 @@ class Plotter:
     def reset_state(self):
         self.clear_visuals()
         self.state = IDLE
-                                             
+                                                     
         self.mode = None
         self.points = []
         self.input_buffer = ""
@@ -1196,7 +1204,7 @@ class Plotter:
     def label(self, center_x, center_y, label, fc):
         # Get the height of the figure in inches and convert to points
         fig_height_pts = self.fig.get_size_inches()[1] * 72
-        scaled_font = max(7, int(round(fig_height_pts * 0.03))) 
+        scaled_font = max(5, int(round(fig_height_pts * 0.02)))
 
         return plt.Text(
             center_x, center_y, 
@@ -1278,7 +1286,7 @@ class Plotter:
                 
                 if target:
                     curr_id = m_type + "_" + str(uid)
-                                                         
+                                                                     
                     if self.current_draggable_id != curr_id:
                         self.partial_release_all()
                         manager.on_press_helper(event)
@@ -1287,7 +1295,7 @@ class Plotter:
                         self.fire_on_motion = False
                                         
             else:
-                self.partial_release_all()                            
+                self.partial_release_all()                           
                 state_str = "VISIBLE" if self.show_overlays else "HIDDEN"
                 self.update_title(f"OVERLAYS: {state_str} | {DEF_STR}", True)
                 # self.cursor_manager.set_state_cursor(IDLE)
@@ -1422,6 +1430,21 @@ class Plotter:
                 if self.current_draggable:
                     self.current_draggable.move(0, step) # y is increasing downward, x stays constant
 
+    def on_resize(self, event):
+            """Updates the font size of all labels when the figure is resized."""
+            if not self.labels_artists:
+                return
+
+            # Recalculate font size based on new figure height
+            fig_height_pts = self.fig.get_size_inches()[1] * 72
+            scaled_font = max(5, int(round(fig_height_pts * 0.02)))
+
+            # Update the fontsize for all tracked text artists
+            for label_artist in self.labels_artists.values():
+                label_artist.set_fontsize(scaled_font)
+                
+            # The canvas redraws automatically on resize, so a manual draw is usually not needed here.
+
     # Delete Logic
     def enter_delete_mode(self):
         if not self.shapes:
@@ -1552,35 +1575,6 @@ class Plotter:
         print(f"[+] Deleted Shape of type: {shape_type} with ID: {uid} and key: '{interception_key}' (hex: {hex_code})")
 
     # Shape Calculation & Finalization
-    def set_specific_key_mapping(self):
-        # --- WINDOWS & LINUX: Use Native Scan Codes ---
-        system = platform.system()
-        mapping = {}
-           
-        # Windows Standard Scan Codes
-        if system == "Windows":
-            mapping = {
-                56: "lalt",
-                312: "ralt",
-                29: "lctrl",
-                285: "rctrl",
-                42: "lshift",
-                54: "rshift"
-            }
-
-        # Linux (X11) Standard Scan Codes
-        elif system == "Linux":
-            mapping = {
-                64: "lalt",
-                108: "ralt",
-                37: "lctrl",
-                105: "rctrl",
-                50: "lshift",
-                62: "rshift"
-            }
-
-        return mapping
-    
     def get_specific_key(self, event):
         """
         Returns a specific string like 'lshift' or 'rshift' 
@@ -1588,32 +1582,16 @@ class Plotter:
         """
         gui_event = event.guiEvent
         if not gui_event:
-            return event.key # Fallback to standard Matplotlib key
+            return event.key
         
-        system = platform.system()
-
-        if system in ["Windows", "Linux"]:
-            scan_code = gui_event.nativeScanCode()
-            return self.mapping.get(scan_code, event.key) # Fallback to standard Matplotlib key if scan code not mapped
-
-        # --- MACOS: Use Native Modifiers ---
-        elif system == "Darwin":
-            # macOS uses bitmasks in nativeModifiers to indicate side
-            native_mod = gui_event.nativeModifiers()
-            
-            if gui_event.key() == Qt.Key_Shift:
-                # Check the specific bits for left/right shift
-                return "rshift" if (native_mod & 0x4) else "lshift"
-                
-            elif gui_event.key() == Qt.Key_Control:
-                # Check the specific bits for left/right control
-                return "rctrl" if (native_mod & 0x2000) else "lctrl"
-                
-            elif gui_event.key() == Qt.Key_Alt:
-                # Check the specific bits for left/right option/alt
-                return "ralt" if (native_mod & 0x40) else "lalt"
-                
-        return event.key # Fallback to standard Matplotlib key if no match found
+        # Cross-platform way to get the native scancode
+        scan_code = gui_event.nativeScanCode()
+        
+        # Ask the abstracted mapping layer for the translation
+        mapped_key = self.mapping.get_key_from_scancode(scan_code)
+        
+        # Fallback to the standard matplotlib key if it wasn't in our modifier map
+        return mapped_key if mapped_key else event.key                
 
     def calculate_shape(self, key_name):
         # 'key_name' might be a key string ('a', 'f1') OR a mouse string ('MOUSE_LEFT')
@@ -1681,7 +1659,7 @@ class Plotter:
                         # Make the label draggable
                         self.label_drag_managers[entry_id] = DraggableLabel(entry_id, self)
                         # Make the shape draggable
-                        self.shape_drag_managers[entry_id] = DraggableShape(entry_id, self, RECT)                   
+                        self.shape_drag_managers[entry_id] = DraggableShape(entry_id, self, RECT)                    
 
     # Naming / Saving Logic
     def enter_naming_mode(self):

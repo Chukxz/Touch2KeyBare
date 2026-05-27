@@ -5,25 +5,23 @@ import time
 import threading
 import subprocess
 import re
+
 from .utils import (
     TouchEvent, ADB_EXE, DOWN, UP, PRESSED, IDLE,
     ROTATION_POLL_INTERVAL, SHORT_DELAY, LONG_DELAY,
     get_adb_device, is_device_online,
-    get_screen_size, maintain_bridge_health,
-    wireless_connect
+    get_screen_size, wireless_connect
     )
 
 if TYPE_CHECKING:
     from .config import AppConfig
     from .utils import MapperEventDispatcher
-    from .bridge import InterceptionBridge
-    
-    
+        
     
 class TouchReader():
-    def __init__(self, config:AppConfig, dispatcher:MapperEventDispatcher, interception_bridge: InterceptionBridge, rate_cap:float):
+    def __init__(self, config:AppConfig, dispatcher:MapperEventDispatcher, interception_bridge, rate_cap:float):
         self.config = config
-        self.mapper_event_dispatcher = dispatcher 
+        self.mapper_event_dispatcher = dispatcher
         self.interception_bridge = interception_bridge
 
         # State Tracking
@@ -54,7 +52,6 @@ class TouchReader():
         self.scale_y = 1
         self.matrix = (0, 0, 0, 0, 0, 0)
         
-        init_time = 0
         self.update_config()
 
         # PERFORMANCE TUNING
@@ -62,7 +59,7 @@ class TouchReader():
         self.move_interval = 1.0 / self.adb_rate_cap if self.adb_rate_cap > 0 else 0
         self.last_dispatch_times = []
         for _ in range(self.max_slots):
-            self.last_dispatch_times.append(init_time)
+            self.last_dispatch_times.append(0)
         
         self.touch_event_processor = None
         
@@ -176,7 +173,7 @@ class TouchReader():
     def get_max_slots(self):
         if not ADB_EXE is None and not self.device is None and not self.device_touch_event is None:
             try:
-                result = subprocess.run([ADB_EXE, "-s", self.device, "shell", "getevent", "-p", self.device_touch_event], capture_output=True, text=True)
+                result = subprocess.run([ADB_EXE, "-s", self.device, "shell", "getevent", "-p", self.device_touch_event], capture_output=True, text=True, timeout=2)
                 for line in result.stdout.splitlines():
                     if "ABS_MT_SLOT" in line and "max" in line:
                         return int(line.split("max")[1].strip().split(',')[0]) + 1
@@ -214,9 +211,9 @@ class TouchReader():
                 
             # Restart failed child processes
             with self.interception_bridge.bridge_lock:
-                maintain_bridge_health(self.interception_bridge)
+                self.interception_bridge.health_check()
             try:
-                result = subprocess.run([ADB_EXE, "-s", self.device, "shell", "dumpsys", "display"], capture_output=True, text=True, timeout=1)
+                result = subprocess.run([ADB_EXE, "-s", self.device, "shell", "dumpsys", "display"], capture_output=True, text=True, timeout=2)
                 for pat in patterns:
                     m = re.search(pat, result.stdout)
                     if m:
@@ -442,6 +439,7 @@ class TouchReader():
                             id=data['tid'], 
                             x=rx, y=ry,
                             sx=data['start_x'], sy=data['start_y'],
+                            timestamp=data['timestamp'],
                             is_mouse=(slot == m_s), 
                             is_wasd=(slot == w_s),
                             )
