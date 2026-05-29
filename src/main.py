@@ -118,9 +118,7 @@ class Engine:
             assert self.key_mapper is not None
             assert self.wasd_mapper is not None
             
-            with self.bridge_class.bridge_lock:
-                self.bridge_class.health_check()
-                
+            self.bridge_class.health_check()    
             self.mouse_mapper.touch_up(None, self.is_visible)
             self.key_mapper.release_all()
             self.wasd_mapper.touch_up()
@@ -182,7 +180,7 @@ class Engine:
         time.sleep(SHORT_DELAY)
 
         json_loader = JSONLoader(config, self.foreground_window)
-        self.touch_reader = TouchReader(config, mapper_event_dispatcher, self.bridge_class, rate_cap)
+        self.touch_reader = TouchReader(config, mapper_event_dispatcher, rate_cap)
         self.mapper_logic = Mapper(json_loader, self.touch_reader, self.bridge_class, pps, emulator)
 
         self.mouse_mapper = MouseMapper(self.mapper_logic)
