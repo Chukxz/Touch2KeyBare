@@ -1,10 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-import tomllib
 import threading
 from pathlib import Path
 import tomlkit
+from tomlkit.exceptions import ParseError
 import keyboard
 from .utils import  MapperEvent, TOML_PATH, create_default_toml
 
@@ -41,12 +41,12 @@ class AppConfig:
 
             # Read the file from disk
             with toml_path.open("rb") as f:
-                new_data = tomllib.load(f)
+                new_data = tomlkit.load(f)
 
             with self.config_lock:
                 self.config_data = new_data
                             
-        except tomllib.TOMLDecodeError as e:
+        except ParseError as e:
             print(f"\n[CONFIG] - Failed to parse TOML. Keeping previous config. Error: {e}")
         except Exception as e:
             print(f"[CONFIG] - Error loading config: {e}")

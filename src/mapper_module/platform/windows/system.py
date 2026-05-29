@@ -18,7 +18,7 @@ class SystemConfig(AbstractSystemConfig):
             NT_TIMER_RES, 1, ctypes.byref(ctypes.c_ulong())
         )
 
-    def set_high_priority(self, pid: int, label: str):
+    def set_high_priority(self, pid: int | None, label: str):
         try:
             p = psutil.Process(pid)
             p.nice(psutil.HIGH_PRIORITY_CLASS)

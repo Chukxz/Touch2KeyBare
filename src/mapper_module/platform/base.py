@@ -94,7 +94,7 @@ class AbstractSystemConfig(ABC):
     def set_timer_resolution(self) -> None: pass
     
     @abstractmethod
-    def set_high_priority(self, pid: int, label: str) -> None: pass
+    def set_high_priority(self, pid: int | None, label: str) -> None: pass
 
 class AbstractMapping(ABC):    
     @abstractmethod
