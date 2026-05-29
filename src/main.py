@@ -4,10 +4,8 @@ import keyboard
 import os
 import threading
 import time
-import ctypes
-import platform
 
-from mapper_module.platform import get_platform
+from mapper_module.platform import check_single_instance, get_platform
 
 from mapper_module.utils import (
     DEFAULT_ADB_RATE_CAP, SHORT_DELAY,
@@ -26,17 +24,7 @@ from mapper_module import (
     WASDMapper,
 )
 
-def check_single_instance(instance_name="Touch2Key_Engine"):
-    """Create a unique mutex to prevent duplicate instances (Cross-Platform safe)."""
-    if platform.system() == "Windows":
-        mutex_name = f"Global\\{instance_name}"
-        handle = ctypes.windll.kernel32.CreateMutexW(None, False, mutex_name)
-        if ctypes.windll.kernel32.GetLastError() == 183:
-            return False, None
-        return True, handle
-    else:
-        # Fallback for Linux/macOS. Advanced implementation would use fcntl lockfiles.
-        return True, None
+NAME = "Touch2Key_Engine"
 
 def construct_titles_dict(emulators: dict) -> dict:
     titles_dict = {}
@@ -109,9 +97,10 @@ class Engine:
         self.bridge_class = BridgeClass(self.window_manager)
         self.system_config = SysConfigClass()
         
-        self.foreground_window = self.window_manager.get_foreground_window()
+        self.system_config.set_process_properties()
         self.system_config.set_dpi_awareness()
         self.system_config.set_timer_resolution()
+        self.foreground_window = self.window_manager.get_foreground_window()
     
         self.touch_reader: TouchReader | None = None
         self.mapper_logic: Mapper | None = None
@@ -240,12 +229,13 @@ class Engine:
 
 
 if __name__ == "__main__":
-    success, mutex_handle = check_single_instance()
+    success, mutex_handle = check_single_instance(NAME)
     if not success:
         print("[MAIN] - Another instance of Touch2Key is already running. Exiting this instance.")
         os._exit(0)
 
     engine = Engine()
+    
     try:
         engine.start()
     except KeyboardInterrupt:

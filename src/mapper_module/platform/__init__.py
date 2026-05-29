@@ -1,4 +1,17 @@
 import platform
+import ctypes
+
+def check_single_instance(instance_name):
+    """Create a unique mutex to prevent duplicate instances (Cross-Platform safe)."""
+    if platform.system() == "Windows":
+        mutex_name = f"Global\\{instance_name}"
+        handle = ctypes.windll.kernel32.CreateMutexW(None, False, mutex_name)
+        if ctypes.windll.kernel32.GetLastError() == 183:
+            return False, None
+        return True, handle
+    else:
+        # Fallback for Linux/macOS. Advanced implementation would use fcntl lockfiles.
+        return True, None
 
 def get_platform():
     system = platform.system()

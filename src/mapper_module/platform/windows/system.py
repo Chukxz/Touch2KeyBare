@@ -1,8 +1,12 @@
 import ctypes
 import psutil
+import multiprocessing
 from mapper_module.utils import NT_TIMER_RES
 
 class SystemConfig:
+    def set_process_properties(self):
+        multiprocessing.set_start_method('spawn')
+        
     def set_dpi_awareness(self):
         try:
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
