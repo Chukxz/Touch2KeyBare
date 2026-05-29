@@ -60,15 +60,15 @@ def select_emulator(window_manager) -> dict | None:
         print(f"    ID: [{id}] Name: {name}")
 
     # Use the abstracted window manager instead of win32gui
-    current_windows = window_manager.enum_windows()
+    current_windows_titles = window_manager.find_window_titles()
     titles_dict = construct_titles_dict(EMULATORS)
     titles = list(titles_dict.keys())
 
     emulator_id = DEF_EMULATOR_ID
 
-    if current_windows:
+    if current_windows_titles:
         i = 0
-        for hwnd, window_title in current_windows.items():
+        for _, window_title in current_windows_titles.items():
             if window_title in titles:
                 if i == 0:
                     print(f"\nEmulators detected:")

@@ -77,10 +77,9 @@ def mouse_worker(m_queue:Queue):
         try:
             if pending_task:
                 task, data = pending_task
-                pending_task = None
             else:
                 task, data = m_queue.get(timeout=15.0)
-
+            
             if task == "button":
                 m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, data, 0, 0, 0))
                 
@@ -97,16 +96,16 @@ def mouse_worker(m_queue:Queue):
                     _sleep(CONSTANT_DWELL)
 
             elif task == "move_rel":
-                acc_dx += data
-                acc_dy += data
+                acc_dx += data[0]
+                acc_dy += data[1]
 
                 coalesce_count = 0
                 while not m_queue.empty() and coalesce_count < MAX_COALESCE:
                     try:
                         next_task, next_data = m_queue.get_nowait()
                         if next_task == "move_rel":
-                            acc_dx += next_data
-                            acc_dy += next_data
+                            acc_dx += next_data[0]
+                            acc_dy += next_data[1]
                             coalesce_count += 1
                         else:
                             pending_task = (next_task, next_data)

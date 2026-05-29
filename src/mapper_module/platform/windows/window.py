@@ -40,7 +40,7 @@ class WindowManager:
     def find_window_by_title(self, title):
         return ctypes.windll.user32.FindWindowW(None, title)
 
-    def enum_windows_callback(self, hwnd, lParam):
+    def enum_class_windows_callback(self, hwnd, lParam):
         target_class = ctypes.cast(
             lParam, ctypes.POINTER(ctypes.py_object)
         ).contents.value['class_name']
@@ -61,7 +61,7 @@ class WindowManager:
             'results': results
         })
         ctypes.windll.user32.EnumWindows(
-            self.EnumWindowsProc(self.enum_windows_callback),
+            self.EnumWindowsProc(self.enum_class_windows_callback),
             ctypes.byref(data)
         )
         return results
@@ -91,3 +91,14 @@ class WindowManager:
         w = ctypes.windll.user32.GetSystemMetrics(0)
         h = ctypes.windll.user32.GetSystemMetrics(1)
         return w, h
+
+    def enum_title_windows_callback(self, hwnd, results: dict):
+        if win32gui.IsWindowVisible(hwnd):
+            title = win32gui.GetWindowText(hwnd)
+            if title:
+                results[hwnd] = title
+
+    def find_window_titles(self):
+        current_windows_titles = {}
+        win32gui.EnumWindows(self.enum_title_windows_callback, current_windows_titles)
+        return current_windows_titles
