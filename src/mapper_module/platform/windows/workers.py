@@ -25,7 +25,7 @@ def keyboard_worker(k_queue:Queue):
     
     while running:
         try:
-            code, state = k_queue.get(timeout=15.0)
+            code, state = k_queue.get(timeout=0.5)
 
             if state == 0:
                 pressed_keys.add(code)
@@ -86,7 +86,7 @@ def mouse_worker(m_queue:Queue):
             if pending_task:
                 task, data = pending_task
             else:
-                task, data = m_queue.get(timeout=15.0)
+                task, data = m_queue.get(timeout=0.5)
             
             if task == "button":
                 m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, data, 0, 0, 0))
