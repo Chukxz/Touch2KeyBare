@@ -61,6 +61,8 @@ class WASDMapper():
             8: self.KEY_D       
         }
 
+        self.ALL_DIRECTIONS = (State.W, State.A, State.S, State.D)
+
         self.PI_8 = math.pi / 8
         self.INV_PI_4 = 1.0 / (math.pi / 4.0)
         self.sprinting = False
@@ -220,10 +222,10 @@ class WASDMapper():
         to_press = target_mask & ~self.current_mask
 
         # 2. Release directional keys no longer needed
-        for k in to_release: 
-            if k.value > 0:
-                self.interception_bridge.key_up(self.state_value_to_key[k.value])
-
+        for key_flag in self.ALL_DIRECTIONS:
+            if key_flag in to_release:
+                self.interception_bridge.key_up(self.state_value_to_key[key_flag.value])
+        
         # 3. Handle Sprint (Shift)
         # Ensure sprint only triggers if we are actually moving
         should_sprint = sprint and target_mask
@@ -237,9 +239,9 @@ class WASDMapper():
                 self.sprinting = True
 
         # 4. Press new directional keys
-        for k in to_press:
-            if k.value > 0:
-                self.interception_bridge.key_down(self.state_value_to_key[k.value])
+        for key_flag in self.ALL_DIRECTIONS:
+            if key_flag in to_press:
+                self.interception_bridge.key_down(self.state_value_to_key[key_flag.value])
 
         self.current_mask = target_mask
 
