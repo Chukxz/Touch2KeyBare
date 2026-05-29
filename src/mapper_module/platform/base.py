@@ -1,54 +1,82 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING, Any
+
 from abc import ABC, abstractmethod
+
+if TYPE_CHECKING:
+    from ctypes import wintypes
+    import win32gui
 
 class AbstractWindowManager(ABC):
     @abstractmethod
-    def get_foreground_window(self): pass
+    def get_foreground_window(self) -> int: pass
     
     @abstractmethod
-    def enum_windows(self): pass
+    def is_window_valid(self, hwnd: wintypes.HWND) -> bool: pass
+        
+    @abstractmethod
+    def is_window_visible(self, hwnd: wintypes.HWND) -> bool: pass
+        
+    @abstractmethod
+    def get_window_class_name(self, hwnd: wintypes.HWND) -> Any: pass
     
     @abstractmethod
-    def get_window_class(self, window): pass
+    def find_window_by_title(self, title: str) -> wintypes.HWND: pass
+
+    @abstractmethod
+    def enum_class_windows_callback(self, hwnd: wintypes.HWND, lParam: wintypes.LPARAM) -> bool: pass
     
     @abstractmethod
-    def get_client_rect(self, window): pass
+    def find_hwnds_by_class(self, class_name: str) -> list:
     
     @abstractmethod
-    def get_window_position(self, window): pass
+    def get_client_rect(self, hwnd: wintypes.HWND) -> tuple[int, int]: pass
+
+    @abstractmethod
+    def get_window_position(self, hwnd: wintypes.HWND) -> tuple[int, int]: pass
+
+    @abstractmethod
+    def is_cursor_visible(self) -> bool: pass
+
+    @abstractmethod
+    def get_screen_metrics(self) -> tuple[int, int]: pass
+
+    @abstractmethod
+    def enum_title_windows_callback(self, hwnd, results: dict) -> None: pass
     
     @abstractmethod
-    def is_cursor_visible(self): pass
+    def find_window_titles(self) -> dict: pass
 
 class AbstractBridge(ABC):   
     @abstractmethod
-    def key_down(self, code): pass
+    def key_down(self, code: int) -> None: pass
     
     @abstractmethod
-    def key_up(self, code): pass
+    def key_up(self, code: int) -> None: pass
     
     @abstractmethod
-    def mouse_move_rel(self, dx, dy): pass
+    def mouse_move_rel(self, dx: int, dy: int) -> None: pass
     
     @abstractmethod
-    def mouse_move_abs(self, x, y): pass
+    def mouse_move_abs(self, x: int, y: int) -> None: pass
     
     @abstractmethod
-    def left_click_down(self): pass
+    def left_click_down(self) -> None: pass
     
     @abstractmethod
-    def left_click_up(self): pass
+    def left_click_up(self) -> None: pass
     
     @abstractmethod
-    def right_click_down(self): pass
+    def right_click_down(self) -> None: pass
     
     @abstractmethod
-    def right_click_up(self): pass
+    def right_click_up(self) -> None: pass
     
     @abstractmethod
-    def middle_click_down(self): pass
+    def middle_click_down(self) -> None: pass
     
     @abstractmethod
-    def middle_click_up(self): pass
+    def middle_click_up(self) -> None: pass
 
     @abstractmethod
     def health_check(self):
@@ -56,37 +84,28 @@ class AbstractBridge(ABC):
         pass
     
     @abstractmethod
-    def release_all(self): pass
+    def release_all(self) -> None: pass
     
 class AbstractSystemConfig(ABC):
     @abstractmethod
-    def set_dpi_awareness(self): pass
+    def set_dpi_awareness(self) -> None: pass
     
     @abstractmethod
-    def set_timer_resolution(self): pass
+    def set_timer_resolution(self) -> None: pass
     
     @abstractmethod
-    def set_high_priority(self, pid, label): pass
+    def set_high_priority(self, pid: int, label: str) -> None: pass
 
-class AbstractMapping(ABC):
-    @property
+class AbstractMapping(ABC):    
     @abstractmethod
-    def modifier_map(self):
-        """
-        Dictionary mapping native OS scancodes to standardized key strings.
-        Example: {56: 'lalt', 29: 'lctrl'}
-        """
-        pass
-    
-    @abstractmethod
-    def get_key_from_scancode(self, scancode):
+    def get_key_from_scancode(self, scancode: int) -> str:
         """
         Translates a native OS scancode into a standardized key name.
         """
         pass
     
     @abstractmethod
-    def get_scancode_from_key(self, key_name):
+    def get_scancode_from_key(self, key_name: str) -> int:
         """
         Translates a standardized key name into a native OS scancode.
         """

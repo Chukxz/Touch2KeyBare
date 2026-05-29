@@ -32,15 +32,23 @@ def keyboard_worker(k_queue:Queue):
             else:
                 pressed_keys.discard(code)
             
-            k_ctx.send(k_handle, KeyStroke(code, state))
+            k_ctx.send(k_handle, KeyStroke(code, state))            
   
-        except Exception:
+        except Exception as e:           
             if pressed_keys:
                 print(f"\n[UTILITY] - Keyboard worker timeout. Releasing {len(pressed_keys)} keys.")
                 for code in list(pressed_keys):
                     k_ctx.send(k_handle, KeyStroke(code, 1))
                 pressed_keys.clear()
-            running = False
+            
+            # Queue is empty, continue the loop
+            if k_queue.empty():
+                continue
+            
+            # An error occured, end the loop
+            else:
+                print(f"\n[UTILITY] - Releasing {len(pressed_keys)} keys.\nKeyboard Worker crashed: {e}")
+                running = False
 
 # Worker: Mouse (Isolated with Coalescing)
 def mouse_worker(m_queue:Queue):
@@ -124,7 +132,7 @@ def mouse_worker(m_queue:Queue):
                 m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_ABSOLUTE | MOUSE_VIRTUAL_DESKTOP, MOUSE_MOVE_ABSOLUTE, 0, x, y))
                 _sleep(CONSTANT_DWELL)
 
-        except Exception: 
+        except Exception as e: 
             print("\n[UTILITY] - Mouse worker timeout. Releasing buttons.")
             if left_down:
                 m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, LEFT_BUTTON_UP, 0, 0, 0))
@@ -132,4 +140,13 @@ def mouse_worker(m_queue:Queue):
                 m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, RIGHT_BUTTON_UP, 0, 0, 0))
             if middle_down:
                 m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, MIDDLE_BUTTON_UP, 0, 0, 0))
-            running = False
+
+            # Queue is empty, continue the loop
+            if m_queue.empty():
+                continue
+            
+            # An error occured, end the loop
+            else:
+                print(f"\n[UTILITY] - Releasing buttons.\nMouse Worker crashed: {e}")
+                running = False
+                

@@ -19,21 +19,21 @@ if TYPE_CHECKING:
     from multiprocessing import Process
 
 # Get location of this file: .../mapper_project/src/mapper_module
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+CURRENT_DIR = Path(__file__).resolve().parent
 
 # Go up one level to 'src'
-SRC_DIR = os.path.dirname(CURRENT_DIR)
+SRC_DIR = CURRENT_DIR.parent
 
 # Go up another level to 'mapper_project' (Root)
-PROJECT_ROOT = os.path.dirname(SRC_DIR)
+PROJECT_ROOT = SRC_DIR.parent
 
-# Path Assignments
+# Path Assignments'
 ADB_NAME = "adb.exe" if platform.system() == "Windows" else "adb"
-ADB_EXE = os.path.join(PROJECT_ROOT, "bin", "platform-tools", ADB_NAME)
+ADB_EXE = PROJECT_ROOT / "bin" / "platform-tools" / ADB_NAME
 
-TOML_PATH = os.path.join(PROJECT_ROOT, "settings.toml")
-IMAGES_FOLDER = os.path.join(SRC_DIR, "resources", "images")
-JSONS_FOLDER = os.path.join(SRC_DIR, "resources", "jsons")
+TOML_PATH = PROJECT_ROOT / "settings.toml"
+IMAGES_FOLDER = SRC_DIR / "resources" / "images"
+JSONS_FOLDER = SRC_DIR / "resources" / "jsons"
 
 # Constants    
 DEF_DPI = 160
@@ -277,21 +277,6 @@ def wireless_connect(device:str|None=None, continuous=True):
                 return True, ''
     
         error_2 = False
-
-
-# Internal cross-platform niceness helper for bridge health respawn
-def internal_set_high_priority(pid: int | None, label):
-    try:
-        p = psutil.Process(pid)
-        if platform.system() == "Windows":
-            p.nice(psutil.HIGH_PRIORITY_CLASS)
-        else:
-            p.nice(-10) # Safe Linux priority equivalent
-        p.cpu_affinity(list(range(psutil.cpu_count() or 1)))
-    
-        print(f"\n[UTILITY] - {label} set to HIGH (Floating Affinity).")
-    except Exception as e:
-        print(f"\n[UTILITY] - Warning: {e}.")
 
 
 def select_image_file(base_dir:str|None = None):

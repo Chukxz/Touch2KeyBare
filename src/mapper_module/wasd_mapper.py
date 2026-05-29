@@ -87,7 +87,7 @@ class WASDMapper():
 
 
     def update_config(self):
-        print(f"[WASDMAPPER] - Reloading config...")
+        print(f"\n[WASDMAPPER] - Reloading config...")
         try:
             with self.config.config_lock:
                 # Get Joystick Settings (Deadzone, Hysteresis)
@@ -104,11 +104,11 @@ class WASDMapper():
                 self.recalc_thresholds()
                 
         except Exception as e:
-            print(f"[WASDMAPPER] - Joystick config error: {e}")
+            print(f"\n[WASDMAPPER] - Joystick config error: {e}")
 
     def update_mouse_wheel(self):
         with self.config.config_lock:
-            print(f"[WASDMAPPER] - Updating mousewheel radius...")
+            print(f"\n[WASDMAPPER] - Updating mousewheel radius...")
             self.raw_inner_radius, d_radius = self.json_loader.get_mouse_wheel_info()
             self.raw_outer_radius = self.raw_inner_radius + d_radius
             
@@ -135,9 +135,9 @@ class WASDMapper():
         dz_px = effective_inner * self.deadzone
         self.deadzone_sq = dz_px * dz_px
         
-        print(f"[WASDMAPPER] - Shared Sensitivity: {sens}x")
+        print(f"\n[WASDMAPPER] - Shared Sensitivity: {sens}x")
         print(f"             - Walk Distance: {dz_px:.1f}px (was {self.raw_inner_radius * self.deadzone:.1f}px)")
-        print(f"             - Sprint Distance: {effective_inner:.1f}px (was {self.raw_inner_radius:.1f}px)")
+        print(f"             - Sprint Distance: {effective_inner:.1f}px (was {self.raw_inner_radius:.1f}px)\n")
 
     def on_wasd_block(self):
         if self.mapper.wasd_block > 0:

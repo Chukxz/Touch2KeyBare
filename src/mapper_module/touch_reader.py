@@ -210,9 +210,6 @@ class TouchReader():
                 time.sleep(SHORT_DELAY)
                 continue
                 
-            # Restart failed child processes
-            with self.interception_bridge.bridge_lock:
-                self.interception_bridge.health_check()
             try:
                 result = subprocess.run([ADB_EXE, "-s", self.device, "shell", "dumpsys", "display"], capture_output=True, text=True, timeout=2)
                 for pat in patterns:
@@ -325,7 +322,7 @@ class TouchReader():
             
             self.touch_lost = False
 
-            if not ADB_EXE is None and not self.device is None and not self.device_touch_event is None:    
+            if ADB_EXE is not None and self.device is not None and self.device_touch_event is not None:    
                 self.process = subprocess.Popen(
                     [ADB_EXE, "-s", self.device, "shell", "getevent", "-l", self.device_touch_event],
                     stdout=subprocess.PIPE, text=True, bufsize=0 

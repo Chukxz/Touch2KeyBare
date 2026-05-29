@@ -191,6 +191,9 @@ class Engine:
 
         self.touch_reader.bind_touch_event(self.process_touch_event)
         mapper_event_dispatcher.register_callback("ON_MENU_MODE_TOGGLE", self.set_is_visible)
+        
+        # Restart failed child processes
+        self.interception_bridge.health_check()
 
         # Block until ESC is pressed
         keyboard.wait()
@@ -229,7 +232,10 @@ class Engine:
 
 
 if __name__ == "__main__":
-    multiprocessing.set_start_method('spawn')
+    try:
+        multiprocessing.set_start_method('spawn', force=True)
+    except RuntimeError:
+        pass
     
     success, mutex_handle = check_single_instance(NAME)
     if not success:

@@ -1,8 +1,9 @@
+from ..base import AbstractSystemConfig
 import ctypes
 import psutil
 from mapper_module.utils import NT_TIMER_RES
 
-class SystemConfig:        
+class SystemConfig(AbstractSystemConfig):        
     def set_dpi_awareness(self):
         try:
             ctypes.windll.shcore.SetProcessDpiAwareness(2)  # PROCESS_PER_MONITOR_DPI_AWARE
@@ -17,7 +18,7 @@ class SystemConfig:
             NT_TIMER_RES, 1, ctypes.byref(ctypes.c_ulong())
         )
 
-    def set_high_priority(self, pid, label):
+    def set_high_priority(self, pid: int, label: str):
         try:
             p = psutil.Process(pid)
             p.nice(psutil.HIGH_PRIORITY_CLASS)

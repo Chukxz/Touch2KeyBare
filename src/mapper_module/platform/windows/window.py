@@ -1,3 +1,6 @@
+from typing import Any
+
+from ..base import AbstractWindowManager
 import ctypes
 from ctypes import wintypes
 import win32gui
@@ -18,29 +21,29 @@ class POINT(ctypes.Structure):
         ("y", ctypes.c_long)
     ]
 
-class WindowManager:
+class WindowManager(AbstractWindowManager):
     EnumWindowsProc = ctypes.WINFUNCTYPE(
         ctypes.c_bool, wintypes.HWND, wintypes.LPARAM
     )
 
-    def get_foreground_window(self):
+    def get_foreground_window(self) -> int:
         return win32gui.GetForegroundWindow()
 
-    def is_window_valid(self, hwnd):
+    def is_window_valid(self, hwnd: wintypes.HWND) -> bool:
         return bool(ctypes.windll.user32.IsWindow(hwnd))
 
-    def is_window_visible(self, hwnd):
+    def is_window_visible(self, hwnd: wintypes.HWND) -> bool:
         return bool(ctypes.windll.user32.IsWindowVisible(hwnd))
 
-    def get_window_class_name(self, hwnd):
+    def get_window_class_name(self, hwnd: wintypes.HWND) -> Any:
         buffer = ctypes.create_unicode_buffer(MAX_CLASS_NAME)
         ctypes.windll.user32.GetClassNameW(hwnd, buffer, MAX_CLASS_NAME)
         return buffer.value
 
-    def find_window_by_title(self, title):
+    def find_window_by_title(self, title: str) -> wintypes.HWND:
         return ctypes.windll.user32.FindWindowW(None, title)
 
-    def enum_class_windows_callback(self, hwnd, lParam):
+    def enum_class_windows_callback(self, hwnd: wintypes.HWND, lParam: wintypes.LPARAM) -> bool:
         target_class = ctypes.cast(
             lParam, ctypes.POINTER(ctypes.py_object)
         ).contents.value['class_name']
@@ -54,7 +57,7 @@ class WindowManager:
             results.append(hwnd)
         return True
 
-    def find_hwnds_by_class(self, class_name):
+    def find_hwnds_by_class(self, class_name: str) -> list:
         results = []
         data = ctypes.py_object({
             'class_name': class_name,
@@ -66,39 +69,39 @@ class WindowManager:
         )
         return results
 
-    def get_client_rect(self, hwnd):
+    def get_client_rect(self, hwnd: wintypes.HWND) -> tuple[int, int]:
         rect = RECT()
         ctypes.windll.user32.GetClientRect(hwnd, ctypes.byref(rect))
         width = rect.right - rect.left
         height = rect.bottom - rect.top
         return width, height
 
-    def get_window_position(self, hwnd):
+    def get_window_position(self, hwnd: wintypes.HWND) -> tuple[int, int]:
         pt = POINT()
         pt.x = 0
         pt.y = 0
         ctypes.windll.user32.ClientToScreen(hwnd, ctypes.byref(pt))
         return pt.x, pt.y
 
-    def is_cursor_visible(self):
+    def is_cursor_visible(self) -> bool:
         try:
             flags, _, _ = win32gui.GetCursorInfo()  # type: ignore
             return bool(flags & 1)
         except Exception:
             return True
 
-    def get_screen_metrics(self):
+    def get_screen_metrics(self) -> tuple[int, int]:
         w = ctypes.windll.user32.GetSystemMetrics(0)
         h = ctypes.windll.user32.GetSystemMetrics(1)
         return w, h
 
-    def enum_title_windows_callback(self, hwnd, results: dict):
+    def enum_title_windows_callback(self, hwnd, results: dict) -> None:
         if win32gui.IsWindowVisible(hwnd):
             title = win32gui.GetWindowText(hwnd)
             if title:
                 results[hwnd] = title
 
-    def find_window_titles(self):
+    def find_window_titles(self) -> dict:
         current_windows_titles = {}
         win32gui.EnumWindows(self.enum_title_windows_callback, current_windows_titles)
         return current_windows_titles

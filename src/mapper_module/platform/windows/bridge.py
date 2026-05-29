@@ -3,13 +3,13 @@ import multiprocessing
 import threading
 from datetime import datetime as _datetime
 from .workers import keyboard_worker, mouse_worker
+from .system import SystemConfig
 
 from mapper_module.utils import (
     LEFT_BUTTON_DOWN, LEFT_BUTTON_UP,
     RIGHT_BUTTON_DOWN, RIGHT_BUTTON_UP, 
     MIDDLE_BUTTON_DOWN, MIDDLE_BUTTON_UP,
     SCANCODES, M_LEFT, M_RIGHT, M_MIDDLE,
-    internal_set_high_priority
 )
 
 class InterceptionBridge(AbstractBridge):
@@ -95,7 +95,7 @@ class InterceptionBridge(AbstractBridge):
             self.k_proc = multiprocessing.Process(target=keyboard_worker, name="Keyboard Worker", args=(self.k_queue,), daemon=True)
             self.k_proc.start()
             # Re-apply High Priority to the new PID
-            internal_set_high_priority(self.k_proc.pid, "Revived Keyboard")
+            SystemConfig().set_high_priority(self.k_proc.pid, "Revived Keyboard")
             # Safety: Clear the queue to prevent a backlog of old 'stuck' keys firing at once
             while not self.k_queue.empty():
                 try: self.k_queue.get_nowait()
@@ -107,7 +107,7 @@ class InterceptionBridge(AbstractBridge):
             self.m_proc = multiprocessing.Process(target=mouse_worker, name="Mouse Worker", args=(self.m_queue,), daemon=True)
             self.m_proc.start()
             # Re-apply High Priority to the new PID
-            internal_set_high_priority(self.m_proc.pid, "Revived Mouse")
+            SystemConfig().set_high_priority(self.m_proc.pid, "Revived Mouse")
             # Safety: Clear the queue to prevent a backlog of old 'stuck' mouse movements firing at once
             while not self.m_queue.empty():
                 try: self.m_queue.get_nowait()
