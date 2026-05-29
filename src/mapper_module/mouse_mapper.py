@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 from time import sleep as _sleep
 from random import uniform as _uniform
+import threading
 
 from .utils import (
     DOWN, UP, PRESSED, TAP_SLOP_DP, TAP_MAX_TIME
@@ -138,7 +139,12 @@ class MouseMapper():
             tap_slop_px_squared = self.mapper.dp_to_px(TAP_SLOP_DP)**2
             
             if temporal_diff <= TAP_MAX_TIME and spatial_diff_squared <= tap_slop_px_squared:
-                self.toggle_key_mouse_sequence(touchevent)      
+                threading.Thread(
+                    target=self.toggle_key_mouse_sequence, 
+                    args=(touchevent,), 
+                    daemon=True
+                ).start()
+  
         self.timestamp = 0.0   
     
     def toggle_key_mouse_sequence(self, touchevent:TouchEvent):
