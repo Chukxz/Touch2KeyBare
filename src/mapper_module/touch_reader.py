@@ -16,9 +16,7 @@ from .utils import (
 if TYPE_CHECKING:
     from .config import AppConfig
     from .utils import MapperEventDispatcher
-    # Just use the windows equivalent as all supported platforms use the same methods albeit different implementations
-    from mapper_module.platform.windows import InterceptionBridge
-    
+ 
 class TouchReader():
     def __init__(self, config:AppConfig, dispatcher:MapperEventDispatcher, rate_cap:float):
         self.config = config
