@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import multiprocessing
 import keyboard
 import os
 import threading
@@ -97,7 +98,6 @@ class Engine:
         self.bridge_class = BridgeClass(self.window_manager)
         self.system_config = SysConfigClass()
         
-        self.system_config.set_process_properties()
         self.system_config.set_dpi_awareness()
         self.system_config.set_timer_resolution()
         self.foreground_window = self.window_manager.get_foreground_window()
@@ -229,6 +229,8 @@ class Engine:
 
 
 if __name__ == "__main__":
+    multiprocessing.set_start_method('spawn')
+    
     success, mutex_handle = check_single_instance(NAME)
     if not success:
         print("[MAIN] - Another instance of Touch2Key is already running. Exiting this instance.")
