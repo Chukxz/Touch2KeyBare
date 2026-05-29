@@ -12,7 +12,7 @@ from mapper_module.utils import (
 )
 
 class InterceptionBridge(AbstractBridge):
-    def __init__(self, window_manager):
+    def __init__(self, window_manager, system_config):
         self.window_manager = window_manager
         self.system_config = system_config
         self.screen_w, self.screen_h = window_manager.get_screen_metrics()
@@ -96,7 +96,7 @@ class InterceptionBridge(AbstractBridge):
                 self.k_proc = multiprocessing.Process(target=keyboard_worker, name="Keyboard Worker", args=(self.k_queue,), daemon=True)
                 self.k_proc.start()
                 # Re-apply High Priority to the new PID
-              system_config.set_high_priority(self.k_proc.pid, "Revived Keyboard")
+               system_config.set_high_priority(self.k_proc.pid, "Revived Keyboard")
                 # Safety: Clear the queue to prevent a backlog of old 'stuck' keys firing at once
                 while not self.k_queue.empty():
                     try: self.k_queue.get_nowait()
