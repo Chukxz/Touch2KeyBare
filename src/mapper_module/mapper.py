@@ -64,7 +64,7 @@ class Mapper():
             self.device_height = self.json_loader.height
             self.dpi = self.json_loader.dpi
             print(f"\n[MAPPER] - Mapping from Device synced to Resolution: {self.device_width}x{self.device_height}, DPI: {self.dpi}.")
-            print(f"\n[MAPPER] - Current Screen Resolution: {self.screen_w}x{self.screen_h}, ")
+            print(f"\n[MAPPER] - Current Screen Resolution: {self.screen_w}x{self.screen_h}")
             
     # Window Management
     def get_game_window_class_name(self, window_title):
