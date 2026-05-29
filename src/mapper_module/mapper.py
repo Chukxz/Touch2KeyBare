@@ -187,8 +187,9 @@ class Mapper():
     
     def device_to_game_abs(self, x, y):
         """Thread-safe absolute mapping."""
-        with self.lock:
-            rot = self.touch_reader.rotation
+            rot = def device_to_game_abs(self, x, y):
+    # No need to hold self.lock just to ask for rotation!
+    rot = self.touch_reader.get_rotation()
         
         rot_dev_w, rot_dev_h = rotate_resolution(self.device_width, self.device_height, rot)
         return (x / rot_dev_w) * self.screen_w, (y / rot_dev_h) * self.screen_h
