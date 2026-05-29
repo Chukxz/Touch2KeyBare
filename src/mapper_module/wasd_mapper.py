@@ -202,9 +202,10 @@ class WASDMapper():
         self.apply_keys(new_sector, sprint)
 
     def touch_up(self):        
-        for k in self.current_mask:
-            if k.value > 0:
-                self.interception_bridge.key_up(self.state_value_to_key[k.value])
+        for key_flag in self.ALL_DIRECTIONS:
+            if key_flag in self.current_mask:
+                self.interception_bridge.key_up(self.state_value_to_key[key_flag.value])
+
         if self.sprint_key_code is not None and self.sprinting:
             self.interception_bridge.key_up(self.sprint_key_code)
 
