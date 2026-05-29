@@ -25,7 +25,7 @@ def keyboard_worker(k_queue:Queue):
     
     while running:
         try:
-            code, state = k_queue.get(timeout=0.5)
+            code, state = k_queue.get(timeout=15.0)
 
             if state == 0:
                 pressed_keys.add(code)
@@ -35,8 +35,8 @@ def keyboard_worker(k_queue:Queue):
             k_ctx.send(k_handle, KeyStroke(code, state))            
   
         except Exception as e:           
+            print(f"\n[UTILITY] - Keyboard worker timed out. Releasing {len(pressed_keys)} keys.")
             if pressed_keys:
-                print(f"\n[UTILITY] - Keyboard worker timeout. Releasing {len(pressed_keys)} keys.")
                 for code in list(pressed_keys):
                     k_ctx.send(k_handle, KeyStroke(code, 1))
                 pressed_keys.clear()
@@ -86,7 +86,7 @@ def mouse_worker(m_queue:Queue):
             if pending_task:
                 task, data = pending_task
             else:
-                task, data = m_queue.get(timeout=0.5)
+                task, data = m_queue.get(timeout=15.0)
             
             if task == "button":
                 m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, data, 0, 0, 0))
@@ -133,7 +133,7 @@ def mouse_worker(m_queue:Queue):
                 _sleep(CONSTANT_DWELL)
 
         except Exception as e: 
-            print("\n[UTILITY] - Mouse worker timeout. Releasing buttons.")
+            print("\n[UTILITY] - Mouse worker timed out. Releasing buttons.")
             if left_down:
                 m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, LEFT_BUTTON_UP, 0, 0, 0))
             if right_down:

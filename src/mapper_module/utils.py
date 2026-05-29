@@ -177,7 +177,7 @@ class MapperEventDispatcher:
 
 
 def get_adb_device():
-    out = subprocess.check_output([ADB_EXE, "devices"]).decode().splitlines()
+    out = subprocess.check_output([ADB_EXE, "devices"], timeout=10).decode().splitlines()
     real = [d.split()[0] for d in out[1:] if "device" in d and not d.startswith("emulator-")]
 
     if not real:
@@ -187,7 +187,7 @@ def get_adb_device():
     
 
 def get_screen_size(device:str):
-    result = subprocess.run([ADB_EXE, "-s", device, "shell", "wm", "size"], capture_output=True, text=True, timeout=2)
+    result = subprocess.run([ADB_EXE, "-s", device, "shell", "wm", "size"], capture_output=True, text=True, timeout=10)
     output = result.stdout.strip().splitlines()
     
     # Check for "Override size" first, then fallback to "Physical size"
@@ -203,7 +203,7 @@ def get_dpi(device:str):
     """Detect screen DPI, fallback to 160."""
     try:
         result = subprocess.run([ADB_EXE, "-s", device, "shell", "getprop", "ro.sf.lcd_density"],
-                                capture_output=True, text=True, timeout=2)
+                                capture_output=True, text=True, timeout=10)
         val = result.stdout.strip()
         return int(val) if val else DEF_DPI
     except Exception:
@@ -213,7 +213,7 @@ def get_dpi(device:str):
 def is_device_online(device:str):
     try:
         res = subprocess.run([ADB_EXE, "-s", device, "get-state"], 
-                            capture_output=True, text=True, timeout=2)
+                            capture_output=True, text=True, timeout=10)
         return "device" in res.stdout
     except Exception:
         return False
@@ -242,7 +242,7 @@ def wireless_connect(device:str | None=None, continuous=True):
             error_1 = False
         
         try:
-            routes = subprocess.check_output([ADB_EXE,  "-s", device, "shell", "ip", "route"], timeout=2).decode().splitlines()
+            routes = subprocess.check_output([ADB_EXE,  "-s", device, "shell", "ip", "route"], timeout=10).decode().splitlines()
             socket = [s.split()[-1] for s in routes if "dev ap0" in s or "dev wlan0" in s]
             
             if not socket:
@@ -252,8 +252,8 @@ def wireless_connect(device:str | None=None, continuous=True):
             if device == socket_path:
                 print(f"\n[UTILITY] - Connected successfully to device: {socket_path}.")
             else:
-                subprocess.run([ADB_EXE, "-s", device, "tcpip", PORT], timeout=2)
-                final = subprocess.check_output([ADB_EXE,  "-s", device, "connect", socket_path], timeout=2).decode().splitlines()[0] # If there's an error its supposed to be raised here.
+                subprocess.run([ADB_EXE, "-s", device, "tcpip", PORT], timeout=10)
+                final = subprocess.check_output([ADB_EXE,  "-s", device, "connect", socket_path], timeout=10).decode().splitlines()[0] # If there's an error its supposed to be raised here.
                 
                 if "(10065)" in final: # Default fallback if no errors were raised in previous line
                     raise RuntimeError(f"\n[UTILITY] - Cannot connect to {socket_path}: A socket operation was attempted to an unreachable host (10065).")
@@ -369,7 +369,7 @@ def get_rotation(device):
     rotation = 0
     patterns = [r"mCurrentRotation=(\d+)", r"rotation=(\d+)", r"mCurrentOrientation=(\d+)", r"mUserRotation=(\d+)"]
     try:
-        result = subprocess.run([ADB_EXE, "-s", device, "shell", "dumpsys", "display"], capture_output=True, text=True, timeout=2)
+        result = subprocess.run([ADB_EXE, "-s", device, "shell", "dumpsys", "display"], capture_output=True, text=True, timeout=10)
         for pat in patterns:
             m = re.search(pat, result.stdout)
             if m:

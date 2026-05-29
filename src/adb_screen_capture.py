@@ -43,7 +43,7 @@ def capture_android_screen(nickname=None, custom_img_folder_name=None, custom_im
         # Wrap the cleanup in its own try/except so a disconnected device doesn't crash the script here
         try:
             # We don't strictly need check=True here since failure just means the file isn't deleted
-            subprocess.run([ADB_EXE, '-s', device_id, 'shell', 'rm', android_tmp], timeout=5, stderr=subprocess.DEVNULL)
+            subprocess.run([ADB_EXE, '-s', device_id, 'shell', 'rm', android_tmp], timeout=10, stderr=subprocess.DEVNULL)
         except subprocess.TimeoutExpired:
             print("[WARNING] Cleanup timed out. Device likely disconnected.")
         except Exception as e:
