@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class Mapper():
-    def __init__(self, json_loader:JSONLoader, touch_reader:TouchReader, interception_bridge: AbstractBridge, pps:float, emulator:dict[str, str]):
+    def __init__(self, json_loader:JSONLoader, touch_reader:TouchReader, interception_bridge:AbstractBridge, pps:float, emulator:dict[str, str]):
         _, WindowMgrClass, _, _ = get_platform()
 
         # Setup Dependencies
