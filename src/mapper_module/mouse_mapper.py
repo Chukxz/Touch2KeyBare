@@ -33,7 +33,6 @@ class MouseMapper():
         # Register Callbacks
         self.mapper_event_dispatcher.register_callback("ON_CONFIG_RELOAD", self.update_config)
 
-
     def update_config(self):
         """Pre-calculates sensitivity to keep the touch_pressed loop lean."""
         print(f"\n[MOUSEMAPPER] - Syncing sensitivity...")
