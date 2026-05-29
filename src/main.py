@@ -123,7 +123,7 @@ class Engine:
             self.key_mapper.release_all()
             self.wasd_mapper.touch_up()
 
-    def check_workers(self)
+    def check_workers(self):
         self.bridge_class.health_check()
         time.sleep(SHORT_DELAY)
 
