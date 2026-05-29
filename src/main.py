@@ -192,8 +192,8 @@ class Engine:
         self.touch_reader.bind_touch_event(self.process_touch_event)
         mapper_event_dispatcher.register_callback("ON_MENU_MODE_TOGGLE", self.set_is_visible)
         
-        # Restart failed child processes
-        self.interception_bridge.health_check()
+        # # Restart failed child processes
+        # self.interception_bridge.health_check()
 
         # Block until ESC is pressed
         keyboard.wait()
