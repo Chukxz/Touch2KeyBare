@@ -7,7 +7,6 @@ import subprocess
 import os
 import tomlkit
 import re
-import psutil
 import time
 import platform
 from typing import Literal
@@ -220,7 +219,7 @@ def is_device_online(device:str):
         return False
 
 
-def wireless_connect(device:str|None=None, continuous=True):
+def wireless_connect(device:str | None=None, continuous=True):
     running = True
     error_1 = False
     error_2 = False
@@ -279,7 +278,7 @@ def wireless_connect(device:str|None=None, continuous=True):
         error_2 = False
 
 
-def select_image_file(base_dir:str|None = None):
+def select_image_file(base_dir:str | None = None):
     root = tk.Tk()
     root.withdraw() 
     root.attributes('-topmost', True) 
@@ -346,20 +345,20 @@ def update_toml(w=None, h=None, dpi=None, image_path=None, json_path=None, mouse
         if "system" not in doc: doc.add("system", tomlkit.table())
         if "joystick" not in doc: doc.add("joystick", tomlkit.table())
         
-        if mouse_wheel_radius is not None: doc["joystick"]["mouse_wheel_radius"] = mouse_wheel_radius
-        if sprint_distance is not None: doc["joystick"]["sprint_distance"] = sprint_distance 
+        if mouse_wheel_radius is not None: doc.get("system", tomlkit.table())["mouse_wheel_radius"] = mouse_wheel_radius
+        if sprint_distance is not None: doc.get("system", tomlkit.table())["sprint_distance"] = sprint_distance
                        
-        if w and h: doc["system"]["json_dev_res"] = [w, h]            
-        if dpi: doc["system"]["json_dev_dpi"] = dpi        
-        if image_path is not None: doc["system"]["hud_image_path"] = Path(image_path).as_posix() if image_path else ""           
-        if json_path is not None: doc["system"]["json_path"] = Path(json_path).as_posix() if json_path else ""
+        if w and h: doc.get("system", tomlkit.table())["json_dev_res"] = [w, h]
+        if dpi: doc.get("system", tomlkit.table())["json_dev_dpi"] = dpi        
+        if image_path is not None: doc.get("system", tomlkit.table())["hud_image_path"] = Path(image_path).as_posix() if image_path else ""           
+        if json_path is not None: doc.get("system", tomlkit.table())["json_path"] = Path(json_path).as_posix() if json_path else ""
 
         with open(TOML_PATH, "w", encoding="utf-8") as f:
             tomlkit.dump(doc, f)
             
     except Exception as e:
         if os.path.exists(TOML_PATH):
-            os.replace(TOML_PATH, TOML_PATH + ".bak")
+            os.replace(TOML_PATH, str(TOML_PATH) + ".bak")
             print("\n[UTILITY] - Settings were corrupted and reset. Backup created.")
         create_default_toml()
         if strict: raise e

@@ -68,18 +68,18 @@ class CursorManager:
         self.canvas = canvas
         # Map application states to PyQt5 cursor shapes
         self.state_map = {
-            "IDLE": Qt.ArrowCursor,
-            "COLLECTING": Qt.CrossCursor,
-            "WAITING_FOR_KEY": Qt.PointingHandCursor,
-            "DELETING": Qt.ForbiddenCursor,
-            "NAMING": Qt.IBeamCursor,
-            "CONFIRM_DELETE_ALL": Qt.WaitCursor,
-            "CONFIRM_EXIT": Qt.WaitCursor
+            "IDLE": Qt.ArrowCursor, # type: ignore
+            "COLLECTING": Qt.CrossCursor, # type: ignore
+            "WAITING_FOR_KEY": Qt.PointingHandCursor, # type: ignore
+            "DELETING": Qt.ForbiddenCursor, # type: ignore
+            "NAMING": Qt.IBeamCursor, # type: ignore
+            "CONFIRM_DELETE_ALL": Qt.WaitCursor, # type: ignore
+            "CONFIRM_EXIT": Qt.WaitCursor # type: ignore
         }
 
     def set_state_cursor(self, state):
         """Sets the cursor based on the predefined state map."""
-        shape = self.state_map.get(state, Qt.ArrowCursor)
+        shape = self.state_map.get(state, Qt.ArrowCursor) # type: ignore
         self.canvas.setCursor(shape)
 
     def set_custom_cursor(self, shape):
@@ -150,7 +150,7 @@ class Draggable:
                 self.plotter.update_title(f"Current Artist: {curr_id} (ID: {self.entry_id}) | Click to Drag or Resize | Arrows to Nudge | {HELP_STR}", True)
             self.plotter.current_draggable = draggable_artist
             
-        self.cursor_manager.set_custom_cursor(Qt.SizeAllCursor)
+        self.cursor_manager.set_custom_cursor(Qt.SizeAllCursor) # type: ignore
 
     def clean_up_current_draggable_id(self):    
         self.indicate_current_draggable_id()
@@ -908,8 +908,8 @@ class Plotter:
         self.mode = None          
         self.state = IDLE         
         self.input_buffer = ""
-        self.shapes_artists: dict[int, plt.Circle | plt.Rectangle] = {}
-        self.labels_artists: dict[int, plt.Text] = {}
+        self.shapes_artists: dict[int, plt.Circle | plt.Rectangle] = {} # type: ignore
+        self.labels_artists: dict[int, plt.Text] = {} # type: ignore
         self.label_drag_managers: dict[int, DraggableLabel] = {}
         self.shape_drag_managers: dict[int, DraggableShape] = {}
                         
@@ -1000,7 +1000,7 @@ class Plotter:
         for uid in self.shape_drag_managers:
             self.shape_drag_managers[uid].disconnect()     
         self.shape_drag_managers = {}
-        self.last_artist_id = None
+        self.last_artist_id : str | None = None
         self.ignore_current_draggable_id_n = 0
         self.current_draggable_id = None
         self.current_draggable: DraggableLabel | DraggableShape | None = None
@@ -1034,7 +1034,7 @@ class Plotter:
         self.buffer_default = True
         state_str = "VISIBLE" if self.show_overlays else "HIDDEN"
         self.update_title(f"OVERLAYS: {state_str} | {DEF_STR}")
-        self.bg_cache = self.fig.canvas.copy_from_bbox(self.ax.bbox)
+        self.bg_cache = self.fig.canvas.copy_from_bbox(self.ax.bbox) # type: ignore
         
     def start_mode(self, mode, num_points):
         self.reset_state() 
@@ -1166,7 +1166,7 @@ class Plotter:
             print(f"Loaded JSON file: {self.json_path.as_posix()}")
 
     def change_image(self):
-        image_path = select_image_file(IMAGES_FOLDER)
+        image_path = select_image_file(str(IMAGES_FOLDER))
         if image_path:
             last_image_path = self.image_path
             self.image_path = Path(image_path)

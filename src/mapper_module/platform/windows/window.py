@@ -35,7 +35,7 @@ class WindowManager(AbstractWindowManager):
     def is_window_visible(self, hwnd: wintypes.HWND) -> bool:
         return bool(ctypes.windll.user32.IsWindowVisible(hwnd))
 
-    def get_window_class_name(self, hwnd: wintypes.HWND) -> Any:
+    def get_window_class_name(self, hwnd: wintypes.HWND) -> str:
         buffer = ctypes.create_unicode_buffer(MAX_CLASS_NAME)
         ctypes.windll.user32.GetClassNameW(hwnd, buffer, MAX_CLASS_NAME)
         return buffer.value
@@ -57,7 +57,7 @@ class WindowManager(AbstractWindowManager):
             results.append(hwnd)
         return True
 
-    def find_hwnds_by_class(self, class_name: str) -> list:
+    def find_hwnds_by_class(self, class_name: str| None) -> list:
         results = []
         data = ctypes.py_object({
             'class_name': class_name,

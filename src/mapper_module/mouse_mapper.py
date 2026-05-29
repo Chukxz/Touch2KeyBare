@@ -135,7 +135,7 @@ class MouseMapper():
             now = touchevent.timestamp
             temporal_diff = now - self.timestamp
             spatial_diff_squared = (touchevent.sx - touchevent.x)**2 + (touchevent.sy - touchevent.y)**2
-            tap_slop_px_squared = self.mapper.dp_to_px(TAP_SLOP_DP)**2
+            tap_slop_px_squared = self.mapper.dp_to_px((TAP_SLOP_DP)**2)
             
             if temporal_diff <= TAP_MAX_TIME and spatial_diff_squared <= tap_slop_px_squared:
                 threading.Thread(
