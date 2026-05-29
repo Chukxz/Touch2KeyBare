@@ -123,6 +123,10 @@ class Engine:
             self.key_mapper.release_all()
             self.wasd_mapper.touch_up()
 
+    def check_workers(self)
+        self.bridge_class.health_check()
+        time.sleep(SHORT_DELAY)
+
     def process_touch_event(self, action, touch_event: TouchEvent):
         assert self.mouse_mapper is not None
         assert self.key_mapper is not None
@@ -190,8 +194,8 @@ class Engine:
         self.touch_reader.bind_touch_event(self.process_touch_event)
         mapper_event_dispatcher.register_callback("ON_MENU_MODE_TOGGLE", self.set_is_visible)
         
-        # # Restart failed child processes
-        # self.interception_bridge.health_check()
+        # Restart failed child processes
+        threading.Thread(target=self.check_workers, daemon=True).start()
 
         # Block until ESC is pressed
         keyboard.wait()
