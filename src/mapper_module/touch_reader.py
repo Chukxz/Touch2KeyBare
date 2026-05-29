@@ -253,6 +253,9 @@ class TouchReader():
                 
         return res_x, res_y
 
+    def get_rotation(self):
+        with self.rotation_lock:
+            return self.rotation
 
     def ensure_slot(self, slot):
         if slot not in self.slots:
