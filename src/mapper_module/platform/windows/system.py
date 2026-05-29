@@ -5,7 +5,7 @@ from mapper_module.utils import NT_TIMER_RES
 class SystemConfig:        
     def set_dpi_awareness(self):
         try:
-            ctypes.windll.shcore.SetProcessDpiAwareness(1)
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)  # PROCESS_PER_MONITOR_DPI_AWARE
         except Exception:
             try:
                 ctypes.windll.user32.SetProcessDPIAware()
