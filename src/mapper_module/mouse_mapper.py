@@ -1,7 +1,9 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-import time
+from time import sleep as _sleep
+from random import uniform as _uniform
+
 from .utils import (
     DOWN, UP, PRESSED, TAP_SLOP_DP, TAP_MAX_TIME
 )
@@ -133,25 +135,32 @@ class MouseMapper():
             now = touchevent.timestamp
             temporal_diff = now - self.timestamp
             spatial_diff_squared = (touchevent.sx - touchevent.x)**2 + (touchevent.sy - touchevent.y)**2
-            
             tap_slop_px_squared = self.mapper.dp_to_px(TAP_SLOP_DP)**2
             
             if temporal_diff <= TAP_MAX_TIME and spatial_diff_squared <= tap_slop_px_squared:
-                self.interception_bridge.key_down(self.mapper.toggle_key_scancode)
-                time.sleep(0.2)
+                self.toggle_key_mouse_sequence(touchevent)      
+        self.timestamp = 0.0   
+    
+    def toggle_key_mouse_sequence(self, touchevent:TouchEvent):
+        self.tap_toggle_key()        
+        _sleep(_uniform(0.04, 0.12))       
+        self.left_click_mouse(touchevent)
+        _sleep(_uniform(0.06, 0.18))        
+        self.tap_toggle_key()
+        
+    def tap_toggle_key(self):
+        self.interception_bridge.key_down(self.mapper.toggle_key_scancode)
+        _sleep(_uniform(0.02, 0.09))
+        self.interception_bridge.key_up(self.mapper.toggle_key_scancode)
+    
+    def left_click_mouse(self, touchevent:TouchEvent):
+        _x, _y = self.mapper.device_to_game_abs(touchevent.x, touchevent.y)
+        self.interception_bridge.mouse_move_abs(_x, _y)
+        _sleep(_uniform(0.016, 0.04))
+        self.interception_bridge.left_click_down()
+        _sleep(_uniform(0.02, 0.07))
+        self.interception_bridge.left_click_up()        
                 
-                _x, _y = self.mapper.device_to_game_abs(touchevent.x, touchevent.y)
-                self.interception_bridge.mouse_move_abs(_x, _y)
-                self.interception_bridge.left_click_down()                
-                time.sleep(0.2)
-                self.interception_bridge.left_click_up()
-                time.sleep(0.2)
-                
-                self.interception_bridge.key_up(self.mapper.toggle_key_scancode)
-            
-        self.timestamp = 0.0
-
-
     def process_touch(self, action, touch_event:TouchEvent, is_visible:bool):
         if action == PRESSED:
             self.touch_pressed(touch_event, is_visible)

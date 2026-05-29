@@ -48,8 +48,8 @@ class WindowManager:
             lParam, ctypes.POINTER(ctypes.py_object)
         ).contents.value['results']
 
-        buffer = ctypes.create_unicode_buffer(256)
-        ctypes.windll.user32.GetClassNameW(hwnd, buffer, 256)
+        buffer = ctypes.create_unicode_buffer(MAX_CLASS_NAME)
+        ctypes.windll.user32.GetClassNameW(hwnd, buffer, MAX_CLASS_NAME)
         if buffer.value == target_class:
             results.append(hwnd)
         return True

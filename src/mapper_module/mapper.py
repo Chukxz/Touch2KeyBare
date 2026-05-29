@@ -2,10 +2,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import time
-import ctypes
-from ctypes import wintypes
 import threading
-import win32gui
+
+from mapper_module.platform import get_platform
+
 from .utils import (
     DEF_DPI, LONG_DELAY, WINDOW_UPDATE_INTERVAL, SCANCODES,
     MapperEvent, rotate_resolution
@@ -14,31 +14,15 @@ from .utils import (
 if TYPE_CHECKING:
     from .json_loader import JSONLoader
     from .touch_reader import TouchReader
+    # Just use the windows equivalent as all supported platforms use the same methods albeit different implementations
+    from mapper_module.platform.windows import InterceptionBridge
 
-MAX_CLASS_NAME = 256
-
-# RECT structure for Windows API
-class RECT(ctypes.Structure):
-    _fields_ = [
-        ("left", ctypes.c_long),
-        ("top", ctypes.c_long),
-        ("right", ctypes.c_long),
-        ("bottom", ctypes.c_long)
-    ]
-
-# POINT structure for ClientToScreen
-class POINT(ctypes.Structure):
-    _fields_ = [
-        ("x", ctypes.c_long), 
-        ("y", ctypes.c_long)
-    ]
 
 class Mapper():
     # EnumWindows callback type definition
-    EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
 
-    def __init__(self, json_loader:JSONLoader, touch_reader:TouchReader, interception_bridge, pps:float, emulator:dict[str, str]):
-        self.enumWindowsProc = Mapper.EnumWindowsProc
+    def __init__(self, json_loader:JSONLoader, touch_reader:TouchReader, interception_bridge:InterceptionBridge, pps:float, emulator:dict[str, str]):
+        _, WindowMgrClass, _, _ = get_platform()
 
         # Setup Dependencies
         self.json_loader = json_loader
@@ -54,8 +38,8 @@ class Mapper():
         self.last_pulse_time = time.perf_counter()
         
         # Window Tracking Setup
-        self.screen_w = ctypes.windll.user32.GetSystemMetrics(0)
-        self.screen_h = ctypes.windll.user32.GetSystemMetrics(1)
+        self.window_manager = WindowMgrClass()
+        self.screen_w, self.screen_h = self.window_manager.get_screen_metrics()
         self.lock = threading.Lock()
         self.last_cursor_state = True # Cursor showing (Default)
         self.game_window_class_name = None
@@ -82,76 +66,42 @@ class Mapper():
             print(f"\n[MAPPER] - Mapping from Device synced to Resolution: {self.device_width}x{self.device_height}, DPI: {self.dpi}.")
             
     # Window Management
-    
-    def get_window_class_name(self, hwnd):
-        buffer = ctypes.create_unicode_buffer(MAX_CLASS_NAME)
-        ctypes.windll.user32.GetClassNameW(hwnd, buffer, MAX_CLASS_NAME)
-        return buffer.value
-
     def get_game_window_class_name(self, window_title):
         """Gets the game window classname."""
         if window_title is None:
             raise ValueError("Window_title must be provided.")
     
         class_name = None            
-        hwnd = ctypes.windll.user32.FindWindowW(None, window_title)
+        hwnd = self.window_manager.find_window_by_title(window_title)
         if hwnd != 0:
-            class_name = self.get_window_class_name(hwnd)
+            class_name = self.window_manager.get_window_class_name(hwnd)
             print(f"\n[MAPPER] - Found window '{window_title}' (Class: {class_name}).")
         else:
             _str = f"\n[MAPPER] - Window class name could not be gotten for window: '{window_title}'."
             raise RuntimeError(_str)            
         return class_name
 
-    def enum_windows_callback(self, hwnd, lParam):
-        target_class = ctypes.cast(lParam, ctypes.POINTER(ctypes.py_object)).contents.value['class_name']
-        results = ctypes.cast(lParam, ctypes.POINTER(ctypes.py_object)).contents.value['results']
-        
-        buffer = ctypes.create_unicode_buffer(256)
-        ctypes.windll.user32.GetClassNameW(hwnd, buffer, 256)
-        if buffer.value == target_class:
-            results.append(hwnd)
-        return True
-
-    def find_hwnds_by_class(self, class_name):
-        results = []
-        data = ctypes.py_object({'class_name': class_name, 'results': results})
-        ctypes.windll.user32.EnumWindows(self.enumWindowsProc(self.enum_windows_callback), ctypes.byref(data))
-        return results
-
     def get_window_info(self, hwnd):
         # Get the Client Area (The pure game content size)
-        client_rect = RECT()
-        ctypes.windll.user32.GetClientRect(hwnd, ctypes.byref(client_rect))
-        width = client_rect.right - client_rect.left
-        height = client_rect.bottom - client_rect.top
+        width, height = self.window_manager.get_client_rect(hwnd)
         
         # Find where top-left (0,0) of the Client Area is on the Screen
-        pt = POINT()
-        pt.x = 0
-        pt.y = 0
-        ctypes.windll.user32.ClientToScreen(hwnd, ctypes.byref(pt))
+        x, y = self.window_manager.get_window_position(hwnd)
 
         self.pulse_status()
         
         # Check Cursor Visibility
-        try:
-            flags, hcursor, pos = win32gui.GetCursorInfo() # type: ignore
-            # 0x00000001 is CURSOR_SHOWING
-            is_visible = True if (flags & 1) else False
+        is_visible = self.window_manager.is_cursor_visible()
+        
+        if not is_visible == self.last_cursor_state:
+            self.last_cursor_state = is_visible
+            # Signal the rest of the app to switch modes
+            self.mapper_event_dispatcher.dispatch(MapperEvent(action="ON_MENU_MODE_TOGGLE", is_visible=is_visible))
             
-            if not is_visible == self.last_cursor_state:
-                self.last_cursor_state = is_visible
-                # Signal the rest of the app to switch modes
-                self.mapper_event_dispatcher.dispatch(MapperEvent(action="ON_MENU_MODE_TOGGLE", is_visible=is_visible))
-                
-        except Exception:
-            print("\n[MAPPER] - Could not check cursor visibility.")
-                
         return {
             'hwnd': hwnd,
-            'left': pt.x,    
-            'top': pt.y,     
+            'left': x,
+            'top': y,    
             'width': width,  
             'height': height 
         }
@@ -166,7 +116,7 @@ class Mapper():
                     if self.game_window_info:
                         current_hwnd = self.game_window_info.get('hwnd')
                         
-                if current_hwnd and ctypes.windll.user32.IsWindow(current_hwnd):
+                if current_hwnd and self.window_manager.is_window_valid(current_hwnd):
                     # WINDOW IS ACTIVE: Get fresh coordinates
                     new_info = self.get_window_info(current_hwnd)
                                         
@@ -215,12 +165,12 @@ class Mapper():
             time.sleep(sleep_time)
 
     def get_game_window_info(self):
-        hwnds = self.find_hwnds_by_class(self.game_window_class_name)
+        hwnds = self.window_manager.find_hwnds_by_class(self.game_window_class_name)
         target_info = None
         max_diag = 0
 
         for hwnd in hwnds:
-            if ctypes.windll.user32.IsWindowVisible(hwnd) == 0:
+            if not self.window_manager.is_window_visible(hwnd):
                 continue
 
             info = self.get_window_info(hwnd)
@@ -268,5 +218,3 @@ class Mapper():
             block_indicator = f"[BLOCK ON ({self.wasd_block})]" if self.wasd_block > 0 else "[OPEN]"
 
             print(f"\n[MAPPER] - Rate: {pps:>5.1f} Hz | Status: {status:<15} | WASD: {block_indicator:<12}")
-
-

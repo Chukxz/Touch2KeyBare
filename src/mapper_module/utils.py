@@ -61,8 +61,8 @@ LONG_DELAY = 2.0
 WINDOW_UPDATE_INTERVAL = 0.05
 ROTATION_POLL_INTERVAL = 0.5
 
-# 1ms (10,000 units of 100ns)
-NT_TIMER_RES = 10000
+# 0.5ms (5,000 units of 100ns)
+NT_TIMER_RES = 5000
 
 # Fallback Performance Constants
 DEFAULT_ADB_RATE_CAP = 250

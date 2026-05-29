@@ -1,4 +1,3 @@
-from typing import ClassVar, TYPE_CHECKING
 from ..base import AbstractBridge
 import multiprocessing
 import threading

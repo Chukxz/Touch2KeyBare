@@ -1,9 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-import time
-import random
-import ctypes
 from mapper_module.utils import (
     MOUSE_MOVE_RELATIVE, MOUSE_MOVE_ABSOLUTE, MOUSE_VIRTUAL_DESKTOP,
     LEFT_BUTTON_DOWN, LEFT_BUTTON_UP,
@@ -12,7 +9,6 @@ from mapper_module.utils import (
 )
 
 if TYPE_CHECKING:
-    from multiprocessing import Process
     from multiprocessing import Queue
     
 # Worker: Keyboard (Isolated)
@@ -20,6 +16,7 @@ def keyboard_worker(k_queue:Queue):
     """ Dedicated process for Keyboard events only (Windows Interception driver). """
     
     from interception import Interception, KeyStroke
+    
     k_ctx = Interception()
     k_handle = k_ctx.keyboard
     # Keep track of keys we've pressed so we know what to release
@@ -48,10 +45,13 @@ def keyboard_worker(k_queue:Queue):
 # Worker: Mouse (Isolated with Coalescing)
 def mouse_worker(m_queue:Queue):
     """ Dedicated process for Mouse events only (Windows Interception driver). """
-    ctypes.windll.ntdll.NtSetTimerResolution(NT_TIMER_RES, 1, ctypes.byref(ctypes.c_ulong()))
-        
+    
+    import ctypes
+    from time import sleep as _sleep
+    from random import uniform as _uniform
     from interception import Interception, MouseStroke
 
+    ctypes.windll.ntdll.NtSetTimerResolution(NT_TIMER_RES, 1, ctypes.byref(ctypes.c_ulong()))
     m_ctx = Interception()
     m_handle = m_ctx.mouse
     
@@ -63,11 +63,16 @@ def mouse_worker(m_queue:Queue):
     middle_down = False
     running = True
 
-    MAX_COALESCE = 20  
-    MIN_DWELL = 0.025 
-    DELTA_DWELL = 0.015
+    MAX_COALESCE = 20
     DOWN_TUPLE = (LEFT_BUTTON_DOWN, RIGHT_BUTTON_DOWN, MIDDLE_BUTTON_DOWN)
-
+    
+    # In seconds
+    CONSTANT_DWELL = 0.001
+    MIN_BUTTON_DWELL = 0.025 
+    MAX_BUTTON_DWELL = 0.04
+    MIN_MOUSE_DWELL = 0.0008
+    MAX_MOUSE_DWELL = 0.0012
+    
     while running:
         try:
             if pending_task:
@@ -87,9 +92,9 @@ def mouse_worker(m_queue:Queue):
                 elif data == MIDDLE_BUTTON_UP: middle_down = False
                 
                 if data in DOWN_TUPLE:
-                     time.sleep(MIN_DWELL + random.random() * DELTA_DWELL)
+                    _sleep(_uniform(MIN_BUTTON_DWELL, MAX_BUTTON_DWELL))
                 else:
-                    time.sleep(0.005) 
+                    _sleep(CONSTANT_DWELL)
 
             elif task == "move_rel":
                 acc_dx += data
@@ -113,12 +118,12 @@ def mouse_worker(m_queue:Queue):
                     m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, MOUSE_MOVE_RELATIVE, 0, acc_dx, acc_dy))
                     acc_dx, acc_dy = 0, 0
                 
-                time.sleep(0.0005)
+                _sleep(_uniform(MIN_MOUSE_DWELL, MAX_MOUSE_DWELL))
 
             elif task == "move_abs":
                 x, y = data
                 m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_ABSOLUTE | MOUSE_VIRTUAL_DESKTOP, MOUSE_MOVE_ABSOLUTE, 0, x, y))
-                time.sleep(0.001)
+                _sleep(CONSTANT_DWELL)
 
         except Exception: 
             print("\n[UTILITY] - Mouse worker timeout. Releasing buttons.")

@@ -9,7 +9,7 @@ class SystemConfig:
         except Exception:
             try:
                 ctypes.windll.user32.SetProcessDPIAware()
-            except Exception:
+            except Exception:   
                 pass
 
     def set_timer_resolution(self):
