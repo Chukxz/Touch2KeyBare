@@ -27,7 +27,6 @@ class Mapper():
         self.config = self.json_loader.config
         self.mapper_event_dispatcher = self.json_loader.mapper_event_dispatcher
         self.touch_reader = touch_reader
-        self.interception_bridge = interception_bridge
         self.emulator = emulator
         self.window_title = emulator['window_title']
         self.toggle_key_scancode = SCANCODES[emulator["toggle_key"]]
