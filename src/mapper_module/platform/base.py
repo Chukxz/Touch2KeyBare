@@ -27,7 +27,7 @@ class AbstractWindowManager(ABC):
     def enum_class_windows_callback(self, hwnd: wintypes.HWND, lParam: wintypes.LPARAM) -> bool: pass
     
     @abstractmethod
-    def find_hwnds_by_class(self, class_name: str) -> list:
+    def find_hwnds_by_class(self, class_name: str) -> list: pass
     
     @abstractmethod
     def get_client_rect(self, hwnd: wintypes.HWND) -> tuple[int, int]: pass
