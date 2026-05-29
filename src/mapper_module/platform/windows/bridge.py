@@ -16,7 +16,7 @@ class InterceptionBridge(AbstractBridge):
     def __init__(self, window_manager):
         self.window_manager = window_manager
         self.screen_w, self.screen_h = window_manager.get_screen_metrics()
-        self.bridge_lock = threading.Lock()
+        self.bridge_lock = threading.RLock()
 
         self.k_queue = multiprocessing.Queue()
         self.k_proc = multiprocessing.Process(
@@ -89,29 +89,30 @@ class InterceptionBridge(AbstractBridge):
         except Exception: pass
 
     def health_check(self):
-        # Check Keyboard Worker
-        if not self.k_proc.is_alive():
-            print(f"\n[UTILITY] - Keyboard Worker Died: {_datetime.now().strftime('%H:%M:%S')}!")
-            self.k_proc = multiprocessing.Process(target=keyboard_worker, name="Keyboard Worker", args=(self.k_queue,), daemon=True)
-            self.k_proc.start()
-            # Re-apply High Priority to the new PID
-            SystemConfig().set_high_priority(self.k_proc.pid, "Revived Keyboard")
-            # Safety: Clear the queue to prevent a backlog of old 'stuck' keys firing at once
-            while not self.k_queue.empty():
-                try: self.k_queue.get_nowait()
-                except Exception: break
+        with self.bridge_lock:
+            # Check Keyboard Worker
+            if not self.k_proc.is_alive():
+                print(f"\n[UTILITY] - Keyboard Worker Died: {_datetime.now().strftime('%H:%M:%S')}!")
+                self.k_proc = multiprocessing.Process(target=keyboard_worker, name="Keyboard Worker", args=(self.k_queue,), daemon=True)
+                self.k_proc.start()
+                # Re-apply High Priority to the new PID
+                SystemConfig().set_high_priority(self.k_proc.pid, "Revived Keyboard")
+                # Safety: Clear the queue to prevent a backlog of old 'stuck' keys firing at once
+                while not self.k_queue.empty():
+                    try: self.k_queue.get_nowait()
+                    except Exception: break
 
-        # Check Mouse Worker
-        if not self.m_proc.is_alive():
-            print(f"\n[UTILITY] - Mouse Worker Died: {_datetime.now().strftime('%H:%M:%S')}!")
-            self.m_proc = multiprocessing.Process(target=mouse_worker, name="Mouse Worker", args=(self.m_queue,), daemon=True)
-            self.m_proc.start()
-            # Re-apply High Priority to the new PID
-            SystemConfig().set_high_priority(self.m_proc.pid, "Revived Mouse")
-            # Safety: Clear the queue to prevent a backlog of old 'stuck' mouse movements firing at once
-            while not self.m_queue.empty():
-                try: self.m_queue.get_nowait()
-                except Exception: break
+            # Check Mouse Worker
+            if not self.m_proc.is_alive():
+                print(f"\n[UTILITY] - Mouse Worker Died: {_datetime.now().strftime('%H:%M:%S')}!")
+                self.m_proc = multiprocessing.Process(target=mouse_worker, name="Mouse Worker", args=(self.m_queue,), daemon=True)
+                self.m_proc.start()
+                # Re-apply High Priority to the new PID
+                SystemConfig().set_high_priority(self.m_proc.pid, "Revived Mouse")
+                # Safety: Clear the queue to prevent a backlog of old 'stuck' mouse movements firing at once
+                while not self.m_queue.empty():
+                    try: self.m_queue.get_nowait()
+                    except Exception: break
 
     def release_all(self):
         print("\n[BRIDGE] - Emergency Release...")
