@@ -20,10 +20,9 @@ if TYPE_CHECKING:
     from mapper_module.platform.windows import InterceptionBridge
     
 class TouchReader():
-    def __init__(self, config:AppConfig, dispatcher:MapperEventDispatcher, interception_bridge:InterceptionBridge, rate_cap:float):
+    def __init__(self, config:AppConfig, dispatcher:MapperEventDispatcher, rate_cap:float):
         self.config = config
         self.mapper_event_dispatcher = dispatcher
-        self.interception_bridge = interception_bridge
 
         # State Tracking
         self.device = None
