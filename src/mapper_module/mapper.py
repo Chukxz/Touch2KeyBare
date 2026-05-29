@@ -14,12 +14,11 @@ from .utils import (
 if TYPE_CHECKING:
     from .json_loader import JSONLoader
     from .touch_reader import TouchReader
+    from mapper_module.platform.base import AbstractBridge
 
 
 class Mapper():
-    # EnumWindows callback type definition
-
-    def __init__(self, json_loader:JSONLoader, touch_reader:TouchReader, pps:float, emulator:dict[str, str]):
+    def __init__(self, json_loader:JSONLoader, touch_reader:TouchReader, interception_bridge: AbstractBridge, pps:float, emulator:dict[str, str]):
         _, WindowMgrClass, _, _ = get_platform()
 
         # Setup Dependencies
@@ -27,6 +26,7 @@ class Mapper():
         self.config = self.json_loader.config
         self.mapper_event_dispatcher = self.json_loader.mapper_event_dispatcher
         self.touch_reader = touch_reader
+        self.interception_bridge = interception_bridge
         self.emulator = emulator
         self.window_title = emulator['window_title']
         self.toggle_key_scancode = SCANCODES[emulator["toggle_key"]]
