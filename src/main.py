@@ -95,8 +95,8 @@ class Engine:
         BridgeClass, WindowMgrClass, SysConfigClass, _ = get_platform()
         
         self.window_manager = WindowMgrClass()
-        self.bridge_class = BridgeClass(self.window_manager)
-        self.system_config = SysConfigClass()
+        self.system_config = SysConfigClass()      
+        self.bridge_class = BridgeClass(self.window_manager, self.system_config)
         
         self.system_config.set_dpi_awareness()
         self.system_config.set_timer_resolution()
