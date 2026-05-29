@@ -14,14 +14,12 @@ from .utils import (
 if TYPE_CHECKING:
     from .json_loader import JSONLoader
     from .touch_reader import TouchReader
-    # Just use the windows equivalent as all supported platforms use the same methods albeit different implementations
-    from mapper_module.platform.windows import InterceptionBridge
 
 
 class Mapper():
     # EnumWindows callback type definition
 
-    def __init__(self, json_loader:JSONLoader, touch_reader:TouchReader, interception_bridge:InterceptionBridge, pps:float, emulator:dict[str, str]):
+    def __init__(self, json_loader:JSONLoader, touch_reader:TouchReader, pps:float, emulator:dict[str, str]):
         _, WindowMgrClass, _, _ = get_platform()
 
         # Setup Dependencies
