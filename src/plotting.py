@@ -1,3 +1,5 @@
+# type: ignore
+
 from __future__ import annotations
 
 import matplotlib
@@ -18,22 +20,23 @@ from mapper_module.platform import get_platform
 
 from mapper_module.utils import (
     CIRCLE, RECT, SCANCODES, DEF_DPI, IMAGES_FOLDER, JSONS_FOLDER,
-    TOML_PATH, MOUSE_WHEEL_CODE, SPRINT_DISTANCE_CODE, IDLE, select_image_file,
-    rotate_resolution, update_toml, get_vibrant_random_color
+    TOML_PATH, MOUSE_WHEEL_CODE, SPRINT_DISTANCE_CODE, IDLE, 
+    select_image_file, rotate_resolution, update_toml, get_vibrant_random_color,
+    get_dulled_hue_color, get_hue_alpha_from_hsv
 )
 
 COLLECTING = "COLLECTING"
 WAITING_FOR_KEY = "WAITING_FOR_KEY"
+NAMING = "NAMING"
 DELETING = "DELETING"
 MARKING = "MARKING"
 CONFIRM_DELETE_ALL = "CONFIRM_DELETE_ALL"
 CONFIRM_EXIT = "CONFIRM_EXIT"
-NAMING = "NAMING"
 HELP_STR = "F1 (Help)"
 DEF_STR = \
     "MODE: IDLE | F3 (Load JSON) | F5 (Load Image) | F12 (Save) | Esc (Exit)\n\
     F6 (Circle) | F7 (Rect) | F8 (Cancel) | Del (Delete) | F2 (Delete All) | F9 (List Current Shapes in Terminal)\n\
-    F4 (Toggle Artist Visibility) | [ (Sprint Threshold) | ] (Mouse Wheel)\n\
+    F4 (Toggle Artist Visibility) | [ (Sprint Threshold) | ] (Mouse Wheel) | Space (Toggle Move Camera)\n\
     Arrows: Nudge | Shift+Arrows: Fast Nudge | Double Click: Change Selected Artist"
 
 SPECIAL_MAP = {
@@ -69,18 +72,19 @@ class CursorManager:
         self.canvas = canvas
         # Map application states to PyQt5 cursor shapes
         self.state_map = {
-            "IDLE": Qt.ArrowCursor, # type: ignore
-            "COLLECTING": Qt.CrossCursor, # type: ignore
-            "WAITING_FOR_KEY": Qt.PointingHandCursor, # type: ignore
-            "DELETING": Qt.ForbiddenCursor, # type: ignore
-            "NAMING": Qt.IBeamCursor, # type: ignore
-            "CONFIRM_DELETE_ALL": Qt.WaitCursor, # type: ignore
-            "CONFIRM_EXIT": Qt.WaitCursor # type: ignore
+            "IDLE": Qt.CursorShape.ArrowCursor,
+            "COLLECTING": Qt.CursorShape.CrossCursor,
+            "WAITING_FOR_KEY": Qt.CursorShape.PointingHandCursor,
+            "NAMING": Qt.CursorShape.IBeamCursor,
+            "DELETING": Qt.CursorShape.ForbiddenCursor,
+            "MARKING": Qt.CursorShape.PointingHandCursor,
+            "CONFIRM_DELETE_ALL": Qt.CursorShape.WaitCursor,
+            "CONFIRM_EXIT": Qt.CursorShape.WaitCursor
         }
 
     def set_state_cursor(self, state):
         """Sets the cursor based on the predefined state map."""
-        shape = self.state_map.get(state, Qt.ArrowCursor) # type: ignore
+        shape = self.state_map.get(state, Qt.CursorShape.ArrowCursor) 
         self.canvas.setCursor(shape)
 
     def set_custom_cursor(self, shape):
@@ -94,10 +98,18 @@ class Draggable:
         self.plotter = plotter_ref
         self.cursor_manager = plotter_ref.cursor_manager
         self.min_move_distance = 3
+        self.is_shape = is_shape
+        
         if is_shape:
             self.artist_id = "shape_" + str(entry_id)
+            shape = self.plotter.shape_drag_managers[entry_id]
+            self.default_face_color = shape.shape_artist.get_facecolor()
         else:
             self.artist_id = "label_" + str(entry_id)
+            label = self.plotter.label_drag_managers[entry_id]
+            label_bbox = label.label_artist.get_bbox_patch()
+            if label_bbox:
+                self.default_face_color = label_bbox.get_facecolor()
             
     def populate_draggables_list(self):
             self.plotter.draggables_ids.append(self.artist_id)
@@ -151,7 +163,7 @@ class Draggable:
                 self.plotter.update_title(f"Current Artist: {curr_id} (ID: {self.entry_id}) | Click to Drag or Resize | Arrows to Nudge | {HELP_STR}", True)
             self.plotter.current_draggable = draggable_artist
             
-        self.cursor_manager.set_custom_cursor(Qt.SizeAllCursor) # type: ignore
+        self.cursor_manager.set_custom_cursor(Qt.CursorShape.SizeAllCursor)
 
     def clean_up_current_draggable_id(self):    
         self.indicate_current_draggable_id()
@@ -166,6 +178,31 @@ class Draggable:
         self.plotter.current_draggable_id = None
         self.plotter.current_move_distance = 0.0
         self.plotter.draggables_ids = []
+    
+    def dull_face_color(self):
+        if self.is_shape:
+            shape = self.plotter.shape_drag_managers[self.entry_id]
+            dulled_face_color = get_dulled_hue_color(get_hue_alpha_from_hsv())
+            shape.shape_artist.set_facecolor(dulled_face_color)
+        
+        else:
+            label = self.plotter.label_drag_managers[self.entry_id]
+            label_bbox = label.label_artist.get_bbox_patch()
+            if label_bbox:
+                dulled_face_color = get_dulled_hue_color(get_hue_alpha_from_hsv())
+                label_bbox.set_facecolor(dulled_face_color)
+    
+    def brighten_face_color(self):
+        if self.is_shape:
+            shape = self.plotter.shape_drag_managers[self.entry_id]
+            shape.shape_artist.set_facecolor(self.default_face_color)
+        
+        else:
+            label = self.plotter.label_drag_managers[self.entry_id]
+            label_bbox = label.label_artist.get_bbox_patch()
+            if label_bbox:
+                label_bbox.set_facecolor(self.default_face_color)       
+            
 
 class DraggableLabel(Draggable):
     def __init__(self, entry_id:int, plotter_ref:Plotter):
@@ -903,6 +940,7 @@ class Plotter:
         # Initiate Parameters
         self.fig, self.ax = plt.subplots()
         self.cursor_manager = CursorManager(self.fig.canvas)
+        self.fig.canvas.set_cursor
 
         self.points = []          
         self.point_artists = []
@@ -1361,6 +1399,9 @@ class Plotter:
             self.handle_delete_input(event.key)
             return
         
+        if self.state == MARKING:
+            self.handle_marking_input(event.key)
+        
         if self.state == CONFIRM_DELETE_ALL:
             if event.key == 'enter':
                 self.delete_all_shapes()
@@ -1412,11 +1453,11 @@ class Plotter:
                 self.enter_naming_mode()
             if event.key == 'delete':
                 self.enter_delete_mode()
+            if event.key == ' ':
+                self.enter_mark_mode()
             if event.key == 'escape':
                 self.state = CONFIRM_EXIT
                 self.update_title("[EXIT?] Press ENTER to Quit or Any other key to Cancel.")
-            if event.key == 'space':
-                ...
 
             step = 5 if event.key.startswith('shift+') else 1
             clean_key = event.key.replace('shift+', '')
@@ -1606,8 +1647,12 @@ class Plotter:
                         print(f"[+] {status}: ID {uid} with key '{marked_key['key_name']}' (hex: {marked_key['m_code']})")
 
                         if not was_marked:
+                            self.shape_drag_managers[uid].dull_face_color()
+                            self.label_drag_managers[uid].dull_face_color()
                             self.update_title(f"Marked ID {uid} for Camera Follow. Returning to IDLE...")
                         else:
+                            self.shape_drag_managers[uid].brighten_face_color()
+                            self.label_drag_managers[uid].brighten_face_color()
                             self.update_title(f"Unmarked ID {uid}. Returning to IDLE...")
                         self.reset_state()
                     else:

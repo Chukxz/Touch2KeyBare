@@ -404,3 +404,15 @@ def get_vibrant_random_color(alpha=1.0):
     v = 0.9
     r, g, b = colorsys.hsv_to_rgb(h, s, v)
     return (r, g, b, alpha)
+
+def get_dulled_hue_color(hue, alpha=1.0):
+    # Given a hue (0-1), return a color with that hue but low saturation and medium value
+    s = 0.3
+    v = 0.7
+    r, g, b = colorsys.hsv_to_rgb(hue, s, v)
+    return (r, g, b, alpha)
+
+def get_hue_alpha_from_hsv(color):
+    r, g, b, a = color
+    h, _, _ = colorsys.rgb_to_hsv(r, g, b)
+    return h, a
