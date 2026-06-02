@@ -78,7 +78,6 @@ class MouseMapper():
         else:
             self.timestamp = touch_event.timestamp
 
-
     def touch_pressed(self, touch_event:TouchEvent, is_visible:bool):
         """
         The 'Hot Path'. This code runs hundreds of times per second.

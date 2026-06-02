@@ -25,6 +25,7 @@ from mapper_module.utils import (
 COLLECTING = "COLLECTING"
 WAITING_FOR_KEY = "WAITING_FOR_KEY"
 DELETING = "DELETING"
+MARKING = "MARKING"
 CONFIRM_DELETE_ALL = "CONFIRM_DELETE_ALL"
 CONFIRM_EXIT = "CONFIRM_EXIT"
 NAMING = "NAMING"
@@ -1414,6 +1415,8 @@ class Plotter:
             if event.key == 'escape':
                 self.state = CONFIRM_EXIT
                 self.update_title("[EXIT?] Press ENTER to Quit or Any other key to Cancel.")
+            if event.key == 'space':
+                ...
 
             step = 5 if event.key.startswith('shift+') else 1
             clean_key = event.key.replace('shift+', '')
@@ -1573,6 +1576,58 @@ class Plotter:
             self.last_artist_id = None
             
         print(f"[+] Deleted Shape of type: {shape_type} with ID: {uid} and key: '{interception_key}' (hex: {hex_code})")
+    
+    # Marking Logic
+    def enter_mark_mode(self):
+        if not self.shapes:
+            print("[!] No shapes to mark.")
+            self.update_title(f"List empty. Nothing to mark | {HELP_STR}")
+            return
+
+        self.state = MARKING
+        self.input_buffer = ""
+        self.update_title("MARK MODE: Type ID... (Enter to Confirm | Esc to Cancel)")
+        
+    def handle_marking_input(self, key):
+        if key == 'escape':
+            self.reset_state()
+            return
+        
+        elif key == 'enter':
+            if self.input_buffer:
+                try:
+                    uid = int(self.input_buffer)
+                    
+                    if uid in self.shapes:
+                        marked_key = self.shapes[uid]
+                        was_marked = marked_key['move_camera']
+                        self.shapes[uid]['move_camera'] = not was_marked
+                        status = "MARKED for Camera Follow" if not was_marked else "UNMARKED for Camera Follow"
+                        print(f"[+] {status}: ID {uid} with key '{marked_key['key_name']}' (hex: {marked_key['m_code']})")
+
+                        if not was_marked:
+                            self.update_title(f"Marked ID {uid} for Camera Follow. Returning to IDLE...")
+                        else:
+                            self.update_title(f"Unmarked ID {uid}. Returning to IDLE...")
+                        self.reset_state()
+                    else:
+                        print(f"[!] ID {uid} not found.")
+                        self.update_title(f"Error: ID {uid} not found. Try again or Press ESC to Cancel.")
+                        self.input_buffer = ""
+                        
+                except ValueError:
+                    self.update_title("Error: Invalid Number. Try again or Press ESC to Cancel.")
+                    self.input_buffer = ""
+            return
+        
+        elif key.isdigit():
+            self.input_buffer += key
+            self.update_title(f"MARK MODE: ID [{self.input_buffer}] (Enter to mark | Esc to Cancel)")
+        elif key == 'backspace':
+            self.input_buffer = self.input_buffer[:-1]
+            self.update_title(f"MARK MODE: ID [{self.input_buffer}] (Enter to mark | Esc to Cancel)")
+        else:
+            print("[!] Blocked: Exit Mark Mode (Esc) first.")
 
     # Shape Calculation & Finalization
     def get_specific_key(self, event):
@@ -1614,6 +1669,7 @@ class Plotter:
     def finalize_shape(self, cx, cy, r, bb, key_name, interception_key, hex_code):
         if cx is not None:
             saved, entry_id = self.save_entry(interception_key, hex_code, cx, cy, r, bb)
+            
             if saved:
                 print(f"[+] Saved ID {self.count-1}: {self.mode} bound to key '{key_name}' with interception key: '{interception_key}'")
                 if self.mode == CIRCLE and cx and cy and r:
@@ -1747,7 +1803,8 @@ class Plotter:
                 "cx": data['cx'],
                 "cy": data['cy'],
                 # Initialize vals to 0/null
-                "val1": 0, "val2": 0, "val3": 0, "val4": 0
+                "val1": 0, "val2": 0, "val3": 0, "val4": 0,
+                "move_camera": data['move_camera'] # Indicates if button should move camera
             }
             
             if data['type'] == CIRCLE:
@@ -1904,7 +1961,8 @@ class Plotter:
             "key_name": interception_key,
             "m_code": hex_code,
             "type": self.mode,
-            "cx": cx, "cy": cy, "r": r, "bb": bb
+            "cx": cx, "cy": cy, "r": r, "bb": bb,
+            "move_camera": False
         }
         
         self.shapes[uid] = entry

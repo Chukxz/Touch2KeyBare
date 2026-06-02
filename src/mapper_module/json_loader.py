@@ -175,6 +175,8 @@ class JSONLoader():
                     zone_data['val3'] = float(item['val3'])
                     zone_data['val4'] = float(item['val4'])
                 
+                zone_data['move_camera'] = bool(item.get('move_camera', False))
+                
                 normalized_zones.append((scancode, zone_data))
                 
             except (ValueError, KeyError) as e:

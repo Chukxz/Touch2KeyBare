@@ -10,6 +10,16 @@ from mapper_module.utils import (
 
 if TYPE_CHECKING:
     from multiprocessing import Queue
+
+MAX_COALESCE = 20
+DOWN_TUPLE = (LEFT_BUTTON_DOWN, RIGHT_BUTTON_DOWN, MIDDLE_BUTTON_DOWN)
+
+# In seconds
+CONSTANT_DWELL = 0.001
+MIN_BUTTON_DWELL = 0.025 
+MAX_BUTTON_DWELL = 0.04
+MIN_MOUSE_DWELL = 0.0008
+MAX_MOUSE_DWELL = 0.0012
     
 # Worker: Keyboard (Isolated)
 def keyboard_worker(k_queue:Queue):
@@ -70,16 +80,6 @@ def mouse_worker(m_queue:Queue):
     right_down = False
     middle_down = False
     running = True
-
-    MAX_COALESCE = 20
-    DOWN_TUPLE = (LEFT_BUTTON_DOWN, RIGHT_BUTTON_DOWN, MIDDLE_BUTTON_DOWN)
-    
-    # In seconds
-    CONSTANT_DWELL = 0.001
-    MIN_BUTTON_DWELL = 0.025 
-    MAX_BUTTON_DWELL = 0.04
-    MIN_MOUSE_DWELL = 0.0008
-    MAX_MOUSE_DWELL = 0.0012
     
     while running:
         try:
@@ -132,7 +132,7 @@ def mouse_worker(m_queue:Queue):
                 m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_ABSOLUTE | MOUSE_VIRTUAL_DESKTOP, MOUSE_MOVE_ABSOLUTE, 0, x, y))
                 _sleep(CONSTANT_DWELL)
 
-        except Exception as e: 
+        except Exception as e:
             print("\n[UTILITY] - Mouse worker timed out. Releasing buttons.")
             if left_down:
                 m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, LEFT_BUTTON_UP, 0, 0, 0))

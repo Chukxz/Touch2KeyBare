@@ -6,7 +6,7 @@ from .utils import (
     RECT, CIRCLE, M_LEFT, M_RIGHT, M_MIDDLE,
     MOUSE_WHEEL_CODE, SPRINT_DISTANCE_CODE, 
     is_in_circle, is_in_rect, MapperEvent,
-    DOWN, UP, SCANCODES
+    DOWN, UP, PRESSED, SCANCODES
 )
 
 if TYPE_CHECKING:
@@ -43,7 +43,7 @@ class KeyMapper():
         
         for scancode, value in raw_data:
             # Filter out ignored functional codes
-            if value.get('name') in self.ignored_names:
+            if value.get('name', '') in self.ignored_names:
                 continue
             
             # Pre-convert scancodes to integers once to save CPU during gameplay
@@ -112,6 +112,8 @@ class KeyMapper():
                     if event.is_wasd:
                         self.mapper.wasd_block += 1
                         self.mapper_event_dispatcher.dispatch(MapperEvent(action="ON_WASD_BLOCK"))
+    
+    def touch_pressed(self, event:TouchEvent):...
 
 
     def touch_up(self, event:TouchEvent):        
@@ -125,7 +127,10 @@ class KeyMapper():
                     self.mapper_event_dispatcher.dispatch(MapperEvent(action="ON_WASD_BLOCK"))
     
     def process_touch(self, action, touch_event:TouchEvent, is_visible:bool):
-        if action == DOWN:
+        if action == PRESSED:
+            self.touch_pressed(touch_event)
+            
+        elif action == "DOWN":
             self.touch_down(touch_event, is_visible)
         
         elif action == UP:
