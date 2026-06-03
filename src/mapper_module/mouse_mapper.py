@@ -6,7 +6,7 @@ from random import uniform as _uniform
 import threading
 
 from .utils import (
-    DOWN, UP, PRESSED, TAP_SLOP_DP, TAP_MAX_TIME
+    UP, DOWN, PRESSED, TAP_SLOP_DP, TAP_MAX_TIME
 )
 
 if TYPE_CHECKING:
@@ -153,9 +153,10 @@ class MouseMapper():
         self.tap_toggle_key()
         
     def tap_toggle_key(self):
-        self.interception_bridge.key_down(self.mapper.toggle_key_scancode)
-        _sleep(_uniform(0.02, 0.09))
-        self.interception_bridge.key_up(self.mapper.toggle_key_scancode)
+        if self.mapper.toggle_key_scancode:
+            self.interception_bridge.key_down(self.mapper.toggle_key_scancode)
+            _sleep(_uniform(0.02, 0.09))
+            self.interception_bridge.key_up(self.mapper.toggle_key_scancode)
     
     def left_click_mouse(self, touchevent:TouchEvent):
         _x, _y = self.mapper.device_to_game_abs(touchevent.x, touchevent.y)

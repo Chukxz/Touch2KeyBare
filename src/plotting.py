@@ -1707,8 +1707,7 @@ class Plotter:
         
         self.finalize_shape(cx, cy, r, bb, key_name, interception_key, hex_code)
         self.reset_state()
-    
-    
+        
     def finalize_shape(self, cx, cy, r, bb, key_name, interception_key, hex_code):
         if cx is not None:
             saved, entry_id = self.save_entry(interception_key, hex_code, cx, cy, r, bb)

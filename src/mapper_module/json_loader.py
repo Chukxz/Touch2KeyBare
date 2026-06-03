@@ -162,18 +162,12 @@ class JSONLoader():
                     zone_data['cx'] = float(item['cx']) / screen_width
                     zone_data['cy'] = float(item['cy']) / screen_height
                     zone_data['r'] = float(item['val1']) / screen_width
-                    zone_data['val1'] = float(item['val1'])
 
                 elif is_rect:
                     zone_data['x1'] = float(item['val1']) / screen_width
                     zone_data['y1'] = float(item['val2']) / screen_height
                     zone_data['x2'] = float(item['val3']) / screen_width
                     zone_data['y2'] = float(item['val4']) / screen_height
-                    
-                    zone_data['val1'] = float(item['val1'])
-                    zone_data['val2'] = float(item['val2'])
-                    zone_data['val3'] = float(item['val3'])
-                    zone_data['val4'] = float(item['val4'])
                 
                 zone_data['move_camera'] = bool(item.get('move_camera', False))
                 

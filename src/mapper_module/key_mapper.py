@@ -30,6 +30,9 @@ class KeyMapper():
         # Optimized List for the Touch Loop
         self.active_zones = []
         
+        self.prevs_x = {}
+        self.prevs_y = {}
+        
         # Initialize data structures
         self.process_json_data()
         self.mapper_event_dispatcher.register_callback("ON_JSON_RELOAD", self.process_json_data)
@@ -130,7 +133,7 @@ class KeyMapper():
         if action == PRESSED:
             self.touch_pressed(touch_event)
             
-        elif action == "DOWN":
+        elif action == DOWN:
             self.touch_down(touch_event, is_visible)
         
         elif action == UP:

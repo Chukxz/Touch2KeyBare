@@ -29,7 +29,7 @@ class Mapper():
         self.interception_bridge = interception_bridge
         self.emulator = emulator
         self.window_title = emulator['window_title']
-        self.toggle_key_scancode = SCANCODES[emulator["toggle_key"]]
+        self.toggle_key_scancode: int | None = SCANCODES[emulator["toggle_key"]]
         self.pps = pps
         self.event_count = 0
         self.last_pulse_time = time.perf_counter()
@@ -38,6 +38,7 @@ class Mapper():
         self.window_manager = WindowMgrClass()
         self.screen_w, self.screen_h = self.window_manager.get_screen_metrics()
         self.lock = threading.Lock()
+        self.agg_lock = threading.Lock()
         self.last_cursor_state = True # Cursor showing (Default)
         self.game_window_class_name = None
         self.game_window_info = None
@@ -54,7 +55,12 @@ class Mapper():
         self.window_lost = False
         self.window_thread = threading.Thread(target=self.update_game_window_info, daemon=True)
         self.window_thread.start()
-    
+        
+        # Mouse moves aggregation
+        self.aggregated_mouse_moves: list[tuple[float, float]]= []
+        self.aggregate_mouse_moves_thread = threading.Thread(target=self.aggregate_mouse_moves, daemon=True)
+        self.aggregate_mouse_moves_thread.start()        
+            
     def update_config(self):
         with self.lock:
             self.device_width = self.json_loader.width
@@ -215,3 +221,16 @@ class Mapper():
             block_indicator = f"[BLOCK ON ({self.wasd_block})]" if self.wasd_block > 0 else "[OPEN]"
 
             print(f"\n[MAPPER] - Rate: {pps:>5.1f} Hz | Status: {status:<15} | WASD: {block_indicator:<12}")
+
+    def aggregate_mouse_moves(self):
+        while self.running:
+            with self.agg_lock:
+                sum_dx = 0.0
+                sum_dy = 0.0
+                for t in self.aggregated_mouse_moves:
+                    sum_dx += t[0]
+                    sum_dy += t[1]
+                self.aggregated_mouse_moves = []
+                    
+                    
+                
