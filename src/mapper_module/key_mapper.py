@@ -120,7 +120,7 @@ class KeyMapper():
         """O(1) Dictionary lookup to release keys when finger lifts."""
         with self.touch_events_lock:
             data_list = self.touch_events_dict.pop(touch_event.slot, [])
-            for scancode, _, is_wasd, prevs in data_list:
+            for scancode, _, is_wasd, __ in data_list:
                 self.send_key_touch_event(scancode, down=False)
                 if is_wasd:
                     self.mapper.wasd_block = max(0, self.mapper.wasd_block - 1)
