@@ -1,5 +1,3 @@
-# type: ignore
-
 from __future__ import annotations
 
 import matplotlib
@@ -102,12 +100,12 @@ class Draggable:
         
         if is_shape:
             self.artist_id = "shape_" + str(entry_id)
-            shape = self.plotter.shape_drag_managers[entry_id]
-            self.default_face_color = shape.shape_artist.get_facecolor()
+            shape = self.plotter.shapes_artists[entry_id]
+            self.default_face_color = shape.get_facecolor()
         else:
             self.artist_id = "label_" + str(entry_id)
-            label = self.plotter.label_drag_managers[entry_id]
-            label_bbox = label.label_artist.get_bbox_patch()
+            label = self.plotter.labels_artists[entry_id]
+            label_bbox = label.get_bbox_patch()
             if label_bbox:
                 self.default_face_color = label_bbox.get_facecolor()
             
@@ -181,29 +179,29 @@ class Draggable:
     
     def dull_face_color(self):
         if self.is_shape:
-            shape = self.plotter.shape_drag_managers[self.entry_id]
-            dulled_face_color = get_dulled_hue_color(get_hue_alpha_from_hsv())
-            shape.shape_artist.set_facecolor(dulled_face_color)
+            shape = self.plotter.shapes_artists[self.entry_id]
+            dulled_face_color = get_dulled_hue_color(*get_hue_alpha_from_hsv(self.default_face_color))
+            shape.set_facecolor(dulled_face_color)
         
         else:
-            label = self.plotter.label_drag_managers[self.entry_id]
-            label_bbox = label.label_artist.get_bbox_patch()
+            label = self.plotter.labels_artists[self.entry_id]
+            label_bbox = label.get_bbox_patch()
             if label_bbox:
-                dulled_face_color = get_dulled_hue_color(get_hue_alpha_from_hsv())
+                dulled_face_color = get_dulled_hue_color(*get_hue_alpha_from_hsv(self.default_face_color))
                 label_bbox.set_facecolor(dulled_face_color)
     
     def brighten_face_color(self):
         if self.is_shape:
-            shape = self.plotter.shape_drag_managers[self.entry_id]
-            shape.shape_artist.set_facecolor(self.default_face_color)
+            shape = self.plotter.shapes_artists[self.entry_id]
+            shape.set_facecolor(self.default_face_color)
         
         else:
-            label = self.plotter.label_drag_managers[self.entry_id]
-            label_bbox = label.label_artist.get_bbox_patch()
+            label = self.plotter.labels_artists[self.entry_id]
+            label_bbox = label.get_bbox_patch()
             if label_bbox:
                 label_bbox.set_facecolor(self.default_face_color)       
             
-
+            
 class DraggableLabel(Draggable):
     def __init__(self, entry_id:int, plotter_ref:Plotter):
         super().__init__(entry_id, False, plotter_ref)
