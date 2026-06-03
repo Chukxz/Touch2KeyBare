@@ -28,7 +28,7 @@ class JSONLoader():
         # State tracking
         self.last_loaded_json_path = None
         self.last_loaded_json_timestamp = 0
-        self.json_data = {}
+        self.json_data: list[tuple[str, dict]] = []
         self.last_reload_time = 0
         
         # Load immediately
@@ -117,7 +117,7 @@ class JSONLoader():
         self.config.reload_config()            
         
     def process_json(self, json_file_path):
-        normalized_zones = []
+        normalized_zones: list[tuple[str, dict]] = []
         
         if not os.path.exists(json_file_path):
             _str = f"\n[JSONLOADER] - Error: File '{json_file_path}' not found."
@@ -145,7 +145,7 @@ class JSONLoader():
         self.height = screen_height
 
         for item in content:
-            scancode = item.get("scancode")
+            scancode: str | None = item.get("scancode")
             if scancode is None: 
                 continue
                             

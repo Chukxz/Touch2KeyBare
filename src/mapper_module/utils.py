@@ -118,7 +118,7 @@ SCANCODES.update({
 
 
 class TouchEvent:
-    def __init__(self, slot:float, id:float, x:float, y:float, sx:float, sy:float, timestamp:float, is_mouse:bool, is_wasd:bool):
+    def __init__(self, slot:int, id:int, x:float, y:float, sx:float, sy:float, timestamp:float, is_mouse:bool, is_wasd:bool):
         self.slot = slot
         self.id = id
         self.x = x

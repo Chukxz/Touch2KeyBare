@@ -19,10 +19,10 @@ class KeyMapper():
         self.config = mapper.config
         self.mapper_event_dispatcher = self.mapper.mapper_event_dispatcher
         self.interception_bridge = mapper.interception_bridge
-
-        # State Tracking: { slot_int: [[scancode(int), zone_data(dict), is_wasd_finger(bool)],...] }
-        self.events_dict = {}
-        self.events_lock = threading.Lock()
+        
+        # State Tracking: { slot_int: [[scancode(int), zone_data(dict), is_wasd_finger(bool), prevs(tuple[int, int])],...] }
+        self.touch_events_dict: dict[int, list[tuple[int, dict, bool, tuple[float, float]]]] = {}
+        self.touch_events_lock = threading.Lock()
         
         # Blacklist for O(1) filtering
         self.ignored_names = {MOUSE_WHEEL_CODE, SPRINT_DISTANCE_CODE}
@@ -30,19 +30,16 @@ class KeyMapper():
         # Optimized List for the Touch Loop
         self.active_zones = []
         
-        self.prevs_x = {}
-        self.prevs_y = {}
-        
         # Initialize data structures
         self.process_json_data()
         self.mapper_event_dispatcher.register_callback("ON_JSON_RELOAD", self.process_json_data)
 
     def process_json_data(self):
         """Pre-processes JSON into a high-speed iteration list."""        
-        temp_zones = []
+        temp_zones: list[tuple[int, dict]] = []
         # Get raw data from the loader
         with self.config.config_lock:
-            raw_data = self.mapper.json_loader.json_data.copy()
+            raw_data: list[tuple[str, dict]] = self.mapper.json_loader.json_data.copy()
         
         for scancode, value in raw_data:
             # Filter out ignored functional codes
@@ -57,12 +54,12 @@ class KeyMapper():
                 continue
 
         self.release_all()
-        with self.events_lock:
+        with self.touch_events_lock:
             self.active_zones = temp_zones
 
         print(f"\n[KEYMAPPER] - Hot-path ready: {len(self.active_zones)} zones active.")
 
-    def send_key_event(self, scancode, down=True):
+    def send_key_touch_event(self, scancode, down=True):
         """Dispatches input to Interception Bridge"""    
 
         # Map internal codes to Bridge methods
@@ -77,17 +74,17 @@ class KeyMapper():
             elif scancode == M_MIDDLE: self.interception_bridge.middle_click_up()
             else: self.interception_bridge.key_up(scancode)
 
-    def touch_down(self, event:TouchEvent, is_visible:bool):        
+    def touch_down(self, touch_event:TouchEvent, is_visible:bool):        
         """Triggered on finger contact. Scans active_zones for a hit."""
         if self.mapper.device_width <= 0 or self.mapper.device_height <= 0:
             return
 
         # Normalize coordinates
-        nx = event.x / self.mapper.device_width
-        ny = event.y / self.mapper.device_height
+        nx = touch_event.x / self.mapper.device_width
+        ny = touch_event.y / self.mapper.device_height
 
         # Fast iteration through the pre-filtered list
-        with self.events_lock:
+        with self.touch_events_lock:
             for scancode, value in self.active_zones:
                 hit = False
                 v_type = value['type']
@@ -105,48 +102,48 @@ class KeyMapper():
             
                 if hit:
                     # Successfully mapped finger to key
-                    self.send_key_event(scancode, down=True)
+                    self.send_key_touch_event(scancode, down=True)
+                    
                     # Create a list if it doesn't exist, then append
-                
-                    if event.slot not in self.events_dict:
-                        self.events_dict[event.slot] = []
-                    self.events_dict[event.slot].append([scancode, value, event.is_wasd])
+                    if touch_event.slot not in self.touch_events_dict:
+                        self.touch_events_dict[touch_event.slot] = []
+                    self.touch_events_dict[touch_event.slot].append((scancode, value, touch_event.is_wasd, (touch_event.x, touch_event.y)))
 
-                    if event.is_wasd:
+                    if touch_event.is_wasd:
                         self.mapper.wasd_block += 1
                         self.mapper_event_dispatcher.dispatch(MapperEvent(action="ON_WASD_BLOCK"))
     
-    def touch_pressed(self, event:TouchEvent):...
+    def touch_pressed(self, touch_event:TouchEvent):...
 
 
-    def touch_up(self, event:TouchEvent):        
+    def touch_up(self, touch_event:TouchEvent):        
         """O(1) Dictionary lookup to release keys when finger lifts."""
-        with self.events_lock:
-            data_list = self.events_dict.pop(event.slot, [])
-            for scancode, _, is_wasd in data_list:
-                self.send_key_event(scancode, down=False)
+        with self.touch_events_lock:
+            data_list = self.touch_events_dict.pop(touch_event.slot, [])
+            for scancode, _, is_wasd, prevs in data_list:
+                self.send_key_touch_event(scancode, down=False)
                 if is_wasd:
                     self.mapper.wasd_block = max(0, self.mapper.wasd_block - 1)
                     self.mapper_event_dispatcher.dispatch(MapperEvent(action="ON_WASD_BLOCK"))
     
-    def process_touch(self, action, touch_event:TouchEvent, is_visible:bool):
+    def process_touch(self, action, touch_touch_event:TouchEvent, is_visible:bool):
         if action == PRESSED:
-            self.touch_pressed(touch_event)
+            self.touch_pressed(touch_touch_event)
             
         elif action == DOWN:
-            self.touch_down(touch_event, is_visible)
+            self.touch_down(touch_touch_event, is_visible)
         
         elif action == UP:
-            self.touch_up(touch_event)        
+            self.touch_up(touch_touch_event)        
 
     def release_all(self):
         """Flushes all current input states."""
-        with self.events_lock:
-            for slot in list(self.events_dict.keys()):
-                data_list = self.events_dict.pop(slot, [])
-                for scancode, _, __ in data_list:
-                    self.send_key_event(scancode, down=False)
+        with self.touch_events_lock:
+            for slot in list(self.touch_events_dict.keys()):
+                data_list = self.touch_events_dict.pop(slot, [])
+                for scancode, _, __, ___ in data_list:
+                    self.send_key_touch_event(scancode, down=False)
 
-            self.events_dict.clear()
+            self.touch_events_dict.clear()
             self.mapper.wasd_block = 0
         
