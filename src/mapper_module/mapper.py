@@ -47,7 +47,8 @@ class Mapper():
         # Config & State
         self.wasd_block = 0
         self.update_config() 
-        
+
+        # Register Callbacks        
         self.mapper_event_dispatcher.register_callback("ON_CONFIG_RELOAD", self.update_config)
         
         # Start the window tracking thread
@@ -57,6 +58,8 @@ class Mapper():
         self.window_thread.start()
         
         # Mouse moves aggregation
+        self.acc_x = 0.0
+        self.acc_y = 0.0
         self.aggregated_mouse_moves: list[tuple[float, float]]= []
         self.aggregate_mouse_moves_thread = threading.Thread(target=self.aggregate_mouse_moves, daemon=True)
         self.aggregate_mouse_moves_thread.start()        
@@ -111,7 +114,7 @@ class Mapper():
         }
 
     def update_game_window_info(self):
-        """Background thread - optimized to minimize lock hold time."""        
+        """Background thread for updating the game window info - optimized to minimize lock hold time."""        
         while self.running:
             try:                
                 # Check if current handle is still valid
@@ -223,14 +226,25 @@ class Mapper():
             print(f"\n[MAPPER] - Rate: {pps:>5.1f} Hz | Status: {status:<15} | WASD: {block_indicator:<12}")
 
     def aggregate_mouse_moves(self):
+        """Background thread for aggregating secondary mouse input - optimized to minimize lock hold time."""        
         while self.running:
-            with self.agg_lock:
-                sum_dx = 0.0
-                sum_dy = 0.0
-                for t in self.aggregated_mouse_moves:
-                    sum_dx += t[0]
-                    sum_dy += t[1]
-                self.aggregated_mouse_moves = []
+            if self.touch_reader.active_touches > 0:
+                snapshot = []
+                
+                with self.agg_lock:
+                    snapshot = self.aggregated_mouse_moves.copy()
+                    self.aggregated_mouse_moves = []
+                    
+                sum_dx = sum([v[0] for v in snapshot])
+                sum_dy = sum([v[1] for v in snapshot])
+                
+                self.mapper_event_dispatcher.dispatch(MapperEvent(action="ON_AGGREGATION", sum_dx=sum_dx, sum_dy=sum_dy, acc_x=self.acc_x, acc_y=self.acc_y))
+            else:
+                self.acc_x = 0.0
+                self.acc_y = 0.0
+                
+            time.sleep(self.touch_reader.adb_rate_cap)
+
                     
                     
                 

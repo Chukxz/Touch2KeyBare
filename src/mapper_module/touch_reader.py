@@ -285,7 +285,6 @@ class TouchReader():
         # Physical Device Specs
         res = get_screen_size(self.device)
         if res is None:
-            self.running = False
             raise RuntimeError("\n[TOUCHREADER] - Detected resolution invalid.")
         self.width, self.height = res
             
@@ -360,8 +359,10 @@ class TouchReader():
                                     'start_x': None, 'start_y': None,
                                     'timestamp': time.monotonic_ns()
                                 })
+                                self.active_touches += 1
                             elif tid == -1:
                                 self.slots[current_slot]['state'] = UP
+                                self.active_touches -= 1
                                 
                         elif "ABS_MT_POSITION_X" == code:
                             val = int(val_str, 16)
@@ -391,8 +392,9 @@ class TouchReader():
                 print(f"\n[TOUCHREADER] - ADB not configured properly. Check ADB_EXE path and device connection.")
                 time.sleep(LONG_DELAY)
                         
+            self.stop_process()
+            
             if self.running:
-                self.stop_process()
                 time.sleep(SHORT_DELAY)
                 if not self.wireless_thread.is_alive():
                     self.wireless_thread = threading.Thread(target=self.connect_wirelessly, daemon=True)

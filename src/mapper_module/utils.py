@@ -91,7 +91,7 @@ EMULATORS = {
         
 PORT = '5555'
 
-EVENT_TYPE = Literal["ON_CONFIG_RELOAD", "ON_JSON_RELOAD", "ON_WASD_BLOCK", "ON_MENU_MODE_TOGGLE"]
+EVENT_TYPE = Literal["ON_CONFIG_RELOAD", "ON_JSON_RELOAD", "ON_WASD_BLOCK", "ON_MENU_MODE_TOGGLE", "ON_AGGREGATION"]
 
 SCANCODES = {
     "ESC": 0x01, "1": 0x02, "2": 0x03, "3": 0x04, "4": 0x05, "5": 0x06, "6": 0x07, "7": 0x08, "8": 0x09, "9": 0x0A, "0": 0x0B,
@@ -130,16 +130,23 @@ class TouchEvent:
         self.is_wasd = is_wasd
         
     def show(self):
-        return f"Slot: {self.slot}, ID: {self.id}, X: {self.x}, Y: {self.y}, SX: {self.sx}, SY: {self.sy}, Timestamp: {self.timestamp}, isMouse: {self.is_mouse}, isWASD: {self.is_wasd}"
+        return f"Slot: {self.slot}, ID: {self.id}, X: {self.x}, Y: {self.y}, SX: {self.sx}, SY: {self.sy}, Timestamp: {self.timestamp}, Mouse: {self.is_mouse}, WASD: {self.is_wasd}"
 
 
 class MapperEvent:
-    def __init__(self, action:EVENT_TYPE, is_visible=True):
-        self.action: EVENT_TYPE = action # CONFIG, JSON, WASD_BLOCK, MENU_MODE_TOGGLE
+    def __init__(self, action:EVENT_TYPE, is_visible=True, sum_dx:float|None=None, sum_dy:float|None=None, acc_x=0.0, acc_y=0.0):
+        self.action: EVENT_TYPE = action
         self.is_visible = is_visible
+        self.sum_dx = sum_dx
+        self.sum_dy = sum_dy
+        self.acc_x = acc_x
+        self.acc_y = acc_y
     
     def show(self):
-        return f"Action: {self.action}\n Cursor Visible: {self.is_visible})"
+        _str = ""
+        if self.sum_dx: _str += f", Sum DX: {self.sum_dx}"
+        if self.sum_dy: _str += f", Sum DY: {self.sum_dy}"
+        return f"Action: {self.action}, Cursor Visible: {self.is_visible})" + _str
 
     
 class MapperEventDispatcher:
@@ -150,13 +157,14 @@ class MapperEventDispatcher:
             "ON_JSON_RELOAD":       [],
             "ON_WASD_BLOCK":        [],
             "ON_MENU_MODE_TOGGLE":  [],
+            "ON_AGGREGATION":       [],
         }
 
     def register_callback(self, event_type:EVENT_TYPE, func):
         if event_type in self.callback_registry:
             self.callback_registry[event_type].append(func)
         else:
-            print(f"\n[UTILITY] - Attempted to register unknown event: {event_type}.")
+            print(f"\n[UTILITY] - Attempted to register unknown event {event_type} for function {func.__name__}.")
     
     def unregister_callback(self, event_type:EVENT_TYPE, func):
         if event_type in self.callback_registry:
@@ -164,6 +172,8 @@ class MapperEventDispatcher:
                 self.callback_registry[event_type].remove(func)
             else:
                 print(f"\n[UTILITY] - Function {func.__name__} was not registered for {event_type}.")
+        else:
+            print(f"\n[UTILITY] - Attempted to unregister unknown event {event_type} for function {func.__name__}.")
 
     def dispatch(self, event_object: MapperEvent):       
         registry_key = event_object.action
@@ -174,7 +184,8 @@ class MapperEventDispatcher:
                     func()
                 elif event_object.action in ["ON_MENU_MODE_TOGGLE"]:
                     func(event_object.is_visible)
-
+                elif event_object.action in ["ON_AGGREGATION"]:
+                    func(event_object.sum_dx, event_object.sum_dy, event_object.acc_x, event_object.acc_y)
 
 def get_adb_device():
     out = subprocess.check_output([ADB_EXE, "devices"], timeout=10).decode().splitlines()
