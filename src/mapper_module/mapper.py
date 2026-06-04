@@ -250,5 +250,4 @@ class Mapper():
             sleep_duration = max(0, self.touch_reader.move_interval - elapsed)
             time.sleep(sleep_duration)
  
- 
 
