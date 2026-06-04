@@ -190,7 +190,7 @@ class Draggable:
                 dulled_face_color = get_dulled_hue_color(*get_hue_alpha_from_hsv(self.default_face_color))
                 label_bbox.set_facecolor(dulled_face_color)
     
-    def brighten_face_color(self):
+    def restore_face_color(self):
         if self.is_shape:
             shape = self.plotter.shapes_artists[self.entry_id]
             shape.set_facecolor(self.default_face_color)
@@ -507,7 +507,7 @@ class DraggableShape(Draggable):
     def circle_transform_helper(self, old_cx, old_cy, old_r, new_cx, new_cy):
         current_shape = self.plotter.shapes[self.entry_id]
         
-        if self.plotter.saved_mouse_wheel and current_shape['key_name'] == MOUSE_WHEEL_CODE:
+        if self.plotter.saved_mouse_wheel and current_shape['interception_key'] == MOUSE_WHEEL_CODE:
             self.plotter.mouse_wheel_cx = new_cx
             self.plotter.mouse_wheel_cy = new_cy
             self.plotter.mouse_wheel_radius = current_shape['r']
@@ -534,7 +534,7 @@ class DraggableShape(Draggable):
                 else:
                     self.plotter.sprint_distance = actual_dist
             
-        if self.plotter.saved_sprint_distance and current_shape['key_name'] == SPRINT_DISTANCE_CODE:
+        if self.plotter.saved_sprint_distance and current_shape['interception_key'] == SPRINT_DISTANCE_CODE:
             actual_dist = self.plotter.euclidean_distance(new_cx, new_cy, self.plotter.mouse_wheel_cx, self.plotter.mouse_wheel_cy)
             
             # STRICT CHECK: Ensure Sprint is actually outside the Joystick
@@ -589,7 +589,7 @@ class DraggableShape(Draggable):
         current_shape = self.plotter.shapes[self.entry_id]
         new_sp_r = None
         
-        if self.plotter.saved_mouse_wheel and current_shape['key_name'] == MOUSE_WHEEL_CODE:
+        if self.plotter.saved_mouse_wheel and current_shape['interception_key'] == MOUSE_WHEEL_CODE:
             new_r = min(new_r, int(round((self.spec_max_ratio * ((self.plotter.width + self.plotter.height) / 2)))))
             
             if self.plotter.saved_sprint_distance and self.plotter.sprint_artist_id is not None:
@@ -598,7 +598,7 @@ class DraggableShape(Draggable):
                 if new_r < sp_r:
                     new_sp_r = new_r
                 
-        if self.plotter.saved_sprint_distance and current_shape['key_name'] == SPRINT_DISTANCE_CODE:
+        if self.plotter.saved_sprint_distance and current_shape['interception_key'] == SPRINT_DISTANCE_CODE:
             new_r = min(new_r, self.plotter.mouse_wheel_radius)
 
         if new_r >= self.min_circ_dist:
@@ -1149,6 +1149,7 @@ class Plotter:
                 val2 = float(item['val2'])
                 val3 = float(item['val3'])
                 val4 = float(item['val4'])
+                move_camera = bool(item['move_camera'])
 
             except (ValueError, KeyError) as e:
                 print(f"Skipping invalid item: {scancode} with name: {name}. Error: {e}")
@@ -1162,6 +1163,7 @@ class Plotter:
             json_shape['type'] = zone_type
             json_shape['cx'] = int(round(cx * scale_x))
             json_shape['cy'] = int(round(cy * scale_y))
+            json_shape['move_camera'] = move_camera
             json_shape['interception_key'] = interception_key if interception_key is not None else ''
             
             if zone_type == CIRCLE:
@@ -1193,11 +1195,13 @@ class Plotter:
                 r = shape.get('r', None)
                 bb = shape.get('bb', None)
                 key_name = shape['key_name']
+                l_move_camera = shape['move_camera']
                 interception_key = shape['interception_key']
                 hex_code = shape['m_code']
                 self.mode = shape['mode']
                                 
-                self.finalize_shape(cx, cy, r, bb, key_name, interception_key, hex_code)
+                self.finalize_shape(cx, cy, r, bb, key_name, interception_key, hex_code, l_move_camera)
+                
             self.reset_state()
             self.json_path = Path(file_path)
             print(f"Loaded JSON file: {self.json_path.as_posix()}")
@@ -1522,13 +1526,13 @@ class Plotter:
                     
                     if uid in self.shapes:
                         # Cascade deletion check
-                        deleted_key_name = self.shapes[uid]['key_name']
+                        deleted_key_name = self.shapes[uid]['interception_key']
                         
                         if deleted_key_name == MOUSE_WHEEL_CODE:
                             # Search for the dependent Sprint point
                             sprint_uid = None
                             for k, v in self.shapes.items():
-                                if v['key_name'] == SPRINT_DISTANCE_CODE:
+                                if v['interception_key'] == SPRINT_DISTANCE_CODE:
                                     sprint_uid = k
                                     break
                             
@@ -1539,8 +1543,8 @@ class Plotter:
                         self.delete_entry(uid)
                         
                         # Check if specific special keys still exist
-                        has_wheel = any(v['key_name'] == MOUSE_WHEEL_CODE for v in self.shapes.values())
-                        has_sprint = any(v['key_name'] == SPRINT_DISTANCE_CODE for v in self.shapes.values())
+                        has_wheel = any(v['interception_key'] == MOUSE_WHEEL_CODE for v in self.shapes.values())
+                        has_sprint = any(v['interception_key'] == SPRINT_DISTANCE_CODE for v in self.shapes.values())
 
                         if not has_wheel:
                             self.saved_mouse_wheel = False
@@ -1553,9 +1557,9 @@ class Plotter:
                             self.sprint_artist_id = None
                             self.sprint_distance = 0.0
                         
-                        if self.saved_mouse_wheel and any(v['key_name'] == MOUSE_WHEEL_CODE for v in self.shapes.values()) == False:
+                        if self.saved_mouse_wheel and any(v['interception_key'] == MOUSE_WHEEL_CODE for v in self.shapes.values()) == False:
                             self.saved_mouse_wheel = False
-                        if self.saved_sprint_distance and any(v['key_name'] == SPRINT_DISTANCE_CODE for v in self.shapes.values()) == False:
+                        if self.saved_sprint_distance and any(v['interception_key'] == SPRINT_DISTANCE_CODE for v in self.shapes.values()) == False:
                             self.saved_sprint_distance = False
                             self.sprint_artist_id = None
                             
@@ -1590,7 +1594,7 @@ class Plotter:
             self.current_draggable = None
         
         shape_type = self.shapes[uid]['type']
-        interception_key = self.shapes[uid]['key_name']
+        interception_key = self.shapes[uid]['interception_key']
         hex_code = self.shapes[uid]['m_code']
                 
         del self.shapes[uid]
@@ -1642,15 +1646,15 @@ class Plotter:
                         was_marked = marked_key['move_camera']
                         self.shapes[uid]['move_camera'] = not was_marked
                         status = "MARKED for Camera Follow" if not was_marked else "UNMARKED for Camera Follow"
-                        print(f"[+] {status}: ID {uid} with key '{marked_key['key_name']}' (hex: {marked_key['m_code']})")
+                        print(f"[+] {status}: ID {uid} with key '{marked_key['interception_key']}' (hex: {marked_key['m_code']})")
 
                         if not was_marked:
-                            self.shape_drag_managers[uid].dull_face_color()
                             self.label_drag_managers[uid].dull_face_color()
+                            self.shape_drag_managers[uid].dull_face_color()
                             self.update_title(f"Marked ID {uid} for Camera Follow. Returning to IDLE...")
                         else:
-                            self.shape_drag_managers[uid].brighten_face_color()
-                            self.label_drag_managers[uid].brighten_face_color()
+                            self.label_drag_managers[uid].restore_face_color()
+                            self.shape_drag_managers[uid].restore_face_color()
                             self.update_title(f"Unmarked ID {uid}. Returning to IDLE...")
                         self.reset_state()
                     else:
@@ -1708,9 +1712,9 @@ class Plotter:
         self.finalize_shape(cx, cy, r, bb, key_name, interception_key, hex_code)
         self.reset_state()
         
-    def finalize_shape(self, cx, cy, r, bb, key_name, interception_key, hex_code):
+    def finalize_shape(self, cx, cy, r, bb, key_name, interception_key, hex_code, move_camera=False):
         if cx is not None:
-            saved, entry_id = self.save_entry(interception_key, hex_code, cx, cy, r, bb)
+            saved, entry_id = self.save_entry(interception_key, hex_code, cx, cy, r, bb, move_camera)
             
             if saved:
                 print(f"[+] Saved ID {self.count-1}: {self.mode} bound to key '{key_name}' with interception key: '{interception_key}'")
@@ -1738,6 +1742,10 @@ class Plotter:
                     # Make the shape draggable
                     self.shape_drag_managers[entry_id] = DraggableShape(entry_id, self, CIRCLE)
                     
+                    if move_camera:
+                        self.label_drag_managers[entry_id].dull_face_color()
+                        self.shape_drag_managers[entry_id].dull_face_color()
+                                                
                 elif self.mode == RECT and cx and cy and bb:
                     if interception_key == MOUSE_WHEEL_CODE or interception_key == SPRINT_DISTANCE_CODE:
                         print(f"[!] Warning: Special keys like '{interception_key}' should be bound to CIRCLE shapes for better visualization. Consider re-binding this key to a circle shape.")
@@ -1757,7 +1765,11 @@ class Plotter:
                         # Make the label draggable
                         self.label_drag_managers[entry_id] = DraggableLabel(entry_id, self)
                         # Make the shape draggable
-                        self.shape_drag_managers[entry_id] = DraggableShape(entry_id, self, RECT)                    
+                        self.shape_drag_managers[entry_id] = DraggableShape(entry_id, self, RECT)
+
+                        if move_camera:
+                            self.label_drag_managers[entry_id].dull_face_color()
+                            self.shape_drag_managers[entry_id].dull_face_color()               
 
     # Naming / Saving Logic
     def enter_naming_mode(self):
@@ -1839,7 +1851,7 @@ class Plotter:
         
         for _, data in self.shapes.items():
             entry = {
-                "name": data['key_name'], # Interception Key Name
+                "name": data['interception_key'], # Interception Key Name
                 "scancode": data['m_code'], # Saved as hex string "0x..."
                 "type": data['type'],
                 "cx": data['cx'],
@@ -1919,7 +1931,7 @@ class Plotter:
         return ""
         
 
-    def save_entry(self, interception_key, hex_code, cx, cy, r, bb):
+    def save_entry(self, interception_key, hex_code, cx, cy, r, bb, move_camera):
         uid = self.count
         inc_count = True
         saved = False
@@ -1929,7 +1941,7 @@ class Plotter:
                 if self.saved_mouse_wheel:
                     print(f"[!] Mouse Wheel already assigned. Overwriting previous assignment.")
                     for k, v in self.shapes.items():
-                        if v['key_name'] == MOUSE_WHEEL_CODE:
+                        if v['interception_key'] == MOUSE_WHEEL_CODE:
                             uid = k
                             inc_count = False
                             self.shapes.pop(k)
@@ -1966,7 +1978,7 @@ class Plotter:
                 if self.saved_sprint_distance:                    
                     print(f"[!] Error: Sprint Threshold already assigned. Overwriting previous assignment.")
                     for k, v in self.shapes.items():
-                        if v['key_name'] == SPRINT_DISTANCE_CODE:
+                        if v['interception_key'] == SPRINT_DISTANCE_CODE:
                             uid = k
                             inc_count = False
                             self.shapes.pop(k)
@@ -2000,11 +2012,11 @@ class Plotter:
                 return saved, uid
         
         entry = {
-            "key_name": interception_key,
+            "interception_key": interception_key,
             "m_code": hex_code,
             "type": self.mode,
             "cx": cx, "cy": cy, "r": r, "bb": bb,
-            "move_camera": False
+            "move_camera": move_camera
         }
         
         self.shapes[uid] = entry
