@@ -244,7 +244,3 @@ class Mapper():
                 self.acc_y = 0.0
                 
             time.sleep(self.touch_reader.adb_rate_cap)
-
-                    
-                    
-                
