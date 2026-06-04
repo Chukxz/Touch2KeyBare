@@ -54,7 +54,7 @@ class TouchReader():
 
         # PERFORMANCE TUNING
         self.adb_rate_cap = rate_cap
-        self.move_interval = 1.0 / self.adb_rate_cap if self.adb_rate_cap > 0 else 0
+        self.move_interval = 1.0 / self.adb_rate_cap if self.adb_rate_cap > 0 else 0.0001
         self.last_dispatch_times = []
         for _ in range(self.max_slots):
             self.last_dispatch_times.append(0)
