@@ -228,6 +228,8 @@ class Mapper():
     def aggregate_mouse_moves(self):
         """Background thread for aggregating secondary mouse input - optimized to minimize lock hold time."""        
         while self.running:
+            start_time = time.perf_counter()
+
             if self.touch_reader.active_touches > 0:
                 snapshot = []
                 
@@ -242,7 +244,11 @@ class Mapper():
             else:
                 self.acc_x = 0.0
                 self.acc_y = 0.0
-                
-            time.sleep(self.touch_reader.move_interval)
+            
+            
+            elapsed = time.perf_counter() - start_time
+            sleep_duration = max(0, self.touch_reader.move_interval - elapsed)
+            time.sleep(sleep_duration)
+ 
  
 
