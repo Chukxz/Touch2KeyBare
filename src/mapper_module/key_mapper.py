@@ -24,6 +24,7 @@ class KeyMapper():
         self.touch_events_dict: dict[int, list[tuple[int, dict, bool]]] = {}
         self.touch_events_prevs: dict[int, tuple[float, float]] = {}
         self.touch_events_lock = threading.Lock()
+        self.scancode_ref_counts = {} # Tracks how many fingers are pressing a scancode
         
         # Blacklist for O(1) filtering
         self.ignored_names = {MOUSE_WHEEL_CODE, SPRINT_DISTANCE_CODE}
@@ -61,9 +62,24 @@ class KeyMapper():
         print(f"\n[KEYMAPPER] - Hot-path ready: {len(self.active_zones)} zones active.")
 
     def send_key_touch_event(self, scancode, down=True):
-        """Dispatches input to Interception Bridge"""    
+        """Dispatches input to Interception Bridge"""
+        if down:
+            # Only send KeyDown if this is the first finger for this scancode
+            count = self.scancode_ref_counts.get(scancode, 0)
+            if count == 0:
+                self.dispatch_to_bridge(scancode, True)
+            self.scancode_ref_counts[scancode] = count + 1
 
-        # Map internal codes to Bridge methods
+        else:
+            # Only send KeyUp if this is the last finger for this scancode
+            count = self.scancode_ref_counts.get(scancode, 0)
+            if count > 0:
+                new_count = count - 1
+                self.scancode_ref_counts[scancode] = new_count
+                if new_count == 0:
+                    self.dispatch_to_bridge(scancode, False)
+
+    def dispatch_to_bridge(self, scancode, down):
         if down:
             if scancode == M_LEFT: self.interception_bridge.left_click_down()
             elif scancode == M_RIGHT: self.interception_bridge.right_click_down()
