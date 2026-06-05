@@ -1,5 +1,19 @@
 from mapper_module.utils import SYSTEM
 
+# import fcntl
+# import os
+
+# def check_single_instance_linux(instance_name):
+#     """Uses a lockfile to prevent duplicate Linux instances."""
+#     lock_file = f"/tmp/{instance_name}.lock"
+#     handle = open(lock_file, "w")
+#     try:
+#         fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+#         return True, handle
+#     except (IOError, OSError):
+#         return False, None
+
+
 def check_single_instance(instance_name):
     """Create a unique mutex to prevent duplicate instances (Cross-Platform safe)."""
     if SYSTEM == "Windows":
