@@ -40,7 +40,7 @@ class WindowManager(AbstractWindowManager):
         ctypes.windll.user32.GetClassNameW(hwnd, buffer, MAX_CLASS_NAME)
         return buffer.value
 
-    def find_window_by_title(self, title: str) -> wintypes.HWND:
+    def find_window_by_title(self, title: str) -> int|None:
         title = ctypes.windll.user32.FindWindowW(None, title)
         return hwnd if hwnd != 0 else None
 
