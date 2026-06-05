@@ -1,39 +1,34 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
-
 from abc import ABC, abstractmethod
-
-if TYPE_CHECKING:
-    from ctypes import wintypes
-    import win32gui
 
 class AbstractWindowManager(ABC):
     @abstractmethod
     def get_foreground_window(self) -> int: pass
     
     @abstractmethod
-    def is_window_valid(self, hwnd: wintypes.HWND) -> bool: pass
+    def is_window_valid(self, hwnd) -> bool: pass
         
     @abstractmethod
-    def is_window_visible(self, hwnd: wintypes.HWND) -> bool: pass
+    def is_window_visible(self, hwnd) -> bool: pass
         
     @abstractmethod
-    def get_window_class_name(self, hwnd: wintypes.HWND) -> str: pass
+    def get_window_class_name(self, hwnd) -> str: pass
     
     @abstractmethod
-    def find_window_by_title(self, title: str) -> wintypes.HWND: pass
+    def find_window_by_title(self, title: str) -> int|None: pass
 
     @abstractmethod
-    def enum_class_windows_callback(self, hwnd: wintypes.HWND, lParam: wintypes.LPARAM) -> bool: pass
+    def enum_class_windows_callback(self, hwnd, lParam) -> bool: pass
     
     @abstractmethod
     def find_hwnds_by_class(self, class_name: str| None) -> list: pass
     
     @abstractmethod
-    def get_client_rect(self, hwnd: wintypes.HWND) -> tuple[int, int]: pass
+    def get_client_rect(self, hwnd) -> tuple[int, int]: pass
 
     @abstractmethod
-    def get_window_position(self, hwnd: wintypes.HWND) -> tuple[int, int]: pass
+    def get_window_position(self, hwnd) -> tuple[int, int]: pass
 
     @abstractmethod
     def is_cursor_visible(self) -> bool: pass
@@ -80,7 +75,6 @@ class AbstractBridge(ABC):
 
     @abstractmethod
     def health_check(self):
-        """Monitors and restarts driver-specific worker processes."""
         pass
     
     @abstractmethod
