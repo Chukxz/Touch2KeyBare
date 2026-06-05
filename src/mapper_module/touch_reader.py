@@ -279,6 +279,13 @@ class TouchReader():
         if self.device_touch_event is None:
             raise RuntimeError("\n[TOUCHREADER] - No touchscreen device found via ADB.")
         print(f"\n[TOUCHREADER] - Using touchscreen device: {self.device_touch_event}.")
+
+        real_slots = self.get_max_slots()
+        if real_slots > len(self.last_dispatch_times):
+        # Extend to cover new slots
+        while len(self.last_dispatch_times) < real_slots:
+            self.last_dispatch_times.append(0)
+        self.max_slots = real_slots
             
         # Physical Device Specs
         res = get_screen_size(self.device)
