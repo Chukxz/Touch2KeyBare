@@ -48,7 +48,6 @@ def select_emulator(window_manager) -> dict | None:
     for id, name in enumerate(emulators_list):
         print(f"    ID: [{id}] Name: {name}")
 
-    # Use the abstracted window manager instead of win32gui
     current_windows_titles = window_manager.find_window_titles()
     titles_dict = construct_titles_dict(EMULATORS)
     titles = list(titles_dict.keys())
