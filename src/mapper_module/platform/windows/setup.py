@@ -20,21 +20,6 @@ def is_admin():
     except:
         return False
 
-def setup_driver():
-    """Handles the one-time driver registration."""
-    if not is_admin():
-        print("[!] Driver registration requires Admin rights.")
-        print("[+] Please re-run this setup script as Administrator.")
-        sys.exit(1)
-
-    print("[+] Registering Interception driver...")
-    # Adjust this path based on where you extract the Interception zip
-    result = subprocess.run([str(INTERCEPTION_EXE), "/install"], capture_output=True)
-    if result.returncode == 0:
-        print("[+] Driver registered successfully! Please restart your PC.")
-    else:
-        print(f"[!] Failed to register driver: {result.stderr.decode()}")
-
 def download_adb():
     """Downloads and extracts Android platform-tools."""
     print("[+] Ensuring ADB is available...")
@@ -54,10 +39,45 @@ def download_adb():
     else:
         print("[+] ADB already present.")
 
+def setup_driver():
+    """Handles the one-time driver registration and returns True if a reboot is needed."""
+    if not is_admin():
+        print("[!] Driver registration requires Admin rights.")
+        print("[+] Please re-run this setup script as Administrator.")
+        sys.exit(1)
+
+    print("[+] Registering Interception driver...")
+    result = subprocess.run([str(INTERCEPTION_EXE), "/install"], capture_output=True)
+    
+    if result.returncode == 0:
+        print("[+] Driver registered successfully!")
+        return True  # True means a reboot is required
+    else:
+        print(f"[!] Failed to register driver: {result.stderr.decode()}")
+        return False
+
 def setup_windows():
     print("--- Touch2Key Setup Wizard ---")
     download_adb()
     
-    # Only register driver if not already installed
-    # (Optional: Add a registry check here to skip if already registered)
-    setup_driver()
+    # Track if the driver was actually installed during this run
+    needs_reboot = setup_driver()
+
+    if needs_reboot:
+        print("\n" + "="*55)
+        print("!!! SYSTEM RESTART REQUIRED !!!".center(55))
+        print("="*55)
+        print("The Interception driver has been installed.")
+        print("Touch2Key will NOT be able to simulate mouse/keyboard")
+        print("inputs until you restart your computer.")
+        print("="*55 + "\n")
+        
+        choice = input("Would you like to restart your PC now? (y/n): ").strip().lower()
+        if choice == 'y':
+            print("[+] Initiating system restart in 5 seconds...")
+            # Windows command to restart the PC with a 5-second delay and a custom message
+            os.system('shutdown /r /t 5 /c "Touch2Key driver installation complete."')
+        else:
+            print("[+] Please remember to manually restart before running Touch2Key.")
+    else:
+        print("\n[+] Setup complete! You are ready to use Touch2Key.")
