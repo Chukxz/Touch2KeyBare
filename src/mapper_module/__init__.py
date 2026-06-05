@@ -8,13 +8,13 @@ from .utils import (
     JSONS_FOLDER
 )
 
-from .config import AppConfig
-from .json_loader import JSONLoader
-from .touch_reader import TouchReader
-from .mapper import Mapper
-from .mouse_mapper import MouseMapper
-from .key_mapper import KeyMapper
-from .wasd_mapper import WASDMapper
+from .core.config import AppConfig
+from .core.json_loader import JSONLoader
+from .core.touch_reader import TouchReader
+from .core.mapper import Mapper
+from .core.mouse_mapper import MouseMapper
+from .core.key_mapper import KeyMapper
+from .core.wasd_mapper import WASDMapper
 
 __all__ = [
     'MapperEvent',
