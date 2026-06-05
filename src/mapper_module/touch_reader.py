@@ -456,6 +456,8 @@ class TouchReader():
             elif data['state'] == UP:
                 self.reset_slot(slot)
 
+        if lift_up: self.active_touches = 0
+
     def stop_process(self):
         with self.config.config_lock:
             self.device = None
