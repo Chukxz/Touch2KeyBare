@@ -22,7 +22,7 @@ class AbstractWindowManager(ABC):
     def enum_class_windows_callback(self, hwnd, lParam) -> bool: pass
     
     @abstractmethod
-    def find_hwnds_by_class(self, class_name: str| None) -> list: pass
+    def find_hwnds_by_class(self, class_name: str|None) -> list: pass
     
     @abstractmethod
     def get_client_rect(self, hwnd) -> tuple[int, int]: pass
