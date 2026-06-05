@@ -41,7 +41,8 @@ class WindowManager(AbstractWindowManager):
         return buffer.value
 
     def find_window_by_title(self, title: str) -> wintypes.HWND:
-        return ctypes.windll.user32.FindWindowW(None, title)
+        title = ctypes.windll.user32.FindWindowW(None, title)
+        return hwnd if hwnd != 0 else None
 
     def enum_class_windows_callback(self, hwnd: wintypes.HWND, lParam: wintypes.LPARAM) -> bool:
         target_class = ctypes.cast(
