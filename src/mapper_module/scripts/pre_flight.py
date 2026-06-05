@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from mapper_module import SYSTEM
+from mapper_module.utils import SYSTEM
 
 def check_adb():
     """Verify ADB is available."""
