@@ -365,7 +365,7 @@ class TouchReader():
                                     'timestamp': time.monotonic_ns()
                                 })
                                 self.active_touches += 1
-                            elif tid == -1:
+                            elif tid == -1 and prev_id != -1:
                                 self.slots[current_slot]['state'] = UP
                                 self.active_touches -= 1
                                 
