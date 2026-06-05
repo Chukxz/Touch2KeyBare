@@ -7,7 +7,6 @@ import threading
 import time
 
 from mapper_module.platform import check_single_instance, get_platform
-
 from mapper_module.utils import (
     DEFAULT_ADB_RATE_CAP, SHORT_DELAY,
     PPS, EMULATORS, ADB_EXE, DEF_EMULATOR_ID,
@@ -231,8 +230,7 @@ class Engine:
         print("[MAIN] - Shutdown complete. Goodbye.")
         os._exit(0)
 
-
-if __name__ == "__main__":
+def run():
     try:
         multiprocessing.set_start_method('spawn', force=True)
     except RuntimeError:
@@ -249,3 +247,6 @@ if __name__ == "__main__":
         engine.start()
     except KeyboardInterrupt:
         engine.shutdown()
+
+if __name__ == "__main__":
+    run()

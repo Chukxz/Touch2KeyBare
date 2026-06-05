@@ -66,9 +66,12 @@ def capture_android_screen(nickname=None, custom_img_folder_name=None, custom_im
     except Exception as e:
         print(f"[ERROR] Toml update failed: {e}")
 
-if __name__ == "__main__":
+def run():
     nickname = input("Enter device nickname [Default 'Device', Blank for Default]: ").strip()
     custom_img_folder_name = input("Enter image folder name [Default 'Image', Blank for Default]: ").strip()
     custom_img_name = input("Enter image name prefix [Default '', Blank for Default]: ").strip()
     
     capture_android_screen(nickname, custom_img_folder_name, custom_img_name)
+
+if __name__ == "__main__":
+    run()

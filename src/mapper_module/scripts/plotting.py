@@ -15,7 +15,6 @@ import datetime
 from pathlib import Path
 
 from mapper_module.platform import get_platform
-
 from mapper_module.utils import (
     CIRCLE, RECT, SCANCODES, DEF_DPI, IMAGES_FOLDER, JSONS_FOLDER,
     TOML_PATH, MOUSE_WHEEL_CODE, SPRINT_DISTANCE_CODE, IDLE, 
@@ -2165,5 +2164,8 @@ class Plotter:
         # Return the coordinate of the winner
         return candidates[0]['pt']
 
-if __name__ == "__main__":
+def run():
     Plotter()
+
+if __name__ == "__main__":
+    run()

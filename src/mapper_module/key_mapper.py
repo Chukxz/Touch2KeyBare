@@ -176,4 +176,3 @@ class KeyMapper():
             self.touch_events_dict.clear()
             self.touch_events_prevs.clear()
             self.mapper.wasd_block = 0
-        

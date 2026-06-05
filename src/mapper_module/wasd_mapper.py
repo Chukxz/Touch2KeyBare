@@ -1,17 +1,9 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from math import sqrt
-from enum import IntFlag
-class State(IntFlag):
-    NONE = 0
-    W = 1 << 0
-    A = 1 << 1
-    S = 1 << 2
-    D = 1 << 3
-
-
 import math
+from enum import IntFlag
+
 from .utils import (
     SCANCODES, UP, DOWN, PRESSED
 )
@@ -20,6 +12,12 @@ if TYPE_CHECKING:
     from .mapper import Mapper
     from .utils import TouchEvent
 
+class State(IntFlag):
+    NONE = 0
+    W = 1 << 0
+    A = 1 << 1
+    S = 1 << 2
+    D = 1 << 3
 
 class WASDMapper():
     def __init__(self, mapper:Mapper):
@@ -172,7 +170,7 @@ class WASDMapper():
         # follows your thumb naturally, even if sensitivity is high.
         outer_sq = self.raw_outer_radius * self.raw_outer_radius
         if dist_sq > outer_sq and outer_sq > 0:
-            dist = sqrt(dist_sq)
+            dist = math.sqrt(dist_sq)
             scale = self.raw_outer_radius / dist
             self.center_x = touch_event.x - (vx * scale)
             self.center_y = touch_event.y - (vy * scale)

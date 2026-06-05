@@ -483,4 +483,3 @@ class TouchReader():
     
     def bind_touch_event(self, touch_event_processor):
         self.touch_event_processor = touch_event_processor
- 

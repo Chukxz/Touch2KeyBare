@@ -29,3 +29,5 @@ def get_platform():
         raise RuntimeError(f"Unsupported platform: {system}")
     
     return InterceptionBridge, WindowManager, SystemConfig, Mapping
+
+__all__ = ["check_single_instance", "get_platform"]

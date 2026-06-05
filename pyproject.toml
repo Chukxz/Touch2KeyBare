@@ -1,1 +1,41 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61.0"]
 
+[project]
+authors = [
+  {name = "Your Name", email = "your.email@example.com"},
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: Microsoft :: Windows",
+]
+dependencies = [
+  "psutil>=5.9.0",
+  "tomlkit>=0.12.0",
+  "pywin32>=306",
+  "Pillow>=10.0.0",
+  "matplotlib>=3.7.0",
+  "PyQt5>=5.15.0",
+]
+description = "A high-performance touch-to-keyboard/mouse mapper for PC gaming."
+name = "touch2key"
+readme = "README.md"
+requires-python = ">=3.10"
+version = "0.1.0"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/touch2key"
+
+[project.scripts]
+capture = "mapper_module.scripts.adb_screen_capture:run"
+plot = "mapper_module.scripts.plotting:run"
+reset = "mapper_module.scripts.hard_reset_toml:run"
+select = "mapper_module.scripts.select_json:run"
+show = "mapper_module.scripts.show:run"
+touch2key = "mapper_module.__main__:run"
+wireless = "mapper_module.scripts.force_wireless:run"
+
+[tool.setuptools.packages.find]
+where = ["src"]

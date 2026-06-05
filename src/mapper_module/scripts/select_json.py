@@ -4,7 +4,7 @@ from tkinter import filedialog
 import json
 from mapper_module.utils import JSONS_FOLDER, update_toml
 
-def select_json_profile():
+def run():
     # Initialize Tkinter and hide the root window
     root = tk.Tk()
     root.withdraw()
@@ -38,6 +38,8 @@ def select_json_profile():
             return
 
     update_toml(image_path="", json_path=file_path, strict=True)
-
+    print(f"\n[SUCCESS]")
+    print(f"Selected JSON: {file_path}")
+    
 if __name__ == "__main__":
-    select_json_profile()
+    run()

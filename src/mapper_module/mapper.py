@@ -244,8 +244,7 @@ class Mapper():
             else:
                 self.acc_x = 0.0
                 self.acc_y = 0.0
-            
-            
+                        
             elapsed = time.perf_counter() - start_time
             sleep_duration = max(0, self.touch_reader.move_interval - elapsed)
             time.sleep(sleep_duration)
