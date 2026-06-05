@@ -154,7 +154,6 @@ def setup_driver():
         print(f"[!] Failed to register driver: {result.stderr.decode()}")
         return False
 
-
 def setup_windows():
     print("--- Touch2Key Setup Wizard ---")
     download_adb()
