@@ -282,10 +282,10 @@ class TouchReader():
 
         real_slots = self.get_max_slots()
         if real_slots > len(self.last_dispatch_times):
-        # Extend to cover new slots
-        while len(self.last_dispatch_times) < real_slots:
-            self.last_dispatch_times.append(0)
-        self.max_slots = real_slots
+            # Extend to cover new slots
+            while len(self.last_dispatch_times) < real_slots:
+                self.last_dispatch_times.append(0)
+            self.max_slots = real_slots
             
         # Physical Device Specs
         res = get_screen_size(self.device)
@@ -412,9 +412,9 @@ class TouchReader():
             matrix_snapshot = self.matrix
 
         # Only update identities if a slot state changed from DOWN or UP
-        needs_identity_update = any(s['state'] in [DOWN, UP] for s in self.slots.values())
-        if needs_identity_update:
-            with self.finger_lock:
+        with self.finger_lock:
+            needs_identity_update = any(s['state'] in [DOWN, UP] for s in self.slots.values())
+            if needs_identity_update:
                 self.update_finger_identities()
                 
         for slot, data in list(self.slots.items()):
