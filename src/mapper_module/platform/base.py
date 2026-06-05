@@ -75,6 +75,7 @@ class AbstractBridge(ABC):
 
     @abstractmethod
     def health_check(self):
+        """Monitors and restarts driver-specific worker processes."""
         pass
     
     @abstractmethod
