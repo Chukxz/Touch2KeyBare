@@ -5,6 +5,7 @@ import keyboard
 import os
 import threading
 import time
+import sys
 
 from mapper_module.platform import check_single_instance, get_platform
 from mapper_module.utils import (
@@ -23,6 +24,8 @@ from mapper_module import (
     KeyMapper,
     WASDMapper,
 )
+
+from mapper_module.scripts.pre_flight import run as pre_flight_run
 
 NAME = "Touch2Key_Engine"
 
@@ -249,4 +252,7 @@ def run():
         engine.shutdown()
 
 if __name__ == "__main__":
+    if not pre_flight_run():
+        sys.exit(1)
+        
     run()
