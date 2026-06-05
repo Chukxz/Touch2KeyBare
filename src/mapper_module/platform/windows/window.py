@@ -1,5 +1,3 @@
-from typing import Any
-
 from ..base import AbstractWindowManager
 import ctypes
 from ctypes import wintypes
