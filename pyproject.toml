@@ -44,7 +44,8 @@ select = "mapper_module.scripts.select_json:run"
 setup = "mapper_module.scripts.setup:run"
 show = "mapper_module.scripts.show:run"
 touch2key = "mapper_module.__main__:run"
-wireless = "mapper_module.scripts.force_wireless:run" 
+wireless = "mapper_module.scripts.force_wireless:run"
+preflight = "mapper_module.scripts.pre_flight:run"
 
 [tool.setuptools.packages.find]
 where = ["src"]

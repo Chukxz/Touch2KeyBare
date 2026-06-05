@@ -20,11 +20,11 @@ def get_platform():
         from .windows.window import WindowManager
         from .windows.system import SystemConfig
         from .windows.mapping import Mapping
-    # elif system == "Linux":
-    #     from .linux.bridge import UInputBridge as InterceptionBridge
-    #     from .linux.window import WindowManager
-    #     from .linux.system import SystemConfig
-    #     from .linux.mapping import Mapping
+    elif system == "Linux":
+        from .linux.bridge import UInputBridge as InterceptionBridge
+        from .linux.window import WindowManager
+        from .linux.system import SystemConfig
+        from .linux.mapping import Mapping
     else:
         raise RuntimeError(f"Unsupported platform: {system}")
     

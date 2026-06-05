@@ -11,3 +11,7 @@
 #         print(f"\n[UTILITY] - {label} set to HIGH (Floating Affinity).")
 #     except Exception as e:
 #         print(f"\n[UTILITY] - Warning: {e}.")
+
+from ..base import AbstractSystemConfig
+
+class SystemConfig(AbstractSystemConfig):...

@@ -15,6 +15,9 @@ from .mapper import Mapper
 from .mouse_mapper import MouseMapper
 from .key_mapper import KeyMapper
 from .wasd_mapper import WASDMapper
+import platform
+
+SYSTEM = platform.system()
 
 __all__ = [
     'MapperEvent',

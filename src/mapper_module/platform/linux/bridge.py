@@ -1,0 +1,3 @@
+from ..base import AbstractBridge
+
+class UInputBridge(AbstractBridge):...
