@@ -26,8 +26,11 @@ SRC_DIR = CURRENT_DIR.parent
 # Go up another level to 'mapper_project' (Root)
 PROJECT_ROOT = SRC_DIR.parent
 
-# Path Assignments'
-ADB_NAME = "adb.exe" if platform.system() == "Windows" else "adb"
+# OS environment 
+SYSTEM = platform.system()
+
+# Path Assignments
+ADB_NAME = "adb.exe" if SYSTEM == "Windows" else "adb"
 ADB_EXE = PROJECT_ROOT / "bin" / "platform-tools" / ADB_NAME
 
 TOML_PATH = PROJECT_ROOT / "settings.toml"
