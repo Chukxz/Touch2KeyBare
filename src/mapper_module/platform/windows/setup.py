@@ -25,23 +25,43 @@ def is_admin():
         return False
 
 def download_adb():
-    """Downloads and extracts Android platform-tools."""
+    """Downloads and extracts Android platform-tools with rollback on failure."""
     print("[+] Ensuring ADB is available...")
-    BIN_DIR.mkdir(exist_ok=True)
-    adb_path = BIN_DIR / "platform-tools" / "adb.exe"
+    BIN_DIR.mkdir(parents=True, exist_ok=True)
     
-    if not adb_path.exists():
-        zip_path = BIN_DIR / "adb.zip"
+    platform_tools_dir = BIN_DIR / "platform-tools"
+    adb_path = platform_tools_dir / "adb.exe"
+    zip_path = BIN_DIR / "adb.zip"
+
+    if adb_path.exists():
+        print("[+] ADB already present.")
+        return
+
+    print("[+] Downloading ADB...")
+    try:
+        # Pre-cleanup
+        if zip_path.exists(): os.remove(zip_path)
+        if platform_tools_dir.exists(): shutil.rmtree(platform_tools_dir)
+
         response = requests.get(ADB_URL, stream=True)
+        response.raise_for_status() # Fails immediately on bad connection
+        
         with open(zip_path, 'wb') as f:
             shutil.copyfileobj(response.raw, f)
-        
+
+        print("[+] Extracting ADB...")
         with zipfile.ZipFile(zip_path, 'r') as z:
             z.extractall(BIN_DIR)
-        os.remove(zip_path)
         print("[+] ADB setup complete.")
-    else:
-        print("[+] ADB already present.")
+
+    except Exception as e:
+        print(f"\n[!] Error during ADB setup: {e}")
+        if platform_tools_dir.exists():
+            shutil.rmtree(platform_tools_dir)
+        sys.exit(1)
+    finally:
+        if zip_path.exists():
+            os.remove(zip_path)
 
 def download_interception():
     """Fetches and extracts the latest Interception release from GitHub."""
@@ -108,6 +128,17 @@ def download_interception():
 
 def setup_driver():
     """Handles the one-time driver registration and returns True if a reboot is needed."""
+    
+    # 1. Check if it's already installed!
+    try:
+        import interception
+        # If this imports successfully without throwing an error, the driver is likely active.
+        # (Assuming the python wrapper is installed and detects the driver)
+        print("[+] Interception driver is already installed and active.")
+        return False # No reboot needed
+    except ImportError:
+        pass # Not installed or not active, proceed with installation
+
     if not is_admin():
         print("[!] Driver registration requires Admin rights.")
         print("[+] Please re-run this setup script as Administrator.")
@@ -115,13 +146,14 @@ def setup_driver():
 
     print("[+] Registering Interception driver...")
     result = subprocess.run([str(INTERCEPTION_EXE), "/install"], capture_output=True)
-    
+
     if result.returncode == 0:
         print("[+] Driver registered successfully!")
         return True  # True means a reboot is required
     else:
         print(f"[!] Failed to register driver: {result.stderr.decode()}")
         return False
+
 
 def setup_windows():
     print("--- Touch2Key Setup Wizard ---")
