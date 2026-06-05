@@ -1,4 +1,4 @@
-from mapper_module import SYSTEM
+from mapper_module.utils import SYSTEM
 
 def check_single_instance(instance_name):
     """Create a unique mutex to prevent duplicate instances (Cross-Platform safe)."""
