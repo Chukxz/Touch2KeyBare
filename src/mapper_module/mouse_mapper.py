@@ -125,6 +125,8 @@ class MouseMapper():
                     args=(touchevent,), 
                     daemon=True
                 ).start()
+                else:
+                    self.tap_in_progress = False
   
         self.timestamp = 0.0   
     
