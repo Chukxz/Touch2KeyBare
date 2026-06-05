@@ -37,15 +37,15 @@ version = "0.1.0"
 Homepage = "https://github.com/Chukxz/Touch2Key"
 
 [project.scripts]
-capture = "mapper_module.scripts.adb_screen_capture:run"
-plot = "mapper_module.scripts.plotting:run"
-reset = "mapper_module.scripts.hard_reset_toml:run"
-select = "mapper_module.scripts.select_json:run"
-setup = "mapper_module.scripts.setup:run"
-show = "mapper_module.scripts.show:run"
+touch2key-capture = "mapper_module.scripts.adb_screen_capture:run"
+touch2key-plot = "mapper_module.scripts.plotting:run"
+touch2key-reset = "mapper_module.scripts.hard_reset_toml:run"
+touch2key-select = "mapper_module.scripts.select_json:run"
+touch2key-setup = "mapper_module.scripts.setup:run"
+touch2key-show = "mapper_module.scripts.show:run"
 touch2key = "mapper_module.__main__:run"
-wireless = "mapper_module.scripts.force_wireless:run"
-preflight = "mapper_module.scripts.pre_flight:run"
+touch2key-wireless = "mapper_module.scripts.force_wireless:run"
+touch2key-preflight = "mapper_module.scripts.pre_flight:run"
 
 [tool.setuptools.packages.find]
 where = ["src"]
