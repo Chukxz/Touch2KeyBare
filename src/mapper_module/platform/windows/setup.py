@@ -12,7 +12,6 @@ from mapper_module.utils import PROJECT_ROOT
 BIN_DIR = PROJECT_ROOT / "bin"
 
 ADB_URL = "https://dl.google.com/android/repository/platform-tools-latest-windows.zip"
-# Updated Configuration at the top of your file
 
 INTERCEPTION_API_URL = "https://api.github.com/repos/oblitum/Interception/releases/latest"
 
@@ -90,7 +89,7 @@ def download_interception():
         with open(zip_path, 'wb') as f:
             shutil.copyfileobj(zip_response.raw, f)
 
-        # 5. Extract the zip
+        # Extract the zip
         print("[+] Extracting Interception...")
         with zipfile.ZipFile(zip_path, 'r') as z:
             z.extractall(BIN_DIR)
