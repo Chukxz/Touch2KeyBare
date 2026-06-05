@@ -1,3 +1,4 @@
+from typing import Any
 from ..base import AbstractWindowManager
 import ctypes
 from ctypes import wintypes
@@ -38,8 +39,8 @@ class WindowManager(AbstractWindowManager):
         ctypes.windll.user32.GetClassNameW(hwnd, buffer, MAX_CLASS_NAME)
         return buffer.value
 
-    def find_window_by_title(self, title: str) -> int|None:
-        title = ctypes.windll.user32.FindWindowW(None, title)
+    def find_window_by_title(self, title: str) -> Any | None:
+        hwnd = ctypes.windll.user32.FindWindowW(None, title)
         return hwnd if hwnd != 0 else None
 
     def enum_class_windows_callback(self, hwnd: wintypes.HWND, lParam: wintypes.LPARAM) -> bool:
@@ -56,7 +57,7 @@ class WindowManager(AbstractWindowManager):
             results.append(hwnd)
         return True
 
-    def find_hwnds_by_class(self, class_name: str| None) -> list:
+    def find_hwnds_by_class(self, class_name: str | None) -> list:
         results = []
         data = ctypes.py_object({
             'class_name': class_name,

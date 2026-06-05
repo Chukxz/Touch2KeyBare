@@ -1,3 +1,4 @@
+from typing import Any
 from abc import ABC, abstractmethod
 
 class AbstractWindowManager(ABC):
@@ -14,10 +15,10 @@ class AbstractWindowManager(ABC):
     def get_window_class_name(self, hwnd) -> str: pass
     
     @abstractmethod
-    def find_window_by_title(self, title: str) -> int|None: pass
+    def find_window_by_title(self, title: str) -> Any | None: pass
     
     @abstractmethod
-    def find_hwnds_by_class(self, class_name: str|None) -> list: pass
+    def find_hwnds_by_class(self, class_name: str | None) -> list: pass
     
     @abstractmethod
     def get_client_rect(self, hwnd) -> tuple[int, int]: pass
