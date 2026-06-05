@@ -10,8 +10,13 @@ from mapper_module.utils import PROJECT_ROOT
 
 # Configuration
 BIN_DIR = PROJECT_ROOT / "bin"
+
 ADB_URL = "https://dl.google.com/android/repository/platform-tools-latest-windows.zip"
-INTERCEPTION_EXE = BIN_DIR / "interception" / "install-interception.exe"
+# Updated Configuration at the top of your file
+
+INTERCEPTION_API_URL = "https://api.github.com/repos/oblitum/Interception/releases/latest"
+
+INTERCEPTION_EXE = BIN_DIR / "Interception" / "command line installer" / "install-interception.exe"
 
 def is_admin():
     """Checks if the script is running with administrative privileges."""
@@ -39,6 +44,69 @@ def download_adb():
     else:
         print("[+] ADB already present.")
 
+def download_interception():
+    """Fetches and extracts the latest Interception release from GitHub."""
+    print("[+] Ensuring Interception driver files are available...")
+    
+    # Interception zip structure usually extracts to a folder named "Interception"
+    interception_dir = BIN_DIR / "Interception" 
+    installer_exe = interception_dir / "command line installer" / "install-interception.exe"
+    zip_path = BIN_DIR / "interception.zip"
+
+    # If we already have the installer, skip the download
+    if installer_exe.exists():
+        print("[+] Interception files already present.")
+        return
+
+    print("[+] Querying GitHub for latest Interception release...")
+    try:
+        # Clean up from any previous failed attempts
+        if zip_path.exists():
+            os.remove(zip_path)
+        if interception_dir.exists():
+            shutil.rmtree(interception_dir)
+
+        # Use GitHub API to get the latest release data
+        api_response = requests.get(INTERCEPTION_API_URL)
+        api_response.raise_for_status()
+        
+        release_data = api_response.json()
+        
+        # Find the zip file URL in the release assets
+        download_url = None
+        for asset in release_data.get("assets", []):
+            if asset["name"].endswith(".zip"):
+                download_url = asset["browser_download_url"]
+                break
+                
+        if not download_url:
+            raise ValueError("Could not find a .zip asset in the latest release.")
+
+        # Download the zip
+        print(f"[+] Downloading Interception ({release_data['tag_name']})...")
+        zip_response = requests.get(download_url, stream=True)
+        zip_response.raise_for_status()
+        
+        with open(zip_path, 'wb') as f:
+            shutil.copyfileobj(zip_response.raw, f)
+
+        # 5. Extract the zip
+        print("[+] Extracting Interception...")
+        with zipfile.ZipFile(zip_path, 'r') as z:
+            z.extractall(BIN_DIR)
+
+        print("[+] Interception download complete.")
+
+    except Exception as e:
+        print(f"\n[!] Error downloading Interception: {e}")
+        if interception_dir.exists():
+            shutil.rmtree(interception_dir)
+        sys.exit(1)
+
+    finally:
+        if zip_path.exists():
+            os.remove(zip_path)
+
 def setup_driver():
     """Handles the one-time driver registration and returns True if a reboot is needed."""
     if not is_admin():
@@ -59,7 +127,8 @@ def setup_driver():
 def setup_windows():
     print("--- Touch2Key Setup Wizard ---")
     download_adb()
-    
+    download_interception()
+
     # Track if the driver was actually installed during this run
     needs_reboot = setup_driver()
 
