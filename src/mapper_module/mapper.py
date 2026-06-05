@@ -85,7 +85,7 @@ class Mapper():
             print(f"\n[MAPPER] - Found window '{window_title}' (Class: {class_name}).")
         else:
             _str = f"\n[MAPPER] - Window class name could not be gotten for window: '{window_title}'."
-            raise RuntimeError(_str)            
+            raise RuntimeError(_str)
         return class_name
 
     def get_window_info(self, hwnd):
