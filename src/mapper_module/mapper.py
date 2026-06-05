@@ -80,7 +80,7 @@ class Mapper():
     
         class_name = None            
         hwnd = self.window_manager.find_window_by_title(window_title)
-        if hwnd != 0:
+        if hwnd is not None:
             class_name = self.window_manager.get_window_class_name(hwnd)
             print(f"\n[MAPPER] - Found window '{window_title}' (Class: {class_name}).")
         else:
