@@ -73,8 +73,7 @@ class TouchReader():
 
     # FINGER IDENTITY LOGIC    
     def update_finger_identities(self):
-        """
-        If the cursor is visible use slot 0 as the Mouse finger and clear the WASD finger else identify the oldest finger on each side to assign as the dedicated Mouse or WASD finger.
+        """Identify the oldest finger on each side to assign as the dedicated Mouse or WASD finger.
         """
         
         if self.is_visible:            
