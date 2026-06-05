@@ -299,7 +299,7 @@ class TouchReader():
         self.scale_x = self.width / self.json_width
         self.scale_y = self.height / self.json_height
         
-        print(f"\n[TOUCHREADER] - Auto-Scaling Active: X={self.scale_x:.2f}, Y={self.scale_y:.2f}.")
+        print(f"\n[TOUCHREADER] - Auto-Scaling Active: X={self.scale_x:.2f}, Y={self.scale_y:.2f}. Max slots: {self.max_slots}.")
           
 
     def get_touches(self):
