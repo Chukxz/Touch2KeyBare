@@ -5,7 +5,6 @@ import time
 import threading
 
 from mapper_module.platform import get_platform
-
 from mapper_module.utils import (
     DEF_DPI, LONG_DELAY, WINDOW_UPDATE_INTERVAL, SCANCODES,
     MapperEvent, rotate_resolution
@@ -15,7 +14,6 @@ if TYPE_CHECKING:
     from .json_loader import JSONLoader
     from .touch_reader import TouchReader
     from mapper_module.platform.base import AbstractBridge
-
 
 class Mapper():
     def __init__(self, json_loader:JSONLoader, touch_reader:TouchReader, interception_bridge:AbstractBridge, pps:float, emulator:dict[str, str]):
