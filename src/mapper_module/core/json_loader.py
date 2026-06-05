@@ -7,7 +7,6 @@ import time
 import keyboard
 
 from mapper_module.platform import get_platform
-
 from mapper_module.utils import (
     MapperEvent, CIRCLE, RECT, RELOAD_DELAY,
     create_default_toml, update_toml
