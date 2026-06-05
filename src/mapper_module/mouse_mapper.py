@@ -55,8 +55,8 @@ class MouseMapper():
 
             self.scaling_factor = base_sens * resolution_ratio
             
-            print(f"\n[MOUSEMAPPER] - Sync: PC width ({pc_w}px) / Phone width ({dev_w}px) = Ratio ({resolution_ratio:.2f}).")
-            print(f"\n[MOUSEMAPPER] - Final Scaling Factor: {self.scaling_factor:.4f} (User Sensitivity: {base_sens}x).")
+            print(f"\n[MOUSEMAPPER] - Sync: PC width ({pc_w}px) / Phone width ({dev_w}px) = Ratio ({resolution_ratio:.2f}).\
+                    \n[MOUSEMAPPER] - Final Scaling Factor: {self.scaling_factor:.4f} (User Sensitivity: {base_sens}x).")
 
         except Exception as e:
             print(f"\n[MOUSEMAPPER] - Mouse config update failed: {e}.")

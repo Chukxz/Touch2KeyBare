@@ -322,7 +322,7 @@ def create_default_toml():
     system.add("left_handed", False)
     system.add("hud_image_path", "")
     system.add("json_path", "")
-    system.add("json_dev_res",) 
+    system.add("json_dev_res", [360, 800]) 
     system.add("json_dev_dpi", 160)
     doc.add("system", system)
 
@@ -333,8 +333,8 @@ def create_default_toml():
     joystick = tomlkit.table()
     joystick.add("deadzone", 0.1)
     joystick.add("hysteresis", 5.0)
-    joystick.add("mouse_wheel_radius", 0.0)
-    joystick.add("sprint_distance", 0.0)
+    joystick.add("mouse_wheel_radius", 50.0)
+    joystick.add("sprint_distance", 10.0)
     doc.add("joystick", joystick)
 
     try:
@@ -352,17 +352,24 @@ def update_toml(w=None, h=None, dpi=None, image_path=None, json_path=None, mouse
 
         with open(TOML_PATH, "r", encoding="utf-8") as f:
             doc = tomlkit.load(f)
-
-        if "system" not in doc: doc.add("system", tomlkit.table())
-        if "joystick" not in doc: doc.add("joystick", tomlkit.table())
+            
+        table_keys = doc.keys()
+        if "joystick" not in doc: joystick = doc.append("joystick", tomlkit.table())
+        else: joystick = doc.get('joystick', tomlkit.table)
+        if "system" not in table_keys: system = doc.append("system", tomlkit.table())
+        else: system = doc.get('system', tomlkit.table())
         
-        if mouse_wheel_radius is not None: doc.get("system", tomlkit.table())["mouse_wheel_radius"] = mouse_wheel_radius
-        if sprint_distance is not None: doc.get("system", tomlkit.table())["sprint_distance"] = sprint_distance
+        if mouse_wheel_radius is not None: joystick.update({'mouse_wheel_radius': mouse_wheel_radius})
+        if sprint_distance is not None: joystick.update({'sprint_distance': sprint_distance})
                        
-        if w and h: doc.get("system", tomlkit.table())["json_dev_res"] = [w, h]
-        if dpi: doc.get("system", tomlkit.table())["json_dev_dpi"] = dpi        
-        if image_path is not None: doc.get("system", tomlkit.table())["hud_image_path"] = Path(image_path).as_posix() if image_path else ""           
-        if json_path is not None: doc.get("system", tomlkit.table())["json_path"] = Path(json_path).as_posix() if json_path else ""
+        if w and h: system.update({"json_dev_res": [w, h]})
+        if dpi: system.update({"json_dev_dpi": dpi})
+        
+        i_path = Path(image_path).as_posix() if image_path else ""
+        if image_path is not None: system.update({'hud_image_path': i_path})
+        
+        j_path = Path(json_path).as_posix() if json_path else ""
+        if json_path is not None: system.update({'json_path': j_path})
 
         with open(TOML_PATH, "w", encoding="utf-8") as f:
             tomlkit.dump(doc, f)

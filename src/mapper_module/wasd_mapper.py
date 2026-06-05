@@ -136,9 +136,9 @@ class WASDMapper():
         dz_px = effective_inner * self.deadzone
         self.deadzone_sq = dz_px * dz_px
         
-        print(f"\n[WASDMAPPER] - Shared Sensitivity: {sens}x")
-        print(f"             - Walk Distance: {dz_px:.1f}px (was {self.raw_inner_radius * self.deadzone:.1f}px)")
-        print(f"             - Sprint Distance: {effective_inner:.1f}px (was {self.raw_inner_radius:.1f}px)\n")
+        print(f"\n[WASDMAPPER] - Shared Sensitivity: {sens}x\
+                \n             - Walk Distance: {dz_px:.1f}px (was {self.raw_inner_radius * self.deadzone:.1f}px\
+                \n             - Sprint Distance: {effective_inner:.1f}px (was {self.raw_inner_radius:.1f}px)")
 
     def on_wasd_block(self):
         if self.mapper.wasd_block > 0:

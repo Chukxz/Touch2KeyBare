@@ -133,7 +133,8 @@ def mouse_worker(m_queue:Queue):
                 _sleep(CONSTANT_DWELL)
 
         except Exception as e:
-            print("\n[UTILITY] - Mouse worker timed out. Releasing buttons.")
+            pressed_buttons = sum([left_down, right_down, middle_down])
+            print(f"\n[UTILITY] - Mouse worker timed out. Releasing {pressed_buttons} buttons.")
             if left_down:
                 m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, LEFT_BUTTON_UP, 0, 0, 0))
             if right_down:
@@ -147,6 +148,6 @@ def mouse_worker(m_queue:Queue):
             
             # An error occured, end the loop
             else:
-                print(f"\n[UTILITY] - Releasing buttons.\nMouse Worker crashed: {e}")
+                print(f"\n[UTILITY] - Releasing {pressed_buttons} buttons.\nMouse Worker crashed: {e}")
                 running = False
                 

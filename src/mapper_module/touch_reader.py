@@ -315,7 +315,7 @@ class TouchReader():
                     self.device = None
                 if not self.touch_lost:
                     self.touch_lost = True
-                    print(f"\n[TOUCHREADER] - Error: {e}. ADB Device disconnected. Attempting to connect...")
+                    print(f"{e}\n[TOUCHREADER] - Error: ADB Device disconnected. Attempting to connect...")
                 
                 time.sleep(LONG_DELAY)
                 continue

@@ -65,12 +65,14 @@ class AppConfig:
         
     def switch_handedness(self):
         """Toggles left-handed mode in config and saves."""
+        
         with self.config_lock:
-            system_config = self.get('system')
-            current_value = system_config.get('left_handed', False)
+            config_system = self.get('system')
+            current_value = config_system.get('left_handed', False)
             new_value = not current_value
-            system_config['left_handed'] = new_value
-            self.config_data['system'] = system_config
+            config_system['left_handed'] = new_value
+            
+            self.config_data['system'] = config_system
         
         # Save back to disk
         try:

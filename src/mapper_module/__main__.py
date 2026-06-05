@@ -236,7 +236,7 @@ def run():
     except RuntimeError:
         pass
     
-    success, mutex_handle = check_single_instance(NAME)
+    success, _ = check_single_instance(NAME)
     if not success:
         print("[MAIN] - Another instance of Touch2Key is already running. Exiting this instance.")
         os._exit(0)

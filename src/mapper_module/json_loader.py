@@ -31,6 +31,12 @@ class JSONLoader():
         self.json_data: list[tuple[str, dict]] = []
         self.last_reload_time = 0
         
+        # Default values
+        self.width, self.height = self.config.get('system', {}).get('json_dev_res', [360, 800])
+        self.dpi = self.config.get('system', {}).get('json_dev_dpi', 160)
+        self.mouse_wheel_radius = self.config.get('joystick', {}).get('mouse_wheel_radius', 50.0)
+        self.sprint_distance = self.config.get('joystick', {}).get('sprint_distance', 10.0)
+        
         # Load immediately
         self.load_json()
         
@@ -118,31 +124,36 @@ class JSONLoader():
         
     def process_json(self, json_file_path):
         normalized_zones: list[tuple[str, dict]] = []
+        data = {}
         
-        if not os.path.exists(json_file_path):
-            _str = f"\n[JSONLOADER] - Error: File '{json_file_path}' not found."
-            raise RuntimeError(_str)
+        try:
+            if not os.path.exists(json_file_path):
+                _str = f"\n[JSONLOADER] - Error: File '{json_file_path}' not found."
+                raise FileNotFoundError(_str)
 
-        with open(json_file_path, mode='r', encoding='utf-8') as f:
-            try:
-                data = json.load(f)
-            except json.JSONDecodeError as e:
-                _str = f"\n[JSONLOADER] - Invalid JSON syntax in '{json_file_path}': {e}."
-                raise RuntimeError(_str)
+            with open(json_file_path, mode='r', encoding='utf-8') as f:
+                try:
+                    data = json.load(f)
+                except json.JSONDecodeError as e:
+                    _str = f"\n[JSONLOADER] - Invalid JSON syntax in '{json_file_path}': {e}."
+                    raise SyntaxError(_str)
+                
+        except (FileNotFoundError, SyntaxError) as e:
+            print(e)        
 
+        content = []
+        
         try:
             metadata = data["metadata"]
             content = data["content"]
-            screen_width = metadata["width"]
-            screen_height = metadata["height"]
+            self.width = metadata["width"]
+            self.height = metadata["height"]
             self.dpi = metadata["dpi"]
             self.mouse_wheel_radius = metadata["mouse_wheel_radius"]
             self.sprint_distance = metadata["sprint_distance"]
+            
         except (KeyError, TypeError) as e:
-            raise RuntimeError(f"\n[JSONLOADER] - Error loading json file: {e}.")
-
-        self.width = screen_width
-        self.height = screen_height
+            print(f"\n[JSONLOADER] - Error parsing JSON: {e} not found.")
 
         for item in content:
             scancode: str | None = item.get("scancode")
@@ -159,15 +170,15 @@ class JSONLoader():
             
             try:
                 if is_circ:
-                    zone_data['cx'] = float(item['cx']) / screen_width
-                    zone_data['cy'] = float(item['cy']) / screen_height
-                    zone_data['r'] = float(item['val1']) / screen_width
+                    zone_data['cx'] = float(item['cx']) / self.width
+                    zone_data['cy'] = float(item['cy']) / self.height
+                    zone_data['r'] = float(item['val1']) / self.width
 
                 elif is_rect:
-                    zone_data['x1'] = float(item['val1']) / screen_width
-                    zone_data['y1'] = float(item['val2']) / screen_height
-                    zone_data['x2'] = float(item['val3']) / screen_width
-                    zone_data['y2'] = float(item['val4']) / screen_height
+                    zone_data['x1'] = float(item['val1']) / self.width
+                    zone_data['y1'] = float(item['val2']) / self.height
+                    zone_data['x2'] = float(item['val3']) / self.width
+                    zone_data['y2'] = float(item['val4']) / self.height
                 
                 zone_data['move_camera'] = bool(item.get('move_camera', False))
                 
