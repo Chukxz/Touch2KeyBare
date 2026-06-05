@@ -27,7 +27,8 @@ class MouseMapper():
         self.left_down = False
         self.scaling_factor = 1.0
         self.timestamp = 0.0
-
+        
+        self.tap_in_progress = False
         self.update_config()
 
         # Register Callbacks
@@ -111,13 +112,15 @@ class MouseMapper():
             self.left_down = False
         
         if touchevent is not None and not is_visible:
-            now = touchevent.timestamp
-            temporal_diff = now - self.timestamp
-            spatial_diff_squared = (touchevent.sx - touchevent.x)**2 + (touchevent.sy - touchevent.y)**2
-            tap_slop_px_squared = self.mapper.dp_to_px(TAP_SLOP_DP)**2
+            if not self.tap_in_progress:
+                self.tap_in_progress = True
+                now = touchevent.timestamp
+                temporal_diff = now - self.timestamp
+                spatial_diff_squared = (touchevent.sx - touchevent.x)**2 + (touchevent.sy - touchevent.y)**2
+                tap_slop_px_squared = self.mapper.dp_to_px(TAP_SLOP_DP)**2
             
-            if temporal_diff <= TAP_MAX_TIME and spatial_diff_squared <= tap_slop_px_squared:
-                threading.Thread(
+                if temporal_diff <= TAP_MAX_TIME and spatial_diff_squared <= tap_slop_px_squared:
+                    threading.Thread(
                     target=self.toggle_key_mouse_sequence, 
                     args=(touchevent,), 
                     daemon=True
@@ -131,7 +134,8 @@ class MouseMapper():
         self.left_click_mouse(touchevent)
         _sleep(_uniform(0.06, 0.18))        
         self.tap_toggle_key()
-        
+        self.tap_in_progress = False
+
     def tap_toggle_key(self):
         if self.mapper.toggle_key_scancode:
             self.interception_bridge.key_down(self.mapper.toggle_key_scancode)
