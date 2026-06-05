@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from mapper_module.utils import SYSTEM
+from mapper_module.utils import SYSTEM, PROJECT_ROOT
 
 def check_adb():
     """Verify ADB is available."""
@@ -8,8 +8,8 @@ def check_adb():
     if shutil.which("adb"):
         return True
     
-    # Optional: check your custom bin/ directory
-    bin_adb = Path(__file__).resolve().parent.parent.parent.parent / "bin" / "platform-tools" / "adb.exe"
+    # Check custom bin/ directory
+    bin_adb = PROJECT_ROOT / "bin" / "platform-tools" / "adb.exe"
     if bin_adb.exists():
         return True
         
