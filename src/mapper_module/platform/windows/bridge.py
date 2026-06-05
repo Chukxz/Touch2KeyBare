@@ -89,7 +89,6 @@ class InterceptionBridge(AbstractBridge):
         except Exception: pass
 
     def health_check(self):
-        """Monitors and restarts driver-specific worker processes."""
         with self.bridge_lock:
             # Check Keyboard Worker
             if not self.k_proc.is_alive():
