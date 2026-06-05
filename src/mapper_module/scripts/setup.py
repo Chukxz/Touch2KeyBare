@@ -1,5 +1,5 @@
 import sys
-from mapper_module import SYSTEM
+from mapper_module.utils import SYSTEM
 
 def run():
     print(f"--- Setting up for {SYSTEM} ---")
