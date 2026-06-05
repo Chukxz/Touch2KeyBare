@@ -1,5 +1,3 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING, Any
 from abc import ABC, abstractmethod
 
 class AbstractWindowManager(ABC):
