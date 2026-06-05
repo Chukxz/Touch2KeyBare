@@ -6,10 +6,10 @@ from pathlib import Path
 import tomlkit
 from tomlkit.exceptions import ParseError
 import keyboard
-from ..utils import  MapperEvent, TOML_PATH, create_default_toml
+from mapper_module.utils import MapperEvent, TOML_PATH, create_default_toml
 
 if TYPE_CHECKING:
-    from ..utils import MapperEventDispatcher
+    from mapper_module.utils import MapperEventDispatcher
 
 class AppConfig:
     def __init__(self, mapper_event_dispatcher:MapperEventDispatcher):
@@ -87,4 +87,3 @@ class AppConfig:
 
     def get(self, key, default=None):
         return self.config_data.get(key, default if default is not None else {})
-#
