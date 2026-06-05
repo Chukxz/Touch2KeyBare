@@ -6,10 +6,11 @@ import sys
 import shutil
 import requests
 import zipfile
-from pathlib import Path
+
+from mapper_module.utils import PROJECT_ROOT
 
 # Configuration
-BIN_DIR = Path(__file__).resolve().parent.parent.parent.parent / "bin"
+BIN_DIR = PROJECT_ROOT / "bin"
 ADB_URL = "https://dl.google.com/android/repository/platform-tools-latest-windows.zip"
 INTERCEPTION_EXE = BIN_DIR / "interception" / "install-interception.exe"
 
