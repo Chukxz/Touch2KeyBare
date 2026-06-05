@@ -15,9 +15,6 @@ class AbstractWindowManager(ABC):
     
     @abstractmethod
     def find_window_by_title(self, title: str) -> int|None: pass
-
-    @abstractmethod
-    def enum_class_windows_callback(self, hwnd, lParam) -> bool: pass
     
     @abstractmethod
     def find_hwnds_by_class(self, class_name: str|None) -> list: pass
@@ -33,9 +30,6 @@ class AbstractWindowManager(ABC):
 
     @abstractmethod
     def get_screen_metrics(self) -> tuple[int, int]: pass
-
-    @abstractmethod
-    def enum_title_windows_callback(self, hwnd, results: dict) -> None: pass
     
     @abstractmethod
     def find_window_titles(self) -> dict: pass
