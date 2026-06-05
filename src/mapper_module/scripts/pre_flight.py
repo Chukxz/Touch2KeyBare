@@ -41,7 +41,7 @@ def run():
     
     if failed:
         print(f"[!] Pre-flight failed: {', '.join(failed)} missing or unavailable.")
-        print("[+] Please run 'setup' to configure environment.")
+        print("[+] Please run 'touch2key-setup' to configure environment.")
         return False
         
     print("[+] Pre-flight checks passed.")
