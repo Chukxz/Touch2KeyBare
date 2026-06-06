@@ -1,4 +1,3 @@
-
 # 🎮 Touch2Key
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -22,12 +21,23 @@
    cd Touch2Key
    pip install .
 
+## 🗑️ Uninstallation
+Because Touch2Key installs system-level drivers and kernel rules, **simply running `pip uninstall Touch2Key` is not sufficient.** You must use the included uninstaller.
+
+| Action | Command | Description |
+| :--- | :--- | :--- |
+| **Standard** | `touch2key-uninstall` | Removes drivers/binaries; preserves your custom mappings/images. |
+| **Purge** | `touch2key-uninstall --purge` | Removes drivers/binaries **AND** deletes all saved mappings/images. |
+
+*(Note: Windows requires a system reboot after uninstallation to fully release the driver).*
+
 ## 🛠️ Command Line Interface (CLI)
 | Command | Description |
 | :--- | :--- |
 | `touch2key` | Launches the main engine. |
 | `touch2key-setup` | OS configuration wizard. |
-| `touch2key-preflight`| Diagnostic checks. |
+| `touch2key-uninstall` | Safely removes drivers and binaries. |
+| `touch2key-preflight` | Diagnostic checks. |
 | `touch2key-capture` | ADB screen capture. |
 | `touch2key-wireless` | Force ADB wireless connection. |
 | `touch2key-plot` | Mapping visualizer. |
