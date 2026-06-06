@@ -57,6 +57,8 @@ touch2key-show = "mapper_module.scripts.show:run"
 touch2key = "mapper_module.__main__:run"
 touch2key-wireless = "mapper_module.scripts.force_wireless:run"
 touch2key-preflight = "mapper_module.scripts.pre_flight:run"
+touch2key-uninstall = "mapper_module.scripts.uninstall:run"
+
 
 [tool.setuptools.packages.find]
 where = ["src"]
