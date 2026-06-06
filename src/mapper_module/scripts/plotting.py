@@ -1842,10 +1842,23 @@ class Plotter:
                 print("[!] Image is external. Saving JSON to root folder.")
                 target_dir = Path(JSONS_FOLDER)
                 
-            file_path = target_dir / f"{user_name}.json"
-            self.json_path = file_path     
+            file_path = target_dir / f"{user_name}.json"     
             target_dir.mkdir(parents=True, exist_ok=True)
-                  
+              
+        if file_path.exists() and not (self.buffer_default and self.json_path == file_path):
+            # Create a temporary root to show the dialog
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes('-topmost', True)
+       
+            overwrite = messagebox.askyesno("Overwrite", f"File '{file_path.name}' already exists. Overwrite?")
+            root.destroy()
+            
+            if not overwrite:
+                print("[!] Save cancelled by user.")
+                self.update_title(f"Save cancelled | {HELP_STR}")
+                return
+        
         output = []  
         
         for _, data in self.shapes.items():
@@ -1901,6 +1914,8 @@ class Plotter:
                 str(self.image_path), str(file_path), 
                 self.mouse_wheel_radius, self.sprint_distance, True
             )
+
+            self.json_path = file_path
 
         except Exception as e:
             print(f"[!] Export Error: {e}")
