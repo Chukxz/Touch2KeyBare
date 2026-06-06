@@ -9,7 +9,7 @@ import tomlkit
 import math
 import os
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 import json
 import datetime
 from pathlib import Path
@@ -1523,46 +1523,11 @@ class Plotter:
                     uid = int(self.input_buffer)
                     
                     if uid in self.shapes:
-                        # Cascade deletion check
-                        deleted_key_name = self.shapes[uid]['interception_key']
-                        
-                        if deleted_key_name == MOUSE_WHEEL_CODE:
-                            # Search for the dependent Sprint point
-                            sprint_uid = None
-                            for k, v in self.shapes.items():
-                                if v['interception_key'] == SPRINT_DISTANCE_CODE:
-                                    sprint_uid = k
-                                    break
+                        if key == 'enter' and uid in self.shapes:
+                            self.delete_entry(uid) 
+                            self.update_title(f"Deleted ID {uid}. Returning to IDLE...")
+                            self.reset_state()
                             
-                            if sprint_uid is not None:
-                                print(f"[System] Auto-deleting Sprint Point (ID {sprint_uid}) because Joystick was deleted.")
-                                self.delete_entry(sprint_uid)
-                        
-                        self.delete_entry(uid)
-                        
-                        # Check if specific special keys still exist
-                        has_wheel = any(v['interception_key'] == MOUSE_WHEEL_CODE for v in self.shapes.values())
-                        has_sprint = any(v['interception_key'] == SPRINT_DISTANCE_CODE for v in self.shapes.values())
-
-                        if not has_wheel:
-                            self.saved_mouse_wheel = False
-                            self.mouse_wheel_radius = 0.0
-                            self.mouse_wheel_cx = 0.0
-                            self.mouse_wheel_cy = 0.0
-                        
-                        if not has_sprint:
-                            self.saved_sprint_distance = False
-                            self.sprint_artist_id = None
-                            self.sprint_distance = 0.0
-                        
-                        if self.saved_mouse_wheel and any(v['interception_key'] == MOUSE_WHEEL_CODE for v in self.shapes.values()) == False:
-                            self.saved_mouse_wheel = False
-                        if self.saved_sprint_distance and any(v['interception_key'] == SPRINT_DISTANCE_CODE for v in self.shapes.values()) == False:
-                            self.saved_sprint_distance = False
-                            self.sprint_artist_id = None
-                            
-                        self.update_title(f"Deleted ID {uid}. Returning to IDLE...")
-                        self.reset_state()
                     else:
                         print(f"[!] ID {uid} not found.")
                         self.update_title(f"Error: ID {uid} not found. Try again or Press ESC to Cancel.")
@@ -1587,19 +1552,31 @@ class Plotter:
         if uid not in self.shapes:
             return
         
+        shape_data = self.shapes[uid]
+        interception_key = shape_data['interception_key']
+        shape_type = shape_data['type']
+        hex_code = shape_data['m_code']
+        
+        # CENTRALIZED CASCADE LOGIC
+        if interception_key == MOUSE_WHEEL_CODE:
+            # Delete dependent Sprint points automatically
+            sprint_uids = [k for k, v in self.shapes.items() if v['interception_key'] == SPRINT_DISTANCE_CODE]
+            for sid in sprint_uids:
+                self.delete_entry(sid) # Recursive call cleans the child
+
+            self.saved_mouse_wheel = False
+            self.mouse_wheel_radius = 0.0
+            self.mouse_wheel_cx = 0.0
+            self.mouse_wheel_cy = 0.0
+        
+        elif interception_key == SPRINT_DISTANCE_CODE:
+            self.saved_sprint_distance = False
+            self.sprint_artist_id = None
+            self.sprint_distance = 0.0
+                            
         if self.current_draggable_id in [f"shape_{uid}", f"label_{uid}"]:
             self.current_draggable_id = None
             self.current_draggable = None
-        
-        shape_type = self.shapes[uid]['type']
-        interception_key = self.shapes[uid]['interception_key']
-        hex_code = self.shapes[uid]['m_code']
-
-        if uid == self.sprint_artist_id:
-            print(f"[System] Sprint Point (ID {uid}) deleted. Resetting tracking.")
-            self.sprint_artist_id = None
-            self.saved_sprint_distance = False
-            self.sprint_distance = 0.0
 
         del self.shapes[uid]
 

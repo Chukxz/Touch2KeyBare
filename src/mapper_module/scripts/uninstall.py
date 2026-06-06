@@ -2,6 +2,8 @@ import os
 import shutil
 import argparse
 import subprocess
+import tkinter as tk
+from tkinter import messagebox
 from pathlib import Path
 from mapper_module.utils import (
     PROJECT_ROOT, SYSTEM, IMAGES_FOLDER, JSONS_FOLDER
@@ -9,27 +11,40 @@ from mapper_module.utils import (
 
 BIN_DIR = PROJECT_ROOT / "bin"
 
+def confirm_uninstall(message):
+    """Fallback-safe confirmation dialog."""
+    try:
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes('-topmost', True)
+        answer = messagebox.askyesno("Touch2Key Uninstall", message)
+        root.destroy()
+        return answer
+    except Exception:
+        # Fallback to CLI for headless/server environments
+        return input(f"{message} (y/n): ").lower() == 'y'
+
 def run():
-    # Setup Argument Parser
     parser = argparse.ArgumentParser(description="Touch2Key Uninstaller")
-    parser.add_argument(
-        "--purge", 
-        action="store_true", 
-        help="Perform a total wipe, including saved JSON mappings and images."
-    )
+    parser.add_argument("--purge", action="store_true", help="Delete JSON configs and images.")
     args = parser.parse_args()
 
-    print(f"--- Uninstalling Touch2Key ({SYSTEM}) ---")
+    # --- Pre-flight Confirmation ---
+    warning = "Are you sure you want to uninstall Touch2Key? This will remove system drivers/rules and all binaries."
+    if not confirm_uninstall(warning):
+        print("[!] Uninstallation cancelled by user.")
+        return
 
-    # 1. Platform Specific Driver/Rule Removal
-    # (Must happen before deleting BIN_DIR)
+    print(f"\n--- Uninstalling Touch2Key ({SYSTEM}) ---")
+
+    # --- Platform Specific Driver/Rule Removal ---
     if SYSTEM == "Windows":
         installer_exe = BIN_DIR / "Interception" / "command line installer" / "install-interception.exe"
         if installer_exe.exists():
             print("[+] Uninstalling Interception driver...")
             try:
                 subprocess.run([str(installer_exe), "/uninstall"], capture_output=True, check=True)
-                print("[!] Please REBOOT your computer to complete driver removal.")
+                print("[!] REBOOT REQUIRED: Please restart your computer to finish driver removal.")
             except Exception as e:
                 print(f"[!] Failed to uninstall driver: {e}")
 
@@ -43,18 +58,24 @@ def run():
                     subprocess.run(["udevadm", "control", "--reload-rules"], check=True)
                     print("[+] udev rules removed.")
                 except Exception as e:
-                    print(f"[!] Error: {e}")
+                    print(f"[!] Error removing udev rules: {e}")
             else:
                 print("[!] Permission Denied: Run as 'sudo' to remove udev rules.")
 
-    # 2. Selective Cleanup
-    # We protect the user's data unless --purge is explicitly passed
+    # --- Full Binary & ADB Cleanup ---
+    if BIN_DIR.exists():
+        print(f"[+] Removing binary directory (ADB, tools, etc)...")
+        try:
+            shutil.rmtree(BIN_DIR)
+            print("    - Binaries cleared.")
+        except Exception as e:
+            print(f"    - Could not delete binaries: {e}")
+
+    # --- Selective Data Cleanup ---
     protected = {IMAGES_FOLDER.name, JSONS_FOLDER.name}
     
     print(f"[+] Cleaning up {PROJECT_ROOT}...")
-    
     for item in PROJECT_ROOT.iterdir():
-        # Do not delete the uninstaller script itself while it is running
         if item.name == Path(__file__).name:
             continue
             
@@ -72,8 +93,7 @@ def run():
 
     if not args.purge:
         print("\n[+] Uninstall complete (Safe Mode).")
-        print("[*] Your JSON mappings and images were preserved.")
-        print("[*] Run with '--purge' to delete all user data.")
+        print("[*] JSON mappings and images preserved in root.")
     else:
         print("\n[+] Purge complete. All files removed.")
 
