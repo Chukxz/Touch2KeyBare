@@ -937,7 +937,6 @@ class Plotter:
         # Initiate Parameters
         self.fig, self.ax = plt.subplots()
         self.cursor_manager = CursorManager(self.fig.canvas)
-        self.fig.canvas.set_cursor
 
         self.points = []          
         self.point_artists = []
@@ -1488,7 +1487,7 @@ class Plotter:
             for label_artist in self.labels_artists.values():
                 label_artist.set_fontsize(scaled_font)
                 
-            # The canvas redraws automatically on resize, so a manual draw is usually not needed here.
+            self.fig.canvas.draw_idle()
 
     # Delete Logic
     def enter_delete_mode(self):
@@ -1595,7 +1594,13 @@ class Plotter:
         shape_type = self.shapes[uid]['type']
         interception_key = self.shapes[uid]['interception_key']
         hex_code = self.shapes[uid]['m_code']
-                
+
+        if uid == self.sprint_artist_id:
+            print(f"[System] Sprint Point (ID {uid}) deleted. Resetting tracking.")
+            self.sprint_artist_id = None
+            self.saved_sprint_distance = False
+            self.sprint_distance = 0.0
+
         del self.shapes[uid]
 
         if uid in self.shapes_artists:
@@ -2053,6 +2058,9 @@ class Plotter:
 
     # Math
     def calculate_circle(self): # 3 Points
+        if len(self.points) < 3:
+            return None, None, None, None
+
         x1, y1 = self.points[0]
         x2, y2 = self.points[1]
         x3, y3 = self.points[2]
@@ -2060,19 +2068,29 @@ class Plotter:
         if D == 0:
             self.update_title("Error: Points are collinear.")
             return None, None, None, None
+
         h = ((x1**2 + y1**2) * (y2 - y3) + (x2**2 + y2**2) * (y3 - y1) + (x3**2 + y3**2) * (y1 - y2)) / D
         k = ((x1**2 + y1**2) * (x3 - x2) + (x2**2 + y2**2) * (x1 - x3) + (x3**2 + y3**2) * (x2 - x1)) / D
         r = math.sqrt((x1 - h)**2 + (y1 - k)**2)
+
         return int(round(h)), int(round(k)), int(round(r)), None
 
     def calculate_rect(self): # 4 Points
+        if len(self.points) < 4:
+            return None, None, None, None
+
         xs = [pt[0] for pt in self.points]
         ys = [pt[1] for pt in self.points]
+
         return int(round(sum(xs)/4)), int(round(sum(ys)/4)), None, ((min(xs), min(ys)), (max(xs), max(ys)))
         
     def calculate_raw_rect(self, values): # 2 Points
+        if len(self.points) < 2:
+            return None, None, None, None
+
         xs = [v[0] for v in values]
         ys = [v[1] for v in values]
+
         return int(round(sum(xs)/2)), int(round(sum(ys)/2)), None, ((min(xs), min(ys)), (max(xs), max(ys)))
 
 
