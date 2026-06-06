@@ -1,4 +1,5 @@
 from __future__ import annotations
+import queue
 from typing import TYPE_CHECKING
 
 from mapper_module.utils import (
@@ -20,19 +21,19 @@ MIN_BUTTON_DWELL = 0.025
 MAX_BUTTON_DWELL = 0.04
 MIN_MOUSE_DWELL = 0.0008
 MAX_MOUSE_DWELL = 0.0012
-    
+
 # Worker: Keyboard (Isolated)
-def keyboard_worker(k_queue:Queue):
+def keyboard_worker(k_queue: Queue):
     """ Dedicated process for Keyboard events only (Windows Interception driver). """
-    
+
     from interception import Interception, KeyStroke
-    
+
     k_ctx = Interception()
     k_handle = k_ctx.keyboard
     # Keep track of keys we've pressed so we know what to release
     pressed_keys = set()
     running = True
-    
+
     while running:
         try:
             code, state = k_queue.get(timeout=15.0)
@@ -41,29 +42,31 @@ def keyboard_worker(k_queue:Queue):
                 pressed_keys.add(code)
             else:
                 pressed_keys.discard(code)
-            
+
             k_ctx.send(k_handle, KeyStroke(code, state))            
-  
-        except Exception as e:           
-            print(f"\n[UTILITY] - Keyboard worker timed out. Releasing {len(pressed_keys)} keys.")
+
+        except queue.Empty:
+            # 15 seconds passed with no input. Flush keys just in case.
             if pressed_keys:
+                print(f"\n[UTILITY] - Keyboard worker timed out. Releasing {len(pressed_keys)} keys.")
                 for code in list(pressed_keys):
                     k_ctx.send(k_handle, KeyStroke(code, 1))
                 pressed_keys.clear()
-            
-            # Queue is empty, continue the loop
-            if k_queue.empty():
-                continue
-            
-            # An error occured, end the loop
-            else:
-                print(f"\n[UTILITY] - Releasing {len(pressed_keys)} keys.\nKeyboard Worker crashed: {e}")
-                running = False
+            continue
+
+        except Exception as e:
+            # Fatal error/crash
+            print(f"\n[UTILITY] - Keyboard Worker crashed: {e}")
+            if pressed_keys:
+                print(f"[UTILITY] - Releasing {len(pressed_keys)} keys before exit.")
+                for code in list(pressed_keys):
+                    k_ctx.send(k_handle, KeyStroke(code, 1))
+            running = False
 
 # Worker: Mouse (Isolated with Coalescing)
-def mouse_worker(m_queue:Queue):
+def mouse_worker(m_queue: Queue):
     """ Dedicated process for Mouse events only (Windows Interception driver). """
-    
+
     import ctypes
     from time import sleep as _sleep
     from random import uniform as _uniform
@@ -72,59 +75,61 @@ def mouse_worker(m_queue:Queue):
     ctypes.windll.ntdll.NtSetTimerResolution(NT_TIMER_RES, 1, ctypes.byref(ctypes.c_ulong()))
     m_ctx = Interception()
     m_handle = m_ctx.mouse
-    
+
     acc_dx, acc_dy = 0, 0
     pending_task = None
-    
+
     left_down = False
     right_down = False
     middle_down = False
     running = True
-    
+
     while running:
         try:
+            # Check for a pending task from the previous coalesce loop
             if pending_task:
                 task, data = pending_task
+                pending_task = None # CRITICAL FIX: Clear the task so we don't infinite loop!
             else:
                 task, data = m_queue.get(timeout=15.0)
-            
+
             if task == "button":
                 m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, data, 0, 0, 0))
-                
+
                 if data == LEFT_BUTTON_DOWN: left_down = True
                 elif data == LEFT_BUTTON_UP: left_down = False
                 elif data == RIGHT_BUTTON_DOWN: right_down = True
                 elif data == RIGHT_BUTTON_UP: right_down = False
                 elif data == MIDDLE_BUTTON_DOWN: middle_down = True
                 elif data == MIDDLE_BUTTON_UP: middle_down = False
-                
+
                 if data in DOWN_TUPLE:
                     _sleep(_uniform(MIN_BUTTON_DWELL, MAX_BUTTON_DWELL))
                 else:
                     _sleep(CONSTANT_DWELL)
 
             elif task == "move_rel":
-                acc_dx += data[0]
-                acc_dy += data[1]
+                acc_dx += data
+                acc_dy += data
 
                 coalesce_count = 0
                 while not m_queue.empty() and coalesce_count < MAX_COALESCE:
                     try:
                         next_task, next_data = m_queue.get_nowait()
                         if next_task == "move_rel":
-                            acc_dx += next_data[0]
-                            acc_dy += next_data[1]
+                            acc_dx += next_data
+                            acc_dy += next_data
                             coalesce_count += 1
                         else:
                             pending_task = (next_task, next_data)
                             break 
-                    except Exception: 
+                    except queue.Empty: 
                         break
 
                 if acc_dx != 0 or acc_dy != 0:
                     m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, MOUSE_MOVE_RELATIVE, 0, acc_dx, acc_dy))
                     acc_dx, acc_dy = 0, 0
-                
+
                 _sleep(_uniform(MIN_MOUSE_DWELL, MAX_MOUSE_DWELL))
 
             elif task == "move_abs":
@@ -132,22 +137,24 @@ def mouse_worker(m_queue:Queue):
                 m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_ABSOLUTE | MOUSE_VIRTUAL_DESKTOP, MOUSE_MOVE_ABSOLUTE, 0, x, y))
                 _sleep(CONSTANT_DWELL)
 
-        except Exception as e:
+        except queue.Empty:
+            # 15 seconds passed with no input. Release stuck buttons
             pressed_buttons = sum([left_down, right_down, middle_down])
-            print(f"\n[UTILITY] - Mouse worker timed out. Releasing {pressed_buttons} buttons.")
-            if left_down:
-                m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, LEFT_BUTTON_UP, 0, 0, 0))
-            if right_down:
-                m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, RIGHT_BUTTON_UP, 0, 0, 0))
-            if middle_down:
-                m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, MIDDLE_BUTTON_UP, 0, 0, 0))
+            if pressed_buttons > 0:
+                print(f"\n[UTILITY] - Mouse worker timed out. Releasing {pressed_buttons} buttons.")
+                if left_down: m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, LEFT_BUTTON_UP, 0, 0, 0))
+                if right_down: m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, RIGHT_BUTTON_UP, 0, 0, 0))
+                if middle_down: m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, MIDDLE_BUTTON_UP, 0, 0, 0))
+                left_down = right_down = middle_down = False
+            continue
 
-            # Queue is empty, continue the loop
-            if m_queue.empty():
-                continue
-            
-            # An error occured, end the loop
-            else:
-                print(f"\n[UTILITY] - Releasing {pressed_buttons} buttons.\nMouse Worker crashed: {e}")
-                running = False
-                
+        except Exception as e:
+            # Fatal error/crash
+            pressed_buttons = sum([left_down, right_down, middle_down])
+            print(f"\n[UTILITY] - Mouse Worker crashed: {e}")
+            if pressed_buttons > 0:
+                print(f"[UTILITY] - Releasing {pressed_buttons} buttons before exit.")
+                if left_down: m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, LEFT_BUTTON_UP, 0, 0, 0))
+                if right_down: m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, RIGHT_BUTTON_UP, 0, 0, 0))
+                if middle_down: m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, MIDDLE_BUTTON_UP, 0, 0, 0))
+            running = False
