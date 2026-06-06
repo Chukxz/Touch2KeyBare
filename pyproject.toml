@@ -3,6 +3,11 @@ requires = ["setuptools>=61.0", "wheel>=0.36.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
+name = "Touch2Key"
+version = "0.1.0"
+description = "A high-performance touch-to-keyboard/mouse mapper for PC gaming."
+readme = "README.md"
+requires-python = ">=3.10"
 authors = [
   {name = "Chukwuemeka", email = "chukwuemekaigwe05@gmail.com"},
 ]
@@ -13,6 +18,7 @@ classifiers = [
   "Operating System :: POSIX :: Linux",
 ]
 dependencies = [
+    # --- Core Cross-Platform Dependencies ---
     "keyboard>=0.13.5",
     "matplotlib>=3.10.8",
     "pillow>=12.1.0",
@@ -21,20 +27,25 @@ dependencies = [
     "requests>=2.34.2",
     "tomlkit>=0.14.0",
 
+    # --- Windows Only Dependencies ---
     "pywin32>=311 ; sys_platform == 'win32'",
     "interception-python>=1.13.6 ; sys_platform == 'win32'",
 
+    # --- Linux Only Dependencies ---
     "python-xlib>=0.31 ; sys_platform == 'linux'",
-    "python-evdev>=0.11.0 ; sys_platform == 'linux'"
+    "evdev>=1.7.0 ; sys_platform == 'linux'" 
 ]
-description = "A high-performance touch-to-keyboard/mouse mapper for PC gaming."
-name = "Touch2Key"
-readme = "README.md"
-requires-python = ">=3.10"
-version = "0.1.0"
 
 [project.urls]
 Homepage = "https://github.com/Chukxz/Touch2Key"
+
+# --- Optional Development Dependencies ---
+# Install these by running: pip install -e .[dev]
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "black>=23.7.0",
+]
 
 [project.scripts]
 touch2key-capture = "mapper_module.scripts.adb_screen_capture:run"
