@@ -1883,7 +1883,6 @@ class Plotter:
                 entry["val2"] = y_min
                 entry["val3"] = x_max
                 entry["val4"] = y_max
-                
             
             output.append(entry)
 
