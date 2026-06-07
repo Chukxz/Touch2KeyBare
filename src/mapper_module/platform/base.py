@@ -27,7 +27,7 @@ class AbstractWindowManager(ABC):
     def get_window_position(self, hwnd) -> tuple[int, int]: pass
 
     @abstractmethod
-    def is_cursor_visible(self) -> bool: pass
+    def is_cursor_visible(self, last_state: bool, last_check_time: int) -> tuple[bool, int]: pass
 
     @abstractmethod
     def get_screen_metrics(self) -> tuple[int, int]: pass
