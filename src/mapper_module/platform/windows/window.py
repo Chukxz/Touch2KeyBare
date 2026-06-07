@@ -6,7 +6,7 @@ from ctypes import wintypes
 import win32gui
 import time
 
-CURSOR_SHOWING = 0x00000001
+CURSOR_SHOWING = 0x1
 
 class RECT(ctypes.Structure):
     _fields_ = [
