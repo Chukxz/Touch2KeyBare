@@ -1,10 +1,10 @@
 from typing import Any
 from ..base import AbstractWindowManager
+from mapper.module.utils import CURSOR_CHECK_DELAY, MAX_CLASS_NAME
 import ctypes
 from ctypes import wintypes
 import win32gui
 import time
-MAX_CLASS_NAME = 256
 
 class RECT(ctypes.Structure):
     _fields_ = [
@@ -43,7 +43,7 @@ class WindowManager(AbstractWindowManager):
         hwnd = ctypes.windll.user32.FindWindowW(None, title)
         return hwnd if hwnd != 0 else None
 
-    def enum_class_windows_callback(self, hwnd: wintypes.HWND, lParam: wintypes.LPARAM) -> bool:
+    def _enum_class_windows_callback(self, hwnd: wintypes.HWND, lParam: wintypes.LPARAM) -> bool:
         target_class = ctypes.cast(
             lParam, ctypes.POINTER(ctypes.py_object)
         ).contents.value['class_name']
@@ -64,7 +64,7 @@ class WindowManager(AbstractWindowManager):
             'results': results
         })
         ctypes.windll.user32.EnumWindows(
-            self.EnumWindowsProc(self.enum_class_windows_callback),
+            self.EnumWindowsProc(self._enum_class_windows_callback),
             ctypes.byref(data)
         )
         return results
@@ -84,18 +84,22 @@ class WindowManager(AbstractWindowManager):
         return pt.x, pt.y
 
     def is_cursor_visible(self, last_state: bool, last_check_time: int) -> tuple[bool, int]:
+        now = time.monotonic_ns()
+        if now - last_check_time < CURSOR_CHECK_DELAY:
+            return last_state, last_check_time
+
         try:
             flags, _, _ = win32gui.GetCursorInfo()  # type: ignore
-            return bool(flags & 1), time.monotonic_ns()
+            return bool(flags & 1), now
         except Exception:
-            return last_state, last_check_time
+            return last_state, now
 
     def get_screen_metrics(self) -> tuple[int, int]:
         w = ctypes.windll.user32.GetSystemMetrics(0)
         h = ctypes.windll.user32.GetSystemMetrics(1)
         return w, h
 
-    def enum_title_windows_callback(self, hwnd, results: dict) -> None:
+    def _enum_title_windows_callback(self, hwnd, results: dict) -> None:
         if win32gui.IsWindowVisible(hwnd):
             title = win32gui.GetWindowText(hwnd)
             if title:
@@ -103,5 +107,5 @@ class WindowManager(AbstractWindowManager):
 
     def find_window_titles(self) -> dict:
         current_windows_titles = {}
-        win32gui.EnumWindows(self.enum_title_windows_callback, current_windows_titles)
+        win32gui.EnumWindows(self._enum_title_windows_callback, current_windows_titles)
         return current_windows_titles
