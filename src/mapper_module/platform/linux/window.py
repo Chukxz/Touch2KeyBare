@@ -1,6 +1,6 @@
 from typing import Any
 from ..base import AbstractWindowManager
-from mapper.module.utils import CURSOR_CHECK_DELAY
+from mapper.module.utils import CURSOR_CHECK_DELAY_NS
 from Xlib import display, X, error
 from Xlib.ext import xfixes
 import time
@@ -144,7 +144,7 @@ class WindowManager(AbstractWindowManager):
             return last_state, last_check_time
 
         now = time.monotonic_ns()
-        if now - last_check_time < CURSOR_CHECK_DELAY:
+        if now - last_check_time < CURSOR_CHECK_DELAY_NS:
             return last_state, last_check_time
 
         # Check if XFixes is supported before attempting to use it
