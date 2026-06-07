@@ -63,8 +63,13 @@ LONG_DELAY = 2.0
 WINDOW_UPDATE_INTERVAL = 0.05
 ROTATION_POLL_INTERVAL = 0.5
 
+# Delay (in nanosecond)
+CURSOR_CHECK_DELAY_NS = 100_000_000
+
+# Windows specific constants
 # 0.5ms (5,000 units of 100ns)
 NT_TIMER_RES = 5000
+MAX_CLASS_NAME = 256
 
 # Fallback Performance Constants
 DEFAULT_ADB_RATE_CAP = 250
