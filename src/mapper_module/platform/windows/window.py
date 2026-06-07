@@ -83,7 +83,7 @@ class WindowManager(AbstractWindowManager):
         ctypes.windll.user32.ClientToScreen(hwnd, ctypes.byref(pt))
         return pt.x, pt.y
 
-    def is_cursor_visible(self) -> bool:
+    def is_cursor_visible(self, last_state: bool, last_check_time: int) -> tuple[bool, int]:
         try:
             flags, _, _ = win32gui.GetCursorInfo()  # type: ignore
             return bool(flags & 1)
