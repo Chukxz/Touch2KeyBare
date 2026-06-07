@@ -4,12 +4,11 @@ from ..base import AbstractMapping
 class Mapping(AbstractMapping):
     """Linux (evdev/uinput) specific keycode mapping implementation."""
 
-    # Linux standard input event codes (from linux/input-event-codes.h)
     _MODIFIER_MAP: ClassVar[dict[int, str]] = {
         56: "lalt",
-        100: "ralt",   # Differs from Windows
+        100: "ralt",
         29: "lctrl",
-        97: "rctrl",   # Differs from Windows
+        97: "rctrl",
         42: "lshift",
         54: "rshift"
     }

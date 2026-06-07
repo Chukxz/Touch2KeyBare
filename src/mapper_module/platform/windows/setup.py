@@ -37,7 +37,7 @@ def kill_adb():
     subprocess.run(["taskkill", "/F", "/IM", "adb.exe", "/T"], capture_output=True, check=False)
 
 def download_adb():
-    """Downloads and extracts Android platform-tools."""
+    """Downloads and extracts Android platform-tools for Windows."""
     print("[+] Ensuring ADB is available...")
     BIN_DIR.mkdir(parents=True, exist_ok=True)
     

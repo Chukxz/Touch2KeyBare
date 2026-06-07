@@ -4,8 +4,6 @@ import threading
 import queue
 from datetime import datetime as _datetime
 
-# Linux implementation uses the same worker architecture, 
-# but evdev handles the parsing inside these workers.
 from .workers import keyboard_worker, mouse_worker
 
 from mapper_module.utils import (
@@ -25,7 +23,7 @@ class UInputBridge(AbstractBridge):
         self.k_queue = multiprocessing.Queue()
         self.k_proc = multiprocessing.Process(
             target=keyboard_worker,
-            name="Linux Keyboard Worker",
+            name="Keyboard Worker",
             args=(self.k_queue,),
             daemon=True
         )
@@ -33,7 +31,7 @@ class UInputBridge(AbstractBridge):
         self.m_queue = multiprocessing.Queue(maxsize=64)
         self.m_proc = multiprocessing.Process(
             target=mouse_worker,
-            name="Linux Mouse Worker",
+            name="Mouse Worker",
             args=(self.m_queue,),
             daemon=True
         )
@@ -41,13 +39,11 @@ class UInputBridge(AbstractBridge):
         self.k_proc.start()
         self.m_proc.start()
 
-        print(f"\n[BRIDGE] - UInput Dual Engine Started. "
+        print(f"\n[BRIDGE] - UInput Dual Engine Started."
               f"K-PID: {self.k_proc.pid} | "
               f"M-PID: {self.m_proc.pid}.")
 
-    # ==========================================
     # KEYBOARD API
-    # ==========================================
     def key_down(self, code): 
         try:
             self.k_queue.put_nowait((code, 0))
@@ -61,9 +57,7 @@ class UInputBridge(AbstractBridge):
             print(f"[WARNING] - Key UP event ({code}) dropped! Triggering rescue...")
             self.health_check()
 
-    # ==========================================
     # MOUSE API
-    # ==========================================
     def mouse_move_rel(self, dx, dy):
         try:
             self.m_queue.put_nowait(("move_rel", (dx, dy)))
@@ -71,7 +65,7 @@ class UInputBridge(AbstractBridge):
             pass
 
     def mouse_move_abs(self, x, y):
-        # LINUX DIFFERENCE: uinput uses literal screen pixels instead of 65535
+        # UInput uses literal screen pixels instead of 65535
         abs_x = int(x)
         abs_y = int(y)
         try:
@@ -111,17 +105,15 @@ class UInputBridge(AbstractBridge):
             print("[WARNING] - Middle Click UP event dropped! Triggering rescue...")
             self.health_check()
 
-    # ==========================================
     # SYSTEM API
-    # ==========================================
     def health_check(self):
         with self.bridge_lock:
             # Check Keyboard Worker
             if not self.k_proc.is_alive():
-                print(f"\n[UTILITY] - Linux Keyboard Worker Died: {_datetime.now().strftime('%H:%M:%S')}!")
-                self.k_proc = multiprocessing.Process(target=keyboard_worker, name="Linux Keyboard Worker", args=(self.k_queue,), daemon=True)
+                print(f"\n[UTILITY] - Keyboard Worker Died: {_datetime.now().strftime('%H:%M:%S')}!")
+                self.k_proc = multiprocessing.Process(target=keyboard_worker, name="Keyboard Worker", args=(self.k_queue,), daemon=True)
                 self.k_proc.start()
-                self.system_config.set_high_priority(self.k_proc.pid, "Revived Linux Keyboard")
+                self.system_config.set_high_priority(self.k_proc.pid, "Revived Keyboard")
                 
                 # Safety flush
                 while not self.k_queue.empty():
@@ -130,10 +122,10 @@ class UInputBridge(AbstractBridge):
 
             # Check Mouse Worker
             if not self.m_proc.is_alive():
-                print(f"\n[UTILITY] - Linux Mouse Worker Died: {_datetime.now().strftime('%H:%M:%S')}!")
-                self.m_proc = multiprocessing.Process(target=mouse_worker, name="Linux Mouse Worker", args=(self.m_queue,), daemon=True)
+                print(f"\n[UTILITY] - Mouse Worker Died: {_datetime.now().strftime('%H:%M:%S')}!")
+                self.m_proc = multiprocessing.Process(target=mouse_worker, name="Mouse Worker", args=(self.m_queue,), daemon=True)
                 self.m_proc.start()
-                self.system_config.set_high_priority(self.m_proc.pid, "Revived Linux Mouse")
+                self.system_config.set_high_priority(self.m_proc.pid, "Revived Mouse")
                 
                 # Safety flush
                 while not self.m_queue.empty():
@@ -153,4 +145,4 @@ class UInputBridge(AbstractBridge):
             for code in unique_codes:
                 try: self.k_queue.put_nowait((code, 1))
                 except queue.Full: pass
-        print("[BRIDGE] - Linux release signals dispatched.")
+        print("[BRIDGE] - Release signals dispatched.")

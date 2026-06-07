@@ -21,7 +21,7 @@ class AbstractWindowManager(ABC):
     def find_window_ids_by_class(self, class_name: str | None) -> list: pass
     
     @abstractmethod
-    def get_client_rect(self, window_id -> tuple[int, int]: pass
+    def get_client_rect(self, window_id) -> tuple[int, int]: pass
 
     @abstractmethod
     def get_window_position(self, window_id) -> tuple[int, int]: pass

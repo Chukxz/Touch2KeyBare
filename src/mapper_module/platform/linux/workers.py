@@ -39,8 +39,7 @@ def keyboard_worker(k_queue: Queue):
         try:
             code, state = k_queue.get(timeout=15.0)
 
-            # LINUX DIFFERENCE: Linux evdev uses 1 for DOWN and 0 for UP.
-            # Your Windows logic sends state=0 for down, state=1 for up. 
+            # Linux evdev uses 1 for DOWN and 0 for UP.
             linux_value = 1 if state == 0 else 0
 
             if linux_value == 1:
@@ -49,7 +48,7 @@ def keyboard_worker(k_queue: Queue):
                 pressed_keys.discard(code)
 
             ui.write(ecodes.EV_KEY, code, linux_value)
-            ui.syn() # Crucial in Linux: syncs the event to the OS          
+            ui.syn()
 
         except queue.Empty:           
             if pressed_keys:

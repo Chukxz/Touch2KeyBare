@@ -4,13 +4,13 @@ import os
 
 class SystemConfig(AbstractSystemConfig):        
     def set_dpi_awareness(self):
-        # LINUX DIFFERENCE: Linux display servers (X11/Wayland) handle scaling 
+        # Linux display servers (X11/Wayland) handle scaling 
         # at the compositor/toolkit layer. Raw input via uinput operates 
         # directly on absolute device coordinates. No API call is needed.
         pass
 
     def set_timer_resolution(self):
-        # LINUX DIFFERENCE: Modern Linux kernels use High-Resolution Timers (hrtimers) 
+        # Modern Linux kernels use High-Resolution Timers (hrtimers) 
         # by default. Python's time.sleep() automatically has nanosecond-level 
         # precision natively. No NT API equivalent is required.
         pass
@@ -20,7 +20,7 @@ class SystemConfig(AbstractSystemConfig):
             # If pid is None, psutil.Process() defaults to the current process
             p = psutil.Process(pid if pid is not None else os.getpid())
             
-            # LINUX DIFFERENCE: Process priority is handled via 'nice' values.
+            # Process priority is handled via 'nice' values.
             # Range is -20 (Highest/Realtime) to 19 (Lowest). 0 is default.
             # -10 is standard "High Priority". 
             try:
@@ -32,7 +32,6 @@ class SystemConfig(AbstractSystemConfig):
 
             p.cpu_affinity(list(range(psutil.cpu_count() or 1)))
             
-            # Only print success if the nice value was actually set
             if p.nice() < 0:
                 print(f"\n[SYSTEM] - {label} set to HIGH (Nice: {p.nice()}, Floating Affinity).")
                 

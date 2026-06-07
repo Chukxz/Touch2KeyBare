@@ -38,13 +38,11 @@ class InterceptionBridge(AbstractBridge):
         self.k_proc.start()
         self.m_proc.start()
 
-        print(f"\n[BRIDGE] - Dual Engine Started. "
+        print(f"\n[BRIDGE] - Interception Dual Engine Started."
               f"K-PID: {self.k_proc.pid} | "
               f"M-PID: {self.m_proc.pid}.")
 
-    # ==========================================
     # KEYBOARD API
-    # ==========================================
     def key_down(self, code): 
         try:
             self.k_queue.put_nowait((code, 0))
@@ -58,9 +56,7 @@ class InterceptionBridge(AbstractBridge):
             print(f"[WARNING] - Key UP event ({code}) dropped! Triggering rescue...")
             self.health_check()
 
-    # ==========================================
     # MOUSE API
-    # ==========================================
     def mouse_move_rel(self, dx, dy):
         try:
             self.m_queue.put_nowait(("move_rel", (dx, dy)))
@@ -108,9 +104,7 @@ class InterceptionBridge(AbstractBridge):
             print("[WARNING] - Middle Click UP event dropped! Triggering rescue...")
             self.health_check()
 
-    # ==========================================
     # SYSTEM API
-    # ==========================================
     def health_check(self):
         with self.bridge_lock:
             # Check Keyboard Worker

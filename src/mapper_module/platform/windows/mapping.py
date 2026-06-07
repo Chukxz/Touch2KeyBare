@@ -4,7 +4,6 @@ from ..base import AbstractMapping
 class Mapping(AbstractMapping):
     """Windows-specific scancode mapping implementation."""
     
-    # Use ClassVar to tell Pylance this is a class attribute, not a property method
     _MODIFIER_MAP: ClassVar[dict[int, str]] = {
         56: "lalt",
         312: "ralt",

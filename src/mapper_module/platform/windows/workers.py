@@ -38,7 +38,8 @@ def keyboard_worker(k_queue: Queue):
     while running:
         try:
             code, state = k_queue.get(timeout=15.0)
-
+            
+            # Windows logic sends state=0 for down, state=1 for up. 
             if state == 0:
                 pressed_keys.add(code)
             else:
@@ -96,14 +97,14 @@ def mouse_worker(m_queue: Queue):
                 task, data = m_queue.get(timeout=15.0)
 
             if task == "button":
-                m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, data, 0, 0, 0))
-
                 if data == LEFT_BUTTON_DOWN: left_down = True
                 elif data == LEFT_BUTTON_UP: left_down = False
                 elif data == RIGHT_BUTTON_DOWN: right_down = True
                 elif data == RIGHT_BUTTON_UP: right_down = False
                 elif data == MIDDLE_BUTTON_DOWN: middle_down = True
                 elif data == MIDDLE_BUTTON_UP: middle_down = False
+                
+                m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, data, 0, 0, 0))
 
                 if data in DOWN_TUPLE:
                     _sleep(_uniform(MIN_BUTTON_DWELL, MAX_BUTTON_DWELL))

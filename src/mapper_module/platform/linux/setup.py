@@ -19,7 +19,7 @@ def is_root() -> bool:
     return os.geteuid() == 0
 
 def kill_adb():
-    """Linux ADB killer."""
+    """Force terminates ADB processes on Linux."""
     print("[+] Checking for running ADB processes...")
     try:
         subprocess.run(["pkill", "-f", "adb"], capture_output=True, check=False)
@@ -28,7 +28,7 @@ def kill_adb():
         print(f"[!] Warning: Could not kill ADB: {e}")
 
 def download_adb():
-    """Downloads and extracts ADB for Linux."""
+    """Downloads and extracts Android platform-tools for Linux."""
     print("[+] Ensuring ADB is available...")
     BIN_DIR.mkdir(parents=True, exist_ok=True)
     
@@ -91,11 +91,11 @@ def setup_udev_rules():
 def setup_linux():
     print("--- Touch2Key Linux Setup Wizard ---")
     
-    # 1. Prepare Environment
+    # Prepare Environment
     kill_adb()
     download_adb()
     
-    # 2. Setup Linux-specific permissions
+    # Setup Linux-specific permissions
     setup_udev_rules()
 
     print("\n[+] Setup complete! You are ready to use Touch2Key.")
