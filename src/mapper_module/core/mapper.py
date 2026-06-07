@@ -38,6 +38,7 @@ class Mapper():
         self.lock = threading.Lock()
         self.agg_lock = threading.Lock()
         self.last_cursor_state = True # Cursor showing (Default)
+        self.last_cursor_check_time = 0
         self.game_window_class_name = None
         self.game_window_info = None
         self.window_update_interval = WINDOW_UPDATE_INTERVAL
@@ -96,7 +97,7 @@ class Mapper():
         self.pulse_status()
 
         # Check Cursor Visibility
-        is_visible = self.window_manager.is_cursor_visible(self.last_cursor_state)
+        is_visible, self.last_cursor_check_time = self.window_manager.is_cursor_visible(self.last_cursor_state, self.last_cursor_check_time)
 
         if not is_visible == self.last_cursor_state:
             self.last_cursor_state = is_visible
