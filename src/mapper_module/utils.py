@@ -200,16 +200,16 @@ def get_adb_device():
         return real[0]
     
 
-def get_screen_size(device:str):
-    result = subprocess.run([ADB_EXE, "-s", device, "shell", "wm", "size"], capture_output=True, text=True, timeout=10)
-    output = result.stdout.strip().splitlines()
-    
-    # Check for "Override size" first, then fallback to "Physical size"
-    # This ensures we use the ACTUAL resolution being rendered
-    size_line = output[-1] 
-    if ":" in size_line:
-        w, h = map(int, size_line.split(":")[-1].strip().split("x"))
+def get_screen_size(device):
+    """Detect screen resolution (portrait natural)."""
+    result = subprocess.run(
+        ["adb", "-s", device, "shell", "wm", "size"], capture_output=True, text=True, timeout=10
+    )
+    output = result.stdout.strip()
+    if "Physical size" in output:
+        w, h = map(int, output.split(":")[-1].strip().split("x"))
         return w, h
+
     return None
 
 

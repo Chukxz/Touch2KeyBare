@@ -26,7 +26,8 @@ MAX_MOUSE_DWELL = 0.0012
 def keyboard_worker(k_queue: Queue):
     """ Dedicated process for Keyboard events only (Windows Interception driver). """
 
-    from interception import Interception, KeyStroke
+    from interception.interception import Interception
+    from interception.strokes import KeyStroke
 
     k_ctx = Interception()
     k_handle = k_ctx.keyboard
@@ -70,7 +71,8 @@ def mouse_worker(m_queue: Queue):
     import ctypes
     from time import sleep as _sleep
     from random import uniform as _uniform
-    from interception import Interception, MouseStroke
+    from interception.interception import Interception
+    from interception.strokes import MouseStroke
 
     ctypes.windll.ntdll.NtSetTimerResolution(NT_TIMER_RES, 1, ctypes.byref(ctypes.c_ulong()))
     m_ctx = Interception()
@@ -109,8 +111,8 @@ def mouse_worker(m_queue: Queue):
                     _sleep(CONSTANT_DWELL)
 
             elif task == "move_rel":
-                acc_dx += data
-                acc_dy += data
+                acc_dx += data[0]
+                acc_dy += data[1]
 
                 coalesce_count = 0
                 while not m_queue.empty() and coalesce_count < MAX_COALESCE:

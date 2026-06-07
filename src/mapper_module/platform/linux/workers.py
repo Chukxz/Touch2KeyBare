@@ -130,8 +130,8 @@ def mouse_worker(m_queue: Queue):
                     _sleep(CONSTANT_DWELL)
 
             elif task == "move_rel":
-                acc_dx += data
-                acc_dy += data
+                acc_dx += data[0]
+                acc_dy += data[1]
 
                 coalesce_count = 0
                 while not m_queue.empty() and coalesce_count < MAX_COALESCE:
