@@ -3,7 +3,7 @@ from ..base import AbstractWindowManager
 import ctypes
 from ctypes import wintypes
 import win32gui
-
+import time
 MAX_CLASS_NAME = 256
 
 class RECT(ctypes.Structure):
@@ -86,9 +86,9 @@ class WindowManager(AbstractWindowManager):
     def is_cursor_visible(self, last_state: bool, last_check_time: int) -> tuple[bool, int]:
         try:
             flags, _, _ = win32gui.GetCursorInfo()  # type: ignore
-            return bool(flags & 1)
+            return bool(flags & 1), time.monotonic_ns()
         except Exception:
-            return True
+            return last_state, last_check_time
 
     def get_screen_metrics(self) -> tuple[int, int]:
         w = ctypes.windll.user32.GetSystemMetrics(0)
