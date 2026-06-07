@@ -6,6 +6,8 @@ from ctypes import wintypes
 import win32gui
 import time
 
+CURSOR_SHOWING = 0x00000001
+
 class RECT(ctypes.Structure):
     _fields_ = [
         ("left", ctypes.c_long),
@@ -90,7 +92,7 @@ class WindowManager(AbstractWindowManager):
 
         try:
             flags, _, _ = win32gui.GetCursorInfo()  # type: ignore
-            return bool(flags & 1), now
+            return bool(flags & CURSOR_SHOWING), now
         except Exception:
             return last_state, now
 
