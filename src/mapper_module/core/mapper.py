@@ -96,7 +96,7 @@ class Mapper():
         self.pulse_status()
 
         # Check Cursor Visibility
-        is_visible = self.window_manager.is_cursor_visible()
+        is_visible = self.window_manager.is_cursor_visible(self.last_cursor_state)
 
         if not is_visible == self.last_cursor_state:
             self.last_cursor_state = is_visible
