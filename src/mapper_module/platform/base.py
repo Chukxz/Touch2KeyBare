@@ -6,13 +6,13 @@ class AbstractWindowManager(ABC):
     def get_foreground_window(self) -> int: pass
     
     @abstractmethod
-    def is_window_valid(self, hwnd) -> bool: pass
+    def is_window_valid(self, window_id) -> bool: pass
         
     @abstractmethod
-    def is_window_visible(self, hwnd) -> bool: pass
+    def is_window_visible(self, window_id) -> bool: pass
         
     @abstractmethod
-    def get_window_class_name(self, hwnd) -> str: pass
+    def get_window_class_name(self, window_id) -> str: pass
     
     @abstractmethod
     def find_window_by_title(self, title: str) -> Any | None: pass
@@ -21,10 +21,10 @@ class AbstractWindowManager(ABC):
     def find_hwnds_by_class(self, class_name: str | None) -> list: pass
     
     @abstractmethod
-    def get_client_rect(self, hwnd) -> tuple[int, int]: pass
+    def get_client_rect(self, window_id -> tuple[int, int]: pass
 
     @abstractmethod
-    def get_window_position(self, hwnd) -> tuple[int, int]: pass
+    def get_window_position(self, window_id) -> tuple[int, int]: pass
 
     @abstractmethod
     def is_cursor_visible(self, last_state: bool, last_check_time: int) -> tuple[bool, int]: pass
