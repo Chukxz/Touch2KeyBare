@@ -30,15 +30,15 @@ class WindowManager(AbstractWindowManager):
     def get_foreground_window(self) -> int:
         return win32gui.GetForegroundWindow()
 
-    def is_window_valid(self, hwnd: wintypes.HWND) -> bool:
-        return bool(ctypes.windll.user32.IsWindow(hwnd))
+    def is_window_valid(self, window_id: wintypes.HWND) -> bool:
+        return bool(ctypes.windll.user32.IsWindow(window_id))
 
-    def is_window_visible(self, hwnd: wintypes.HWND) -> bool:
-        return bool(ctypes.windll.user32.IsWindowVisible(hwnd))
+    def is_window_visible(self, window_id: wintypes.HWND) -> bool:
+        return bool(ctypes.windll.user32.IsWindowVisible(window_id))
 
-    def get_window_class_name(self, hwnd: wintypes.HWND) -> str:
+    def get_window_class_name(self, window_id: wintypes.HWND) -> str:
         buffer = ctypes.create_unicode_buffer(MAX_CLASS_NAME)
-        ctypes.windll.user32.GetClassNameW(hwnd, buffer, MAX_CLASS_NAME)
+        ctypes.windll.user32.GetClassNameW(window_id, buffer, MAX_CLASS_NAME)
         return buffer.value
 
     def find_window_by_title(self, title: str) -> Any | None:
@@ -71,18 +71,18 @@ class WindowManager(AbstractWindowManager):
         )
         return results
 
-    def get_client_rect(self, hwnd: wintypes.HWND) -> tuple[int, int]:
+    def get_client_rect(self, window_id: wintypes.HWND) -> tuple[int, int]:
         rect = RECT()
-        ctypes.windll.user32.GetClientRect(hwnd, ctypes.byref(rect))
+        ctypes.windll.user32.GetClientRect(window_id, ctypes.byref(rect))
         width = rect.right - rect.left
         height = rect.bottom - rect.top
         return width, height
 
-    def get_window_position(self, hwnd: wintypes.HWND) -> tuple[int, int]:
+    def get_window_position(self, window_id: wintypes.HWND) -> tuple[int, int]:
         pt = POINT()
         pt.x = 0
         pt.y = 0
-        ctypes.windll.user32.ClientToScreen(hwnd, ctypes.byref(pt))
+        ctypes.windll.user32.ClientToScreen(window_id, ctypes.byref(pt))
         return pt.x, pt.y
 
     def is_cursor_visible(self, last_state: bool, last_check_time: int) -> tuple[bool, int]:
