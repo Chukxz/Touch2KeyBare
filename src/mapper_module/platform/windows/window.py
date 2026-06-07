@@ -1,6 +1,6 @@
 from typing import Any
 from ..base import AbstractWindowManager
-from mapper.module.utils import CURSOR_CHECK_DELAY, MAX_CLASS_NAME
+from mapper.module.utils import CURSOR_CHECK_DELAY_NS, MAX_CLASS_NAME
 import ctypes
 from ctypes import wintypes
 import win32gui
@@ -85,7 +85,7 @@ class WindowManager(AbstractWindowManager):
 
     def is_cursor_visible(self, last_state: bool, last_check_time: int) -> tuple[bool, int]:
         now = time.monotonic_ns()
-        if now - last_check_time < CURSOR_CHECK_DELAY:
+        if now - last_check_time < CURSOR_CHECK_DELAY_NS:
             return last_state, last_check_time
 
         try:
