@@ -21,9 +21,9 @@ class WindowManager(AbstractWindowManager):
             print(f"[WINDOW MANAGER] - Failed to connect to X11 Display. Ensure you are on X11, not pure Wayland: {e}")
             self.disp = None
 
-    def _get_window_obj(self, hwnd: int):
+    def _get_window_obj(self, xid: int):
         """Helper to cast an integer ID back to an Xlib Window object."""
-        return self.disp.create_resource_object('window', hwnd)
+        return self.disp.create_resource_object('window', xid)
 
     def _get_all_windows(self, window=None) -> list:
         """Helper to recursively traverse the X11 window tree."""
@@ -47,28 +47,28 @@ class WindowManager(AbstractWindowManager):
             pass
         return 0
 
-    def is_window_valid(self, hwnd: int) -> bool:
-        if not self.disp or hwnd == 0: return False
+    def is_window_valid(self, window_id: int) -> bool:
+        if not self.disp or window_id == 0: return False
         try:
-            win = self._get_window_obj(hwnd)
+            win = self._get_window_obj(window_id)
             win.get_attributes()  # Will throw BadWindow if invalid
             return True
         except error.BadWindow:
             return False
 
-    def is_window_visible(self, hwnd: int) -> bool:
-        if not self.disp or hwnd == 0: return False
+    def is_window_visible(self, window_id: int) -> bool:
+        if not self.disp or window_id == 0: return False
         try:
-            win = self._get_window_obj(hwnd)
+            win = self._get_window_obj(window_id)
             attr = win.get_attributes()
             return attr.map_state == X.IsViewable
         except error.BadWindow:
             return False
 
-    def get_window_class_name(self, hwnd: int) -> str:
-        if not self.disp or hwnd == 0: return ""
+    def get_window_class_name(self, window_id: int) -> str:
+        if not self.disp or window_id == 0: return ""
         try:
-            win = self._get_window_obj(hwnd)
+            win = self._get_window_obj(window_id)
             wm_class = win.get_wm_class()
             # X11 classes are tuples: ('instance_name', 'Class_Name')
             if wm_class and len(wm_class) > 1:
@@ -86,7 +86,7 @@ class WindowManager(AbstractWindowManager):
                 return hwnd
         return None
 
-    def find_hwnds_by_class(self, class_name: str | None) -> list:
+    def find_window_ids_by_class(self, class_name: str | None) -> list:
         if not self.disp or not class_name: return []
         results = []
         for win in self._get_all_windows():
@@ -98,20 +98,20 @@ class WindowManager(AbstractWindowManager):
                 continue
         return results
 
-    def get_client_rect(self, hwnd: int) -> tuple[int, int]:
-        if not self.disp or hwnd == 0: return 0, 0
+    def get_client_rect(self, window_id: int) -> tuple[int, int]:
+        if not self.disp or window_id == 0: return 0, 0
         try:
-            win = self._get_window_obj(hwnd)
+            win = self._get_window_obj(window_id)
             geom = win.get_geometry()
             # X11 get_geometry returns inner client dimensions, excluding WM borders
             return geom.width, geom.height
         except Exception:
             return 0, 0
 
-    def get_window_position(self, hwnd: int) -> tuple[int, int]:
-        if not self.disp or hwnd == 0: return 0, 0
+    def get_window_position(self, window_id: int) -> tuple[int, int]:
+        if not self.disp or window_id == 0: return 0, 0
         try:
-            win = self._get_window_obj(hwnd)
+            win = self._get_window_obj(window_id)
             # Translate local coordinates (0, 0) to global root/screen coordinates
             coords = win.translate_coords(self.root, 0, 0)
             return coords.x, coords.y
