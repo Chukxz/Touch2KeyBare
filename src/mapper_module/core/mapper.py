@@ -78,21 +78,21 @@ class Mapper():
             raise ValueError("Window_title must be provided.")
 
         class_name = None            
-        hwnd = self.window_manager.find_window_by_title(window_title)
-        if hwnd is not None:
-            class_name = self.window_manager.get_window_class_name(hwnd)
+        window_id = self.window_manager.find_window_by_title(window_title)
+        if window_id is not None:
+            class_name = self.window_manager.get_window_class_name(window_id)
             print(f"\n[MAPPER] - Found window '{window_title}' (Class: {class_name}).")
         else:
             _str = f"\n[MAPPER] - Window class name could not be gotten for window: '{window_title}'."
             raise RuntimeError(_str)
         return class_name
 
-    def get_window_info(self, hwnd):
+    def get_window_info(self, window_id):
         # Get the Client Area (The pure game content size)
-        width, height = self.window_manager.get_client_rect(hwnd)
+        width, height = self.window_manager.get_client_rect(window_id)
 
         # Find where top-left (0,0) of the Client Area is on the Screen
-        x, y = self.window_manager.get_window_position(hwnd)
+        x, y = self.window_manager.get_window_position(window_id)
 
         self.pulse_status()
 
@@ -105,7 +105,7 @@ class Mapper():
             self.mapper_event_dispatcher.dispatch(MapperEvent(action="ON_MENU_MODE_TOGGLE", is_visible=is_visible))
 
         return {
-            'hwnd': hwnd,
+            'window_id': window_id,
             'left': x,
             'top': y,    
             'width': width,  
@@ -116,15 +116,15 @@ class Mapper():
         """Background thread for updating the game window info - optimized to minimize lock hold time."""        
         while self.running:
             try:                
-                # Check if current handle is still valid
-                current_hwnd = None
+                # Check if current window_id is still valid
+                current_window_id = None
                 with self.lock:
                     if self.game_window_info:
-                        current_hwnd = self.game_window_info.get('hwnd')
+                        current_window_id = self.game_window_info.get('window_id')
 
-                if current_hwnd and self.window_manager.is_window_valid(current_hwnd):
+                if current_window_id and self.window_manager.is_window_valid(current_window_id):
                     # WINDOW IS ACTIVE: Get fresh coordinates
-                    new_info = self.get_window_info(current_hwnd)
+                    new_info = self.get_window_info(current_window_id)
 
                     if self.window_lost:
                         print(f"\n[MAPPER] - Acquired game window!")
@@ -171,15 +171,15 @@ class Mapper():
             time.sleep(sleep_time)
 
     def get_game_window_info(self):
-        hwnds = self.window_manager.find_hwnds_by_class(self.game_window_class_name)
+        window_ids = self.window_manager.find_window_ids_by_class(self.game_window_class_name)
         target_info = None
         max_diag = 0
 
-        for hwnd in hwnds:
-            if not self.window_manager.is_window_visible(hwnd):
+        for window_id in window_ids:
+            if not self.window_manager.is_window_visible(window_id):
                 continue
 
-            info = self.get_window_info(hwnd)
+            info = self.get_window_info(window_id)
             w, h = info['width'], info['height']
             diag = (w*w + h*h) ** 0.5
 
