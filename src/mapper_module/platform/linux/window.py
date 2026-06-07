@@ -140,7 +140,7 @@ class WindowManager(AbstractWindowManager):
         return self.xfixes_supported
 
     def is_cursor_visible(self, last_state: bool, last_check_time: int) -> tuple[bool, int]:
-        if not self.disp or hwnd == 0:
+        if not self.disp:
             return last_state, last_check_time
 
         now = time.monotonic_ns()
