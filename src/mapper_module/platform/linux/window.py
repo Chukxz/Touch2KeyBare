@@ -1,8 +1,9 @@
 from typing import Any
 from ..base import AbstractWindowManager
+from mapper.module.utils import CURSOR_CHECK_DELAY
 from Xlib import display, X, error
-
-# Note: Requires `pip install python-xlib`
+from Xlib.ext import xfixes
+import time
 
 class WindowManager(AbstractWindowManager):
     def __init__(self):
@@ -10,7 +11,9 @@ class WindowManager(AbstractWindowManager):
         try:
             self.disp = display.Display()
             self.root = self.disp.screen().root
-            
+            self.xfixes_supported = False
+            self._checked_xfixes = False # 
+
             # X11 uses "Atoms" (cached strings) to query window properties
             self.NET_ACTIVE_WINDOW = self.disp.intern_atom('_NET_ACTIVE_WINDOW')
             self.NET_WM_NAME = self.disp.intern_atom('_NET_WM_NAME')
@@ -115,11 +118,41 @@ class WindowManager(AbstractWindowManager):
         except Exception:
             return 0, 0
 
-    def is_cursor_visible(self) -> bool:
-        # X11 cursor visibility tracking requires the XFixes extension.
-        # To avoid heavy/unstable dependencies, we fallback to True.
-        # In Linux, cursor hiding is usually handled by the game capturing it.
-        return True
+    def _ensure_xfixes(self):
+        """Perform the handshake once and cache the result."""
+        if self._checked_xfixes:
+            return self.xfixes_supported
+        
+        try:
+            # Negotiate version 5.0 (which is required for get_cursor_image)
+            version = xfixes.query_version(self.disp, 5, 0)
+            
+            # Verify if the server actually gave us what we need
+            if version.major_version >= 5:
+                self.xfixes_supported = True
+            else:
+                print(f"[WINDOW MANAGER] XFixes too old: {version.major_version}.{version.minor_version}, requires: ≥5.0.")
+                self.xfixes_supported = False
+        except Exception:
+            self.xfixes_supported = False
+            
+        self._checked_xfixes = True
+        return self.xfixes_supported
+
+    def is_cursor_visible(self, last_state: bool, last_check_time: int) -> tuple[bool, int]:
+        if not self.disp or hwnd == 0:
+            return last_state, last_check_time
+
+        now = time.monotonic_ns()
+        if now - last_check_time < CURSOR_CHECK_DELAY:
+            return last_state, last_check_time
+
+        # Check if XFixes is supported before attempting to use it
+        if not self._ensure_xfixes():
+            return last_state, now # Fallback if extension not available
+        
+        cursor = xfixes.get_cursor_image(self.root)
+        return cursor.width > 0 and cursor.height > 0, now
 
     def get_screen_metrics(self) -> tuple[int, int]:
         if not self.disp: return 1920, 1080 # Safe fallback
