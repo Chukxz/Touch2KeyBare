@@ -1,6 +1,7 @@
 from typing import ClassVar
 from ..base import AbstractMapping
 
+
 class Mapping(AbstractMapping):
     """Linux (evdev/uinput) specific keycode mapping implementation."""
 
@@ -10,7 +11,7 @@ class Mapping(AbstractMapping):
         29: "lctrl",
         97: "rctrl",
         42: "lshift",
-        54: "rshift"
+        54: "rshift",
     }
 
     # Generate reverse map once at class load for O(1) lookups

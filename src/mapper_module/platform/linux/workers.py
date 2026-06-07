@@ -5,9 +5,12 @@ from time import sleep as _sleep
 from random import uniform as _uniform
 
 from mapper_module.utils import (
-    LEFT_BUTTON_DOWN, LEFT_BUTTON_UP,
-    RIGHT_BUTTON_DOWN, RIGHT_BUTTON_UP, MIDDLE_BUTTON_DOWN, 
-    MIDDLE_BUTTON_UP
+    LEFT_BUTTON_DOWN,
+    LEFT_BUTTON_UP,
+    RIGHT_BUTTON_DOWN,
+    RIGHT_BUTTON_UP,
+    MIDDLE_BUTTON_DOWN,
+    MIDDLE_BUTTON_UP,
 )
 
 if TYPE_CHECKING:
@@ -18,14 +21,15 @@ DOWN_TUPLE = (LEFT_BUTTON_DOWN, RIGHT_BUTTON_DOWN, MIDDLE_BUTTON_DOWN)
 
 # In seconds
 CONSTANT_DWELL = 0.001
-MIN_BUTTON_DWELL = 0.025 
+MIN_BUTTON_DWELL = 0.025
 MAX_BUTTON_DWELL = 0.04
 MIN_MOUSE_DWELL = 0.0008
 MAX_MOUSE_DWELL = 0.0012
 
+
 # Worker: Keyboard (Isolated)
 def keyboard_worker(k_queue: Queue):
-    """ Dedicated process for Linux evdev virtual keyboard. """
+    """Dedicated process for Linux evdev virtual keyboard."""
     from evdev import UInput, ecodes
 
     # Create a virtual keyboard capable of sending all standard keys
@@ -50,11 +54,13 @@ def keyboard_worker(k_queue: Queue):
             ui.write(ecodes.EV_KEY, code, linux_value)
             ui.syn()
 
-        except queue.Empty:           
+        except queue.Empty:
             if pressed_keys:
-                print(f"\n[UTILITY] - Keyboard timeout. Releasing {len(pressed_keys)} keys.")
+                print(
+                    f"\n[UTILITY] - Keyboard timeout. Releasing {len(pressed_keys)} keys."
+                )
                 for code in list(pressed_keys):
-                    ui.write(ecodes.EV_KEY, code, 0) # 0 = UP
+                    ui.write(ecodes.EV_KEY, code, 0)  # 0 = UP
                     ui.syn()
                 pressed_keys.clear()
             continue
@@ -68,9 +74,10 @@ def keyboard_worker(k_queue: Queue):
             running = False
     ui.close()
 
+
 # Worker: Mouse (Isolated with Coalescing)
 def mouse_worker(m_queue: Queue):
-    """ Dedicated process for Linux evdev virtual mouse. """
+    """Dedicated process for Linux evdev virtual mouse."""
     from evdev import UInput, ecodes, AbsInfo
 
     # Define Mouse Capabilities
@@ -79,9 +86,15 @@ def mouse_worker(m_queue: Queue):
         ecodes.EV_REL: [ecodes.REL_X, ecodes.REL_Y, ecodes.REL_WHEEL],
         ecodes.EV_ABS: [
             # Max 65535 maps proportionally to screen size in X11/Wayland
-            (ecodes.ABS_X, AbsInfo(value=0, min=0, max=65535, fuzz=0, flat=0, resolution=0)),
-            (ecodes.ABS_Y, AbsInfo(value=0, min=0, max=65535, fuzz=0, flat=0, resolution=0))
-        ]
+            (
+                ecodes.ABS_X,
+                AbsInfo(value=0, min=0, max=65535, fuzz=0, flat=0, resolution=0),
+            ),
+            (
+                ecodes.ABS_Y,
+                AbsInfo(value=0, min=0, max=65535, fuzz=0, flat=0, resolution=0),
+            ),
+        ],
     }
     ui = UInput(cap, name="Touch2Key-Mouse")
 
@@ -112,12 +125,18 @@ def mouse_worker(m_queue: Queue):
                 task, data = m_queue.get(timeout=15.0)
 
             if task == "button":
-                if data == LEFT_BUTTON_DOWN: left_down = True
-                elif data == LEFT_BUTTON_UP: left_down = False
-                elif data == RIGHT_BUTTON_DOWN: right_down = True
-                elif data == RIGHT_BUTTON_UP: right_down = False
-                elif data == MIDDLE_BUTTON_DOWN: middle_down = True
-                elif data == MIDDLE_BUTTON_UP: middle_down = False
+                if data == LEFT_BUTTON_DOWN:
+                    left_down = True
+                elif data == LEFT_BUTTON_UP:
+                    left_down = False
+                elif data == RIGHT_BUTTON_DOWN:
+                    right_down = True
+                elif data == RIGHT_BUTTON_UP:
+                    right_down = False
+                elif data == MIDDLE_BUTTON_DOWN:
+                    middle_down = True
+                elif data == MIDDLE_BUTTON_UP:
+                    middle_down = False
 
                 btn_code, btn_val = BTN_MAP[data]
                 ui.write(ecodes.EV_KEY, btn_code, btn_val)
@@ -142,8 +161,8 @@ def mouse_worker(m_queue: Queue):
                             coalesce_count += 1
                         else:
                             pending_task = (next_task, next_data)
-                            break 
-                    except queue.Empty: 
+                            break
+                    except queue.Empty:
                         break
 
                 if acc_dx != 0 or acc_dy != 0:
@@ -164,20 +183,30 @@ def mouse_worker(m_queue: Queue):
         except queue.Empty:
             pressed_buttons = sum([left_down, right_down, middle_down])
             if pressed_buttons > 0:
-                print(f"\n[UTILITY] - Mouse worker timed out. Releasing {pressed_buttons} buttons.")
-                if left_down: ui.write(ecodes.EV_KEY, ecodes.BTN_LEFT, 0)
-                if right_down: ui.write(ecodes.EV_KEY, ecodes.BTN_RIGHT, 0)
-                if middle_down: ui.write(ecodes.EV_KEY, ecodes.BTN_MIDDLE, 0)
+                print(
+                    f"\n[UTILITY] - Mouse worker timed out. Releasing {pressed_buttons} buttons."
+                )
+                if left_down:
+                    ui.write(ecodes.EV_KEY, ecodes.BTN_LEFT, 0)
+                if right_down:
+                    ui.write(ecodes.EV_KEY, ecodes.BTN_RIGHT, 0)
+                if middle_down:
+                    ui.write(ecodes.EV_KEY, ecodes.BTN_MIDDLE, 0)
                 ui.syn()
                 left_down = right_down = middle_down = False
             continue
 
         except Exception as e:
             pressed_buttons = sum([left_down, right_down, middle_down])
-            print(f"\n[UTILITY] - Mouse Worker crashed: {e}. Releasing {pressed_buttons} buttons.")
-            if left_down: ui.write(ecodes.EV_KEY, ecodes.BTN_LEFT, 0)
-            if right_down: ui.write(ecodes.EV_KEY, ecodes.BTN_RIGHT, 0)
-            if middle_down: ui.write(ecodes.EV_KEY, ecodes.BTN_MIDDLE, 0)
+            print(
+                f"\n[UTILITY] - Mouse Worker crashed: {e}. Releasing {pressed_buttons} buttons."
+            )
+            if left_down:
+                ui.write(ecodes.EV_KEY, ecodes.BTN_LEFT, 0)
+            if right_down:
+                ui.write(ecodes.EV_KEY, ecodes.BTN_RIGHT, 0)
+            if middle_down:
+                ui.write(ecodes.EV_KEY, ecodes.BTN_MIDDLE, 0)
             ui.syn()
             running = False
 

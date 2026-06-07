@@ -3,14 +3,17 @@ import ctypes
 import psutil
 from mapper_module.utils import NT_TIMER_RES
 
-class SystemConfig(AbstractSystemConfig):        
+
+class SystemConfig(AbstractSystemConfig):
     def set_dpi_awareness(self):
         try:
-            ctypes.windll.shcore.SetProcessDpiAwareness(2)  # PROCESS_PER_MONITOR_DPI_AWARE
+            ctypes.windll.shcore.SetProcessDpiAwareness(
+                2
+            )  # PROCESS_PER_MONITOR_DPI_AWARE
         except Exception:
             try:
                 ctypes.windll.user32.SetProcessDPIAware()
-            except Exception:   
+            except Exception:
                 pass
 
     def set_timer_resolution(self):

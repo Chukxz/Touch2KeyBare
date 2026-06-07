@@ -6,17 +6,29 @@ import threading
 
 from mapper_module.platform import get_platform
 from mapper_module.utils import (
-    DEF_DPI, LONG_DELAY, WINDOW_UPDATE_INTERVAL, SCANCODES,
-    MapperEvent, rotate_resolution
-    )
+    DEF_DPI,
+    LONG_DELAY,
+    WINDOW_UPDATE_INTERVAL,
+    SCANCODES,
+    MapperEvent,
+    rotate_resolution,
+)
 
 if TYPE_CHECKING:
     from .json_loader import JSONLoader
     from .touch_reader import TouchReader
     from mapper_module.platform.base import AbstractBridge
 
-class Mapper():
-    def __init__(self, json_loader:JSONLoader, touch_reader:TouchReader, interception_bridge:AbstractBridge, pps:float, emulator:dict[str, str]):
+
+class Mapper:
+    def __init__(
+        self,
+        json_loader: JSONLoader,
+        touch_reader: TouchReader,
+        interception_bridge: AbstractBridge,
+        pps: float,
+        emulator: dict[str, str],
+    ):
         _, WindowMgrClass, _, _ = get_platform()
 
         # Setup Dependencies
@@ -26,7 +38,7 @@ class Mapper():
         self.touch_reader = touch_reader
         self.interception_bridge = interception_bridge
         self.emulator = emulator
-        self.window_title = emulator['window_title']
+        self.window_title = emulator["window_title"]
         self.toggle_key_scancode: int | None = SCANCODES[emulator["toggle_key"]]
         self.pps = pps
         self.event_count = 0
@@ -37,7 +49,7 @@ class Mapper():
         self.screen_w, self.screen_h = self.window_manager.get_screen_metrics()
         self.lock = threading.Lock()
         self.agg_lock = threading.Lock()
-        self.last_cursor_state = True # Cursor showing (Default)
+        self.last_cursor_state = True  # Cursor showing (Default)
         self.last_cursor_check_time = 0
         self.game_window_class_name = None
         self.game_window_info = None
@@ -45,39 +57,49 @@ class Mapper():
 
         # Config & State
         self.wasd_block = 0
-        self.update_config() 
+        self._update_config()
 
-        # Register Callbacks        
-        self.mapper_event_dispatcher.register_callback("ON_CONFIG_RELOAD", self.update_config)
+        # Register Callbacks
+        self.mapper_event_dispatcher.register_callback(
+            "ON_CONFIG_RELOAD", self._update_config
+        )
 
         # Start the window tracking thread
         self.running = True
         self.window_lost = False
-        self.window_thread = threading.Thread(target=self.update_game_window_info, daemon=True)
+        self.window_thread = threading.Thread(
+            target=self._update_game_window_info, daemon=True
+        )
         self.window_thread.start()
 
         # Mouse moves aggregation
         self.acc_x = 0.0
         self.acc_y = 0.0
-        self.aggregated_mouse_moves: list[tuple[float, float]]= []
-        self.aggregate_mouse_moves_thread = threading.Thread(target=self.aggregate_mouse_moves, daemon=True)
-        self.aggregate_mouse_moves_thread.start()        
+        self.aggregated_mouse_moves: list[tuple[float, float]] = []
+        self.aggregate_mouse_moves_thread = threading.Thread(
+            target=self._aggregate_mouse_moves, daemon=True
+        )
+        self.aggregate_mouse_moves_thread.start()
 
-    def update_config(self):
+    def _update_config(self):
         with self.lock:
             self.device_width = self.json_loader.width
             self.device_height = self.json_loader.height
             self.dpi = self.json_loader.dpi
-            print(f"\n[MAPPER] - Mapping from Device synced to Resolution: {self.device_width}x{self.device_height}, DPI: {self.dpi}.")
-            print(f"\n[MAPPER] - Current Screen Resolution: {self.screen_w}x{self.screen_h}.")
+            print(
+                f"\n[MAPPER] - Mapping from Device synced to Resolution: {self.device_width}x{self.device_height}, DPI: {self.dpi}."
+            )
+            print(
+                f"\n[MAPPER] - Current Screen Resolution: {self.screen_w}x{self.screen_h}."
+            )
 
     # Window Management
-    def get_game_window_class_name(self, window_title):
+    def _get_game_window_class_name(self, window_title):
         """Gets the game window classname."""
         if window_title is None:
             raise ValueError("Window_title must be provided.")
 
-        class_name = None            
+        class_name = None
         window_id = self.window_manager.find_window_by_title(window_title)
         if window_id is not None:
             class_name = self.window_manager.get_window_class_name(window_id)
@@ -87,44 +109,50 @@ class Mapper():
             raise RuntimeError(_str)
         return class_name
 
-    def get_window_info(self, window_id):
+    def _get_window_info(self, window_id):
         # Get the Client Area (The pure game content size)
         width, height = self.window_manager.get_client_rect(window_id)
 
         # Find where top-left (0,0) of the Client Area is on the Screen
         x, y = self.window_manager.get_window_position(window_id)
 
-        self.pulse_status()
+        self._pulse_status()
 
         # Check Cursor Visibility
-        is_visible, self.last_cursor_check_time = self.window_manager.is_cursor_visible(self.last_cursor_state, self.last_cursor_check_time)
+        is_visible, self.last_cursor_check_time = self.window_manager.is_cursor_visible(
+            self.last_cursor_state, self.last_cursor_check_time
+        )
 
         if not is_visible == self.last_cursor_state:
             self.last_cursor_state = is_visible
             # Signal the rest of the app to switch modes
-            self.mapper_event_dispatcher.dispatch(MapperEvent(action="ON_MENU_MODE_TOGGLE", is_visible=is_visible))
+            self.mapper_event_dispatcher.dispatch(
+                MapperEvent(action="ON_MENU_MODE_TOGGLE", is_visible=is_visible)
+            )
 
         return {
-            'window_id': window_id,
-            'left': x,
-            'top': y,    
-            'width': width,  
-            'height': height 
+            "window_id": window_id,
+            "left": x,
+            "top": y,
+            "width": width,
+            "height": height,
         }
 
-    def update_game_window_info(self):
-        """Background thread for updating the game window info - optimized to minimize lock hold time."""        
+    def _update_game_window_info(self):
+        """Background thread for updating the game window info - optimized to minimize lock hold time."""
         while self.running:
-            try:                
+            try:
                 # Check if current window_id is still valid
                 current_window_id = None
                 with self.lock:
                     if self.game_window_info:
-                        current_window_id = self.game_window_info.get('window_id')
+                        current_window_id = self.game_window_info.get("window_id")
 
-                if current_window_id and self.window_manager.is_window_valid(current_window_id):
+                if current_window_id and self.window_manager.is_window_valid(
+                    current_window_id
+                ):
                     # WINDOW IS ACTIVE: Get fresh coordinates
-                    new_info = self.get_window_info(current_window_id)
+                    new_info = self._get_window_info(current_window_id)
 
                     if self.window_lost:
                         print(f"\n[MAPPER] - Acquired game window!")
@@ -135,9 +163,11 @@ class Mapper():
                         self.window_lost = False
 
                 else:
-                    # WINDOW IS LOST: Handle scanning                        
+                    # WINDOW IS LOST: Handle scanning
                     if not self.window_lost:
-                        print("\n[MAPPER] - Game window lost! Scanning for new window...")
+                        print(
+                            "\n[MAPPER] - Game window lost! Scanning for new window..."
+                        )
                         with self.lock:
                             self.window_lost = True
                             self.game_window_info = None
@@ -146,10 +176,12 @@ class Mapper():
                         # Get window title class name if it doesn't exist
 
                         if not self.game_window_class_name:
-                            self.game_window_class_name = self.get_game_window_class_name(self.window_title)
+                            self.game_window_class_name = (
+                                self._get_game_window_class_name(self.window_title)
+                            )
 
                         # Scan for the window
-                        discovered_info = self.get_game_window_info()
+                        discovered_info = self._get_game_window_info()
 
                         # If we found it, swap it in
                         with self.lock:
@@ -170,8 +202,10 @@ class Mapper():
             sleep_time = LONG_DELAY if self.window_lost else self.window_update_interval
             time.sleep(sleep_time)
 
-    def get_game_window_info(self):
-        window_ids = self.window_manager.find_window_ids_by_class(self.game_window_class_name)
+    def _get_game_window_info(self):
+        window_ids = self.window_manager.find_window_ids_by_class(
+            self.game_window_class_name
+        )
         target_info = None
         max_diag = 0
 
@@ -179,9 +213,9 @@ class Mapper():
             if not self.window_manager.is_window_visible(window_id):
                 continue
 
-            info = self.get_window_info(window_id)
-            w, h = info['width'], info['height']
-            diag = (w*w + h*h) ** 0.5
+            info = self._get_window_info(window_id)
+            w, h = info["width"], info["height"]
+            diag = (w * w + h * h) ** 0.5
 
             if diag > max_diag:
                 max_diag = diag
@@ -197,9 +231,10 @@ class Mapper():
         """Thread-safe absolute mapping."""
         rot = self.touch_reader.get_rotation()
 
-        rot_dev_w, rot_dev_h = rotate_resolution(self.device_width, self.device_height, rot)
+        rot_dev_w, rot_dev_h = rotate_resolution(
+            self.device_width, self.device_height, rot
+        )
         return (x / rot_dev_w) * self.screen_w, (y / rot_dev_h) * self.screen_h
-
 
     def dp_to_px(self, dp):
         return dp * (self.dpi / DEF_DPI)
@@ -207,7 +242,7 @@ class Mapper():
     def px_to_dp(self, px):
         return px * (DEF_DPI / self.dpi)
 
-    def pulse_status(self):
+    def _pulse_status(self):
         now = time.perf_counter()
         elapsed = now - self.last_pulse_time
 
@@ -219,13 +254,18 @@ class Mapper():
 
             # Check if we are lagging
             status = "HEALTHY" if pps >= self.pps else "LOW RATE"
-            if pps == 0: status = "IDLE/DISCONNECTED"
-            block_indicator = f"[BLOCK ON ({self.wasd_block})]" if self.wasd_block > 0 else "[OPEN]"
+            if pps == 0:
+                status = "IDLE/DISCONNECTED"
+            block_indicator = (
+                f"[BLOCK ON ({self.wasd_block})]" if self.wasd_block > 0 else "[OPEN]"
+            )
 
-            print(f"\n[MAPPER] - Rate: {pps:>5.1f} Hz | Status: {status:<15} | WASD: {block_indicator:<12}")
+            print(
+                f"\n[MAPPER] - Rate: {pps:>5.1f} Hz | Status: {status:<15} | WASD: {block_indicator:<12}"
+            )
 
-    def aggregate_mouse_moves(self):
-        """Background thread for aggregating secondary mouse input - optimized to minimize lock hold time."""        
+    def _aggregate_mouse_moves(self):
+        """Background thread for aggregating secondary mouse input - optimized to minimize lock hold time."""
         while self.running:
             start_time = time.perf_counter()
 
@@ -239,7 +279,15 @@ class Mapper():
                 sum_dx = sum([v[0] for v in snapshot])
                 sum_dy = sum([v[1] for v in snapshot])
 
-                self.mapper_event_dispatcher.dispatch(MapperEvent(action="ON_AGGREGATION", sum_dx=sum_dx, sum_dy=sum_dy, acc_x=self.acc_x, acc_y=self.acc_y))
+                self.mapper_event_dispatcher.dispatch(
+                    MapperEvent(
+                        action="ON_AGGREGATION",
+                        sum_dx=sum_dx,
+                        sum_dy=sum_dy,
+                        acc_x=self.acc_x,
+                        acc_y=self.acc_y,
+                    )
+                )
             else:
                 self.acc_x = 0.0
                 self.acc_y = 0.0

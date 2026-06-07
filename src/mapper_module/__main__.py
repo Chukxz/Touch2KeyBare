@@ -9,9 +9,14 @@ import sys
 
 from mapper_module.platform import check_single_instance, get_platform
 from mapper_module.utils import (
-    DEFAULT_ADB_RATE_CAP, SHORT_DELAY,
-    PPS, EMULATORS, ADB_EXE, DEF_EMULATOR_ID,
-    TouchEvent, stop_process
+    DEFAULT_ADB_RATE_CAP,
+    SHORT_DELAY,
+    PPS,
+    EMULATORS,
+    ADB_EXE,
+    DEF_EMULATOR_ID,
+    TouchEvent,
+    stop_process,
 )
 
 from mapper_module import (
@@ -27,18 +32,19 @@ from mapper_module import (
 
 from mapper_module.scripts.pre_flight import run as pre_flight_run
 
-NAME = "Touch2Key_Engine"
+NAME = "Touch2Key__Engine"
 
-def construct_titles_dict(emulators: dict) -> dict:
+
+def _construct_titles_dict(emulators: dict) -> dict:
     titles_dict = {}
     n = 0
     for emulator, value in emulators.items():
-        titles_dict[value['window_title']] = {"name": emulator, "id": n}
+        titles_dict[value["window_title"]] = {"name": emulator, "id": n}
         n += 1
     return titles_dict
 
 
-def select_emulator(window_manager) -> dict | None:
+def _select_emulator(window_manager) -> dict | None:
     print("\n[MAIN] - Touch2Key Emulator Selector")
     emulators_list = list(EMULATORS.keys())
     emulators_len = len(emulators_list)
@@ -51,7 +57,7 @@ def select_emulator(window_manager) -> dict | None:
         print(f"    ID: [{id}] Name: {name}")
 
     current_windows_titles = window_manager.find_window_titles()
-    titles_dict = construct_titles_dict(EMULATORS)
+    titles_dict = _construct_titles_dict(EMULATORS)
     titles = list(titles_dict.keys())
 
     emulator_id = DEF_EMULATOR_ID
@@ -77,7 +83,9 @@ def select_emulator(window_manager) -> dict | None:
                 i += 1
 
     try:
-        choice = input(f"\nSelect Emulator ID [Default - {emulators_list[emulator_id]}]: ").strip()
+        choice = input(
+            f"\nSelect Emulator ID [Default - {emulators_list[emulator_id]}]: "
+        ).strip()
         tmp = emulator_id
         emulator_id = int(choice)
         if not (0 <= emulator_id < emulators_len):
@@ -91,20 +99,20 @@ def select_emulator(window_manager) -> dict | None:
     return EMULATORS[emulator_name]
 
 
-class Engine:
-    def __init__(self):   
+class _Engine:
+    def __init__(self):
         BridgeClass, WindowMgrClass, SysConfigClass, _ = get_platform()
-        
+
         self.window_manager = WindowMgrClass()
-        self.system_config = SysConfigClass()      
+        self.system_config = SysConfigClass()
         self.bridge_class = BridgeClass(self.window_manager, self.system_config)
-        
+
         self.system_config.set_dpi_awareness()
         self.system_config.set_timer_resolution()
         self.foreground_window = self.window_manager.get_foreground_window()
-    
+
         self.touch_reader: TouchReader | None = None
-        self.mapper_logic: Mapper | None = None
+        self.mapper: Mapper | None = None
         self.mouse_mapper: MouseMapper | None = None
         self.key_mapper: KeyMapper | None = None
         self.wasd_mapper: WASDMapper | None = None
@@ -112,30 +120,30 @@ class Engine:
         self.lock: threading.Lock = threading.Lock()
         self.is_shutting_down: bool = False
 
-    def set_is_visible(self, _is_visible: bool):
+    def _set_is_visible(self, _is_visible: bool):
         with self.lock:
             self.is_visible = _is_visible
             assert self.mouse_mapper is not None
             assert self.key_mapper is not None
             assert self.wasd_mapper is not None
-            
-            self.bridge_class.health_check()    
+
+            self.bridge_class.health_check()
             self.mouse_mapper.touch_up(None, self.is_visible)
             self.key_mapper.release_all()
             self.wasd_mapper.touch_up()
 
-    def check_workers(self):
+    def _check_workers(self):
         self.bridge_class.health_check()
         time.sleep(SHORT_DELAY)
 
-    def process_touch_event(self, action, touch_event: TouchEvent):
+    def _process_touch_event(self, action, touch_event: TouchEvent):
         assert self.mouse_mapper is not None
         assert self.key_mapper is not None
         assert self.wasd_mapper is not None
-        assert self.mapper_logic is not None
+        assert self.mapper is not None
 
         local_visible = self.is_visible
-        self.mapper_logic.event_count += 1
+        self.mapper.event_count += 1
 
         if touch_event.is_mouse:
             self.mouse_mapper.process_touch(action, touch_event, local_visible)
@@ -146,25 +154,31 @@ class Engine:
         if touch_event.is_wasd:
             self.wasd_mapper.process_touch(action, touch_event, self.is_visible)
 
-    def start(self):
-        keyboard.add_hotkey('esc', self.shutdown)
+    def _start(self):
+        keyboard.add_hotkey("esc", self._shutdown)
 
         # Elevate Main Process (ADB Parsing & Logic) using abstracted config
         self.system_config.set_high_priority(os.getpid(), "Main Loop")
 
-        print("\n[MAIN] - Initializing Dual-Engine Mapper... Press 'ESC' to Stop.")
+        print("\n[MAIN] - Initializing Dual-_Engine Mapper... Press 'ESC' to Stop.")
         print(f"\n[MAIN] - ADB Executable File Path: {ADB_EXE}.")
 
-        emulator = select_emulator(self.window_manager)
+        emulator = _select_emulator(self.window_manager)
         if emulator is None:
             print("\n[MAIN] - No emulators supported. Exiting...")
             return
 
         try:
-            rate_input = input(f"\nEnter ADB rate cap [Default {DEFAULT_ADB_RATE_CAP}, Min 60, Blank for Default]: ").strip()
-            rate_cap = max(60.0, float(rate_input)) if rate_input else DEFAULT_ADB_RATE_CAP
+            rate_input = input(
+                f"\nEnter ADB rate cap [Default {DEFAULT_ADB_RATE_CAP}, Min 60, Blank for Default]: "
+            ).strip()
+            rate_cap = (
+                max(60.0, float(rate_input)) if rate_input else DEFAULT_ADB_RATE_CAP
+            )
 
-            pps_input = input(f"Enter target Alert Threshold for health alerts [Default {PPS}, Range 30-120]: ").strip()
+            pps_input = input(
+                f"Enter target Alert Threshold for health alerts [Default {PPS}, Range 30-120]: "
+            ).strip()
             pps = max(30.0, min(120.0, float(pps_input))) if pps_input else PPS
 
         except ValueError:
@@ -176,32 +190,38 @@ class Engine:
         mapper_event_dispatcher = MapperEventDispatcher()
         config = AppConfig(mapper_event_dispatcher)
 
-        if hasattr(self.bridge_class, 'm_proc'):
+        if hasattr(self.bridge_class, "m_proc"):
             self.system_config.set_high_priority(self.bridge_class.m_proc.pid, "Mouse")
 
-        if hasattr(self.bridge_class, 'k_proc'):
-            self.system_config.set_high_priority(self.bridge_class.k_proc.pid, "Keyboard")
+        if hasattr(self.bridge_class, "k_proc"):
+            self.system_config.set_high_priority(
+                self.bridge_class.k_proc.pid, "Keyboard"
+            )
 
         time.sleep(SHORT_DELAY)
 
         json_loader = JSONLoader(config, self.foreground_window)
         self.touch_reader = TouchReader(config, mapper_event_dispatcher, rate_cap)
-        self.mapper_logic = Mapper(json_loader, self.touch_reader, self.bridge_class, pps, emulator)
+        self.mapper = Mapper(
+            json_loader, self.touch_reader, self.bridge_class, pps, emulator
+        )
 
-        self.mouse_mapper = MouseMapper(self.mapper_logic)
-        self.key_mapper = KeyMapper(self.mapper_logic)
-        self.wasd_mapper = WASDMapper(self.mapper_logic)
+        self.mouse_mapper = MouseMapper(self.mapper)
+        self.key_mapper = KeyMapper(self.mapper)
+        self.wasd_mapper = WASDMapper(self.mapper)
 
-        self.touch_reader.bind_touch_event(self.process_touch_event)
-        mapper_event_dispatcher.register_callback("ON_MENU_MODE_TOGGLE", self.set_is_visible)
-        
+        self.touch_reader.bind_touch_event(self._process_touch_event)
+        mapper_event_dispatcher.register_callback(
+            "ON_MENU_MODE_TOGGLE", self._set_is_visible
+        )
+
         # Restart failed child processes
-        threading.Thread(target=self.check_workers, daemon=True).start()
+        threading.Thread(target=self._check_workers, daemon=True).start()
 
         # Block until ESC is pressed
         keyboard.wait()
 
-    def shutdown(self):
+    def _shutdown(self):
         # Use abstracted window manager to check active window
         if self.window_manager.get_foreground_window() != self.foreground_window:
             return
@@ -216,16 +236,16 @@ class Engine:
             print("[MAIN] - Exiting all spawned threads...")
             if self.touch_reader is not None:
                 self.touch_reader.stop()
-            if self.mapper_logic is not None:
-                self.mapper_logic.running = False
+            if self.mapper is not None:
+                self.mapper.running = False
             if self.bridge_class is not None:
                 self.bridge_class.release_all()
-                
+
                 # Cleanup child processes safely if they exist in the OS-specific implementation
                 print("[MAIN] - Stopping Mouse and Keyboard child processes...")
-                if hasattr(self.bridge_class, 'k_proc'):
+                if hasattr(self.bridge_class, "k_proc"):
                     stop_process(self.bridge_class.k_proc)
-                if hasattr(self.bridge_class, 'm_proc'):
+                if hasattr(self.bridge_class, "m_proc"):
                     stop_process(self.bridge_class.m_proc)
         except Exception:
             pass
@@ -233,26 +253,30 @@ class Engine:
         print("[MAIN] - Shutdown complete. Goodbye.")
         os._exit(0)
 
+
 def run():
     try:
-        multiprocessing.set_start_method('spawn', force=True)
+        multiprocessing.set_start_method("spawn", force=True)
     except RuntimeError:
         pass
-    
+
     success, _ = check_single_instance(NAME)
     if not success:
-        print("[MAIN] - Another instance of Touch2Key is already running. Exiting this instance.")
+        print(
+            "[MAIN] - Another instance of Touch2Key is already running. Exiting this instance."
+        )
         os._exit(0)
 
-    engine = Engine()
-    
+    _engine = _Engine()
+
     try:
-        engine.start()
+        _engine._start()
     except KeyboardInterrupt:
-        engine.shutdown()
+        _engine._shutdown()
+
 
 if __name__ == "__main__":
     if not pre_flight_run():
         sys.exit(1)
-        
+
     run()

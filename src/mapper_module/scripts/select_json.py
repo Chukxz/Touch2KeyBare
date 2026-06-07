@@ -4,19 +4,20 @@ from tkinter import filedialog
 import json
 from mapper_module.utils import JSONS_FOLDER, update_toml
 
+
 def run():
     # Initialize Tkinter and hide the root window
     root = tk.Tk()
     root.withdraw()
-    root.attributes('-topmost', True) 
+    root.attributes("-topmost", True)
 
     os.makedirs(JSONS_FOLDER, exist_ok=True)
-    
+
     # Open File Dialog
     file_path = filedialog.askopenfilename(
         initialdir=JSONS_FOLDER,
         title="Select JSON Mapping Profile",
-        filetypes=(("JSON files", "*.json"), ("All files", "*.*"))
+        filetypes=(("JSON files", "*.json"), ("All files", "*.*")),
     )
 
     if not file_path:
@@ -25,12 +26,12 @@ def run():
         return
 
     root.destroy()
-        
+
     if not os.path.exists(file_path):
         print(f"[ERROR] File '{file_path}' not found.")
         return
 
-    with open(file_path, mode='r', encoding='utf-8') as f:
+    with open(file_path, mode="r", encoding="utf-8") as f:
         try:
             json.load(f)
         except json.JSONDecodeError as e:
@@ -40,6 +41,7 @@ def run():
     update_toml(image_path="", json_path=file_path, strict=True)
     print(f"\n[SUCCESS]")
     print(f"Selected JSON: {file_path}")
-    
+
+
 if __name__ == "__main__":
     run()

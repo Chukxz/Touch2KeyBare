@@ -1,18 +1,19 @@
 from typing import ClassVar
 from ..base import AbstractMapping
 
+
 class Mapping(AbstractMapping):
     """Windows-specific scancode mapping implementation."""
-    
+
     _MODIFIER_MAP: ClassVar[dict[int, str]] = {
         56: "lalt",
         312: "ralt",
         29: "lctrl",
         285: "rctrl",
         42: "lshift",
-        54: "rshift"
+        54: "rshift",
     }
-    
+
     # Generate reverse map once at class load for O(1) lookups
     _REVERSE_MAP: ClassVar[dict[str, int]] = {v: k for k, v in _MODIFIER_MAP.items()}
 

@@ -6,4 +6,12 @@ from .workers import keyboard_worker
 from .workers import mouse_worker
 from .setup import setup_linux
 
-__all__ = ['UInputBridge', 'WindowManager', 'SystemConfig', 'Mapping', 'keyboard_worker', 'mouse_worker', 'setup_linux']
+__all__ = [
+    "UInputBridge",
+    "WindowManager",
+    "SystemConfig",
+    "Mapping",
+    "keyboard_worker",
+    "mouse_worker",
+    "setup_linux",
+]

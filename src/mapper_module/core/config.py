@@ -11,8 +11,9 @@ from mapper_module.utils import MapperEvent, TOML_PATH, create_default_toml
 if TYPE_CHECKING:
     from mapper_module.utils import MapperEventDispatcher
 
+
 class AppConfig:
-    def __init__(self, mapper_event_dispatcher:MapperEventDispatcher):
+    def __init__(self, mapper_event_dispatcher: MapperEventDispatcher):
         self.mapper_event_dispatcher = mapper_event_dispatcher
 
         # Initialize the lock to protect config_data
@@ -21,22 +22,26 @@ class AppConfig:
         self.config_data = {}
 
         # Load immediately
-        self.load_config()
+        self._load_config()
         print(f"\n[CONFIG] - Configuration loaded from {TOML_PATH}.")
-        print(f"\n[CONFIG] - Current Handedness: {self.display_handedness(self.get('system').get('left_handed', False))}")
+        print(
+            f"\n[CONFIG] - Current Handedness: {self._display_handedness(self.get('system').get('left_handed', False))}"
+        )
 
         # REGISTER HOTKEY
         print("\n[CONFIG] - Press F7 to switch handedness or F9 to only reload config.")
-        keyboard.add_hotkey('f7', self.switch_handedness)
-        keyboard.add_hotkey('f9', self.reload_config)
+        keyboard.add_hotkey("f7", self._switch_handedness)
+        keyboard.add_hotkey("f9", self.reload_config)
 
-    def load_config(self):
+    def _load_config(self):
         """Loads TOML data safely. Creates default if missing."""
         try:
             # Check if file exists, if not create it using your helper
             toml_path = Path(TOML_PATH)
             if not Path.exists(toml_path):
-                print(f"\n[CONFIG] - Config file {TOML_PATH} not found! Creating default...")
+                print(
+                    f"\n[CONFIG] - Config file {TOML_PATH} not found! Creating default..."
+                )
                 create_default_toml()
 
             # Read the file from disk
@@ -47,38 +52,41 @@ class AppConfig:
                 self.config_data = new_data
 
         except ParseError as e:
-            print(f"\n[CONFIG] - Failed to parse TOML. Keeping previous config. Error: {e}")
+            print(
+                f"\n[CONFIG] - Failed to parse TOML. Keeping previous config. Error: {e}"
+            )
         except Exception as e:
             print(f"[CONFIG] - Error loading config: {e}")
-
 
     def reload_config(self):
         """Reloads from disk and notifies listeners."""
         print(f"\n[CONFIG] - Reloading TOML configuration from {TOML_PATH}...")
-        self.load_config()
+        self._load_config()
 
         # Dispatch event so other modules know config changed
         self.mapper_event_dispatcher.dispatch(MapperEvent(action="ON_CONFIG_RELOAD"))
 
-    def display_handedness(self, handedness):
+    def _display_handedness(self, handedness):
         return "Left-Handed" if handedness else "Right-Handed"
 
-    def switch_handedness(self):
+    def _switch_handedness(self):
         """Toggles left-handed mode in config and saves."""
 
         with self.config_lock:
-            config_system = self.get('system')
-            current_value = config_system.get('left_handed', False)
+            config_system = self.get("system")
+            current_value = config_system.get("left_handed", False)
             new_value = not current_value
-            config_system['left_handed'] = new_value
+            config_system["left_handed"] = new_value
 
-            self.config_data['system'] = config_system
+            self.config_data["system"] = config_system
 
         # Save back to disk
         try:
             with open(TOML_PATH, "w", encoding="utf-8") as f:
                 tomlkit.dump(self.config_data, f)
-            print(f"\n[CONFIG] - Handedness switched to {self.display_handedness(new_value)}. Config saved.")
+            print(
+                f"\n[CONFIG] - Handedness switched to {self._display_handedness(new_value)}. Config saved."
+            )
         except Exception as e:
             print(f"\n[CONFIG] - Failed to save config: {e}")
 

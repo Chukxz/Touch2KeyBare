@@ -6,4 +6,12 @@ from .mouse_mapper import MouseMapper
 from .key_mapper import KeyMapper
 from .wasd_mapper import WASDMapper
 
-__all__ = ['AppConfig', 'JSONLoader', 'TouchReader', 'Mapper', 'MouseMapper', 'KeyMapper', 'WASDMapper']
+__all__ = [
+    "AppConfig",
+    "JSONLoader",
+    "TouchReader",
+    "Mapper",
+    "MouseMapper",
+    "KeyMapper",
+    "WASDMapper",
+]

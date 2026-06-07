@@ -8,24 +8,22 @@ import time
 
 CURSOR_SHOWING = 0x1
 
-class RECT(ctypes.Structure):
+
+class _RECT(ctypes.Structure):
     _fields_ = [
         ("left", ctypes.c_long),
         ("top", ctypes.c_long),
         ("right", ctypes.c_long),
-        ("bottom", ctypes.c_long)
+        ("bottom", ctypes.c_long),
     ]
 
-class POINT(ctypes.Structure):
-    _fields_ = [
-        ("x", ctypes.c_long),
-        ("y", ctypes.c_long)
-    ]
+
+class _POINT(ctypes.Structure):
+    _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+
 
 class WindowManager(AbstractWindowManager):
-    EnumWindowsProc = ctypes.WINFUNCTYPE(
-        ctypes.c_bool, wintypes.HWND, wintypes.LPARAM
-    )
+    EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
 
     def get_foreground_window(self) -> int:
         return win32gui.GetForegroundWindow()
@@ -45,13 +43,15 @@ class WindowManager(AbstractWindowManager):
         hwnd = ctypes.windll.user32.FindWindowW(None, title)
         return hwnd if hwnd != 0 else None
 
-    def _enum_class_windows_callback(self, hwnd: wintypes.HWND, lParam: wintypes.LPARAM) -> bool:
+    def _enum_class_windows_callback(
+        self, hwnd: wintypes.HWND, lParam: wintypes.LPARAM
+    ) -> bool:
         target_class = ctypes.cast(
             lParam, ctypes.POINTER(ctypes.py_object)
-        ).contents.value['class_name']
-        results = ctypes.cast(
-            lParam, ctypes.POINTER(ctypes.py_object)
-        ).contents.value['results']
+        ).contents.value["class_name"]
+        results = ctypes.cast(lParam, ctypes.POINTER(ctypes.py_object)).contents.value[
+            "results"
+        ]
 
         buffer = ctypes.create_unicode_buffer(MAX_CLASS_NAME)
         ctypes.windll.user32.GetClassNameW(hwnd, buffer, MAX_CLASS_NAME)
@@ -61,31 +61,29 @@ class WindowManager(AbstractWindowManager):
 
     def find_window_ids_by_class(self, class_name: str | None) -> list:
         results = []
-        data = ctypes.py_object({
-            'class_name': class_name,
-            'results': results
-        })
+        data = ctypes.py_object({"class_name": class_name, "results": results})
         ctypes.windll.user32.EnumWindows(
-            self.EnumWindowsProc(self._enum_class_windows_callback),
-            ctypes.byref(data)
+            self.EnumWindowsProc(self._enum_class_windows_callback), ctypes.byref(data)
         )
         return results
 
     def get_client_rect(self, window_id: wintypes.HWND) -> tuple[int, int]:
-        rect = RECT()
+        rect = _RECT()
         ctypes.windll.user32.GetClientRect(window_id, ctypes.byref(rect))
         width = rect.right - rect.left
         height = rect.bottom - rect.top
         return width, height
 
     def get_window_position(self, window_id: wintypes.HWND) -> tuple[int, int]:
-        pt = POINT()
+        pt = _POINT()
         pt.x = 0
         pt.y = 0
         ctypes.windll.user32.ClientToScreen(window_id, ctypes.byref(pt))
         return pt.x, pt.y
 
-    def is_cursor_visible(self, last_state: bool, last_check_time: int) -> tuple[bool, int]:
+    def is_cursor_visible(
+        self, last_state: bool, last_check_time: int
+    ) -> tuple[bool, int]:
         now = time.monotonic_ns()
         if now - last_check_time < CURSOR_CHECK_DELAY_NS:
             return last_state, last_check_time

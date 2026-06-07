@@ -3,18 +3,29 @@ from typing import TYPE_CHECKING
 
 import threading
 from mapper_module.utils import (
-    RECT, CIRCLE, M_LEFT, M_RIGHT, M_MIDDLE,
-    MOUSE_WHEEL_CODE, SPRINT_DISTANCE_CODE, 
-    is_in_circle, is_in_rect, MapperEvent,
-    DOWN, UP, PRESSED, SCANCODES
+    RECT,
+    CIRCLE,
+    M_LEFT,
+    M_RIGHT,
+    M_MIDDLE,
+    MOUSE_WHEEL_CODE,
+    SPRINT_DISTANCE_CODE,
+    is_in_circle,
+    is_in_rect,
+    MapperEvent,
+    DOWN,
+    UP,
+    PRESSED,
+    SCANCODES,
 )
 
 if TYPE_CHECKING:
     from .mapper import Mapper
     from mapper_module.utils import TouchEvent
 
-class KeyMapper():
-    def __init__(self, mapper:Mapper):
+
+class KeyMapper:
+    def __init__(self, mapper: Mapper):
         self.mapper = mapper
         self.config = mapper.config
         self.mapper_event_dispatcher = self.mapper.mapper_event_dispatcher
@@ -24,7 +35,7 @@ class KeyMapper():
         self.touch_events_dict: dict[int, list[tuple[int, dict, bool]]] = {}
         self.touch_events_prevs: dict[int, tuple[float, float]] = {}
         self.touch_events_lock = threading.Lock()
-        self.scancode_ref_counts = {} # Tracks how many fingers are pressing a scancode
+        self.scancode_ref_counts = {}  # Tracks how many fingers are pressing a scancode
 
         # Blacklist for O(1) filtering
         self.ignored_names = {MOUSE_WHEEL_CODE, SPRINT_DISTANCE_CODE}
@@ -33,11 +44,13 @@ class KeyMapper():
         self.active_zones = []
 
         # Initialize data structures
-        self.process_json_data()
-        self.mapper_event_dispatcher.register_callback("ON_JSON_RELOAD", self.process_json_data)
+        self._process_json_data()
+        self.mapper_event_dispatcher.register_callback(
+            "ON_JSON_RELOAD", self._process_json_data
+        )
 
-    def process_json_data(self):
-        """Pre-processes JSON into a high-speed iteration list."""        
+    def _process_json_data(self):
+        """Pre-processes JSON into a high-speed iteration list."""
         temp_zones: list[tuple[int, dict]] = []
         # Get raw data from the loader
         with self.config.config_lock:
@@ -45,12 +58,14 @@ class KeyMapper():
 
         for scancode, value in raw_data:
             # Filter out ignored functional codes
-            if value.get('name', '') in self.ignored_names:
+            if value.get("name", "") in self.ignored_names:
                 continue
 
             # Pre-convert scancodes to integers once to save CPU during gameplay
             try:
-                s_int = int(scancode, 16) if isinstance(scancode, str) else int(scancode)
+                s_int = (
+                    int(scancode, 16) if isinstance(scancode, str) else int(scancode)
+                )
                 temp_zones.append((s_int, value))
             except (ValueError, TypeError):
                 continue
@@ -61,13 +76,13 @@ class KeyMapper():
 
         print(f"\n[KEYMAPPER] - Hot-path ready: {len(self.active_zones)} zones active.")
 
-    def send_key_touch_event(self, scancode, down=True):
+    def _send_key_touch_event(self, scancode, down=True):
         """Dispatches input to Interception Bridge"""
         if down:
             # Only send KeyDown if this is the first finger for this scancode
             count = self.scancode_ref_counts.get(scancode, 0)
             if count == 0:
-                self.dispatch_to_bridge(scancode, True)
+                self._dispatch_to_bridge(scancode, True)
             self.scancode_ref_counts[scancode] = count + 1
 
         else:
@@ -77,21 +92,29 @@ class KeyMapper():
                 new_count = count - 1
                 self.scancode_ref_counts[scancode] = new_count
                 if new_count == 0:
-                    self.dispatch_to_bridge(scancode, False)
+                    self._dispatch_to_bridge(scancode, False)
 
-    def dispatch_to_bridge(self, scancode, down):
+    def _dispatch_to_bridge(self, scancode, down):
         if down:
-            if scancode == M_LEFT: self.interception_bridge.left_click_down()
-            elif scancode == M_RIGHT: self.interception_bridge.right_click_down()
-            elif scancode == M_MIDDLE: self.interception_bridge.middle_click_down()
-            else: self.interception_bridge.key_down(scancode)
+            if scancode == M_LEFT:
+                self.interception_bridge.left_click_down()
+            elif scancode == M_RIGHT:
+                self.interception_bridge.right_click_down()
+            elif scancode == M_MIDDLE:
+                self.interception_bridge.middle_click_down()
+            else:
+                self.interception_bridge.key_down(scancode)
         else:
-            if scancode == M_LEFT: self.interception_bridge.left_click_up()
-            elif scancode == M_RIGHT: self.interception_bridge.right_click_up()
-            elif scancode == M_MIDDLE: self.interception_bridge.middle_click_up()
-            else: self.interception_bridge.key_up(scancode)
+            if scancode == M_LEFT:
+                self.interception_bridge.left_click_up()
+            elif scancode == M_RIGHT:
+                self.interception_bridge.right_click_up()
+            elif scancode == M_MIDDLE:
+                self.interception_bridge.middle_click_up()
+            else:
+                self.interception_bridge.key_up(scancode)
 
-    def touch_down(self, touch_event:TouchEvent, is_visible:bool):        
+    def _touch_down(self, touch_event: TouchEvent, is_visible: bool):
         """Triggered on finger contact. Scans active_zones for a hit."""
         if self.mapper.device_width <= 0 or self.mapper.device_height <= 0:
             return
@@ -104,13 +127,15 @@ class KeyMapper():
         with self.touch_events_lock:
             for scancode, value in self.active_zones:
                 hit = False
-                v_type = value['type']
+                v_type = value["type"]
 
                 if v_type == CIRCLE:
-                    if is_in_circle(nx, ny, value['cx'], value['cy'], value['r']):
+                    if is_in_circle(nx, ny, value["cx"], value["cy"], value["r"]):
                         hit = True
                 elif v_type == RECT:
-                    if is_in_rect(nx, ny, value['x1'], value['x2'], value['y1'], value['y2']):
+                    if is_in_rect(
+                        nx, ny, value["x1"], value["x2"], value["y1"], value["y2"]
+                    ):
                         hit = True
 
                 if is_visible:
@@ -119,52 +144,61 @@ class KeyMapper():
 
                 if hit:
                     # Successfully mapped finger to key
-                    self.send_key_touch_event(scancode, down=True)
+                    self._send_key_touch_event(scancode, down=True)
 
                     # Create a list if it doesn't exist, then append tuples
                     if touch_event.slot not in self.touch_events_dict:
                         self.touch_events_dict[touch_event.slot] = []
-                    self.touch_events_dict[touch_event.slot].append((scancode, value, touch_event.is_wasd))
+                    self.touch_events_dict[touch_event.slot].append(
+                        (scancode, value, touch_event.is_wasd)
+                    )
 
                     # Create a list of a tuple if it doesn't exist
-                    if value['move_camera']:
+                    if value["move_camera"]:
                         if touch_event.slot not in self.touch_events_prevs:
-                            self.touch_events_prevs[touch_event.slot] = (touch_event.x, touch_event.y)
+                            self.touch_events_prevs[touch_event.slot] = (
+                                touch_event.x,
+                                touch_event.y,
+                            )
 
                     if touch_event.is_wasd:
                         self.mapper.wasd_block += 1
-                        self.mapper_event_dispatcher.dispatch(MapperEvent(action="ON_WASD_BLOCK"))
+                        self.mapper_event_dispatcher.dispatch(
+                            MapperEvent(action="ON_WASD_BLOCK")
+                        )
 
-    def touch_pressed(self, touch_event:TouchEvent):
+    def _touch_pressed(self, touch_event: TouchEvent):
         """O(1) Dictionary lookup to process deltas if any of the key(s) tied to a finger are mouse move enabled."""
         if touch_event.slot in self.touch_events_prevs:
             prev = self.touch_events_prevs[touch_event.slot]
             raw_dx = touch_event.x - prev[0]
             raw_dy = touch_event.y - prev[1]
-            self.touch_events_prevs[touch_event.slot] = (touch_event.x, touch_event.y)  
+            self.touch_events_prevs[touch_event.slot] = (touch_event.x, touch_event.y)
             with self.mapper.agg_lock:
                 self.mapper.aggregated_mouse_moves.append((raw_dx, raw_dy))
 
-    def touch_up(self, touch_event:TouchEvent):        
+    def _touch_up(self, touch_event: TouchEvent):
         """O(1) Dictionary lookup to release keys when finger lifts."""
         with self.touch_events_lock:
             data_list = self.touch_events_dict.pop(touch_event.slot, [])
             for scancode, _, is_wasd in data_list:
-                self.send_key_touch_event(scancode, down=False)
-                self.touch_events_prevs.pop(touch_event.slot, ())                
+                self._send_key_touch_event(scancode, down=False)
+                self.touch_events_prevs.pop(touch_event.slot, ())
                 if is_wasd:
                     self.mapper.wasd_block = max(0, self.mapper.wasd_block - 1)
-                    self.mapper_event_dispatcher.dispatch(MapperEvent(action="ON_WASD_BLOCK"))
+                    self.mapper_event_dispatcher.dispatch(
+                        MapperEvent(action="ON_WASD_BLOCK")
+                    )
 
-    def process_touch(self, action, touch_event:TouchEvent, is_visible:bool):
+    def process_touch(self, action, touch_event: TouchEvent, is_visible: bool):
         if action == PRESSED:
-            self.touch_pressed(touch_event)
+            self._touch_pressed(touch_event)
 
         elif action == DOWN:
-            self.touch_down(touch_event, is_visible)
+            self._touch_down(touch_event, is_visible)
 
         elif action == UP:
-            self.touch_up(touch_event)        
+            self._touch_up(touch_event)
 
     def release_all(self):
         """Flushes all current input states."""
@@ -172,7 +206,7 @@ class KeyMapper():
             for slot in list(self.touch_events_dict.keys()):
                 data_list = self.touch_events_dict.pop(slot, [])
                 for scancode, _, __ in data_list:
-                    self.send_key_touch_event(scancode, down=False)
+                    self._send_key_touch_event(scancode, down=False)
             self.touch_events_dict.clear()
             self.touch_events_prevs.clear()
             self.mapper.wasd_block = 0
