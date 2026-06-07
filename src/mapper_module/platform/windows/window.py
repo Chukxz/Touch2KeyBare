@@ -59,7 +59,7 @@ class WindowManager(AbstractWindowManager):
             results.append(hwnd)
         return True
 
-    def find_hwnds_by_class(self, class_name: str | None) -> list:
+    def find_window_ids_by_class(self, class_name: str | None) -> list:
         results = []
         data = ctypes.py_object({
             'class_name': class_name,
