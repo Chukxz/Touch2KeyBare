@@ -42,6 +42,8 @@ DELETING = "DELETING"
 MARKING = "MARKING"
 CONFIRM_DELETE_ALL = "CONFIRM_DELETE_ALL"
 CONFIRM_EXIT = "CONFIRM_EXIT"
+CONFIRM_DELETE_EXIT = "CONFIRM_DELETE_EXIT"
+CONFIRM_NAMING_EXIT = "CONFIRM_NAMING_EXIT"
 HELP_STR = "F1 (Help)"
 DEF_STR = "MODE: IDLE | F3 (Load JSON) | F5 (Load Image) | F12 (Save) | Esc (Exit)\n\
     F6 (Circle) | F7 (Rect) | F8 (Cancel) | Del (Delete) | F2 (Delete All) | F9 (List Current Shapes in Terminal)\n\
@@ -953,7 +955,7 @@ class _DraggableShape(_Draggable):
 
         else:
             return
-        
+
         self.cursor_manager.set_state_cursor(self.plotter.state)
         self.canvas.draw()
         self.plotter.drawn = False
@@ -1455,7 +1457,7 @@ class Plotter:
                     self.crosshair_v_fg,
                 ]:
                     line.set_visible(False)
-                    
+
                 self.cursor_manager.set_state_cursor(self.state)
                 self.fig.canvas.draw_idle()
 
@@ -1558,17 +1560,17 @@ class Plotter:
 
     def on_key_press(self, event):
         """Main Input Router."""
-
         if self.state == NAMING:
             self.handle_naming_input(event.key)
             return
 
         if self.state == DELETING:
-            self.handle_delete_input(event.key)
+            self.handle_deleting_input(event.key)
             return
 
         if self.state == MARKING:
             self.handle_marking_input(event.key)
+            return
 
         if self.state == CONFIRM_DELETE_ALL:
             if event.key == "enter":
@@ -1589,7 +1591,6 @@ class Plotter:
             if event.key == "f8":
                 print("[-] Action Cancelled.")
                 self.reset_state()
-
             else:
                 print(f"[!] Blocked: Finish or Cancel (F8) current shape first.")
             return
@@ -1602,57 +1603,58 @@ class Plotter:
         if self.state == IDLE:
             if event.key == "f1":
                 self.reset_state()
-            if event.key == "f2":
+            elif event.key == "f2":
                 self.state = CONFIRM_DELETE_ALL
                 self.update_title(
                     "[DELETE ALL?] Press ENTER to Confirm or Any other key to Cancel."
                 )
-            if event.key == "f3":
+            elif event.key == "f3":
                 self.load_json()
-            if event.key == "f4":
+            elif event.key == "f4":
                 self.toggle_visibility()
-            if event.key == "f5":
+            elif event.key == "f5":
                 self.change_image()
-            if event.key == "f6":
+            elif event.key == "f6":
                 self.start_mode(CIRCLE, 3)
-            if event.key == "f7":
+            elif event.key == "f7":
                 self.start_mode(RECT, 4)
-            if event.key == "f9":
+            elif event.key == "f9":
                 self.print_data()
-            if event.key == "f12":
+            elif event.key == "f12":
                 self.enter_naming_mode()
-            if event.key == "delete":
-                self.enter_delete_mode()
-            if event.key == " ":
-                self.enter_mark_mode()
-            if event.key == "escape":
+            elif event.key == "delete":
+                self.enter_deleting_mode()
+            elif event.key == " ":
+                self.enter_marking_mode()
+            elif event.key == "escape":
                 self.state = CONFIRM_EXIT
                 self.update_title(
                     "[EXIT?] Press ENTER to Quit or Any other key to Cancel."
                 )
 
-            step = 5 if event.key.startswith("shift+") else 1
-            clean_key = event.key.replace("shift+", "")
-            if clean_key == "left":
-                if self.current_draggable:
-                    self.current_draggable.move(
-                        -step, 0
-                    )  # x is decreasing leftward, y stays constant
-            elif clean_key == "right":
-                if self.current_draggable:
-                    self.current_draggable.move(
-                        step, 0
-                    )  # x is increasing rightward, y stays constants
-            elif clean_key == "up":
-                if self.current_draggable:
-                    self.current_draggable.move(
-                        0, -step
-                    )  # y is decreasing upward, x stays constant
-            elif clean_key == "down":
-                if self.current_draggable:
-                    self.current_draggable.move(
-                        0, step
-                    )  # y is increasing downward, x stays constant
+            else:
+                step = 5 if event.key.startswith("shift+") else 1
+                clean_key = event.key.replace("shift+", "")
+                if clean_key == "left":
+                    if self.current_draggable:
+                        self.current_draggable.move(
+                            -step, 0
+                        )  # x is decreasing leftward, y stays constant
+                elif clean_key == "right":
+                    if self.current_draggable:
+                        self.current_draggable.move(
+                            step, 0
+                        )  # x is increasing rightward, y stays constants
+                elif clean_key == "up":
+                    if self.current_draggable:
+                        self.current_draggable.move(
+                            0, -step
+                        )  # y is decreasing upward, x stays constant
+                elif clean_key == "down":
+                    if self.current_draggable:
+                        self.current_draggable.move(
+                            0, step
+                        )  # y is increasing downward, x stays constant
 
     def on_resize(self, event):
         """Updates the font size of all labels when the figure is resized."""
@@ -1671,7 +1673,7 @@ class Plotter:
         self.fig.canvas.draw_idle()
 
     # Delete Logic
-    def enter_delete_mode(self):
+    def enter_deleting_mode(self):
         if not self.shapes:
             print("[!] No shapes to delete.")
             self.update_title(f"List empty. Nothing to delete | {HELP_STR}")
@@ -1693,7 +1695,7 @@ class Plotter:
         self.reset_state()
         print("[+] All shapes deleted.")
 
-    def handle_delete_input(self, key):
+    def handle_deleting_input(self, key):
         if key == "escape":
             self.reset_state()
             return
@@ -1797,7 +1799,7 @@ class Plotter:
         )
 
     # Marking Logic
-    def enter_mark_mode(self):
+    def enter_marking_mode(self):
         if not self.shapes:
             print("[!] No shapes to mark.")
             self.update_title(f"List empty. Nothing to mark | {HELP_STR}")
@@ -1915,16 +1917,23 @@ class Plotter:
             )
 
             if saved:
+                label = interception_key
+                if interception_key == MOUSE_WHEEL_CODE:
+                    label = "MOUSE_WHEEL"
+                elif interception_key == SPRINT_DISTANCE_CODE:
+                    label = "SPRINT_DISTANCE"
+                else:
+                    label = label.split("E0_")[-1]
+
                 print(
-                    f"[+] Saved ID {self.count-1}: {self.mode} bound to key '{key_name}' with interception key: '{interception_key}'"
+                    f"[+] Saved ID {self.count-1}: {self.mode} bound to key '{key_name}' with interception key: '{interception_key}' and labelled as: '{label}'"
                 )
+
                 if self.mode == CIRCLE and cx and cy and r:
                     if interception_key == MOUSE_WHEEL_CODE:
                         fc = DEFAULT_MOUSE_WHEEL_FACE_COLOR  # Bright Cyan/Teal
-                        interception_key = "MOUSE_WHEEL"
                     elif interception_key == SPRINT_DISTANCE_CODE:
                         fc = DEFAULT_SPRINT_DISTANCE_FACE_COLOR  # Bright Red
-                        interception_key = "SPRINT_DISTANCE"
                     else:
                         fc = get_vibrant_random_color(DEFAULT_FACE_COLOR_ALPHA)
                     # Add shape artist
@@ -1935,7 +1944,7 @@ class Plotter:
                     self.ax.add_patch(shape_artist)
                     self.shapes_artists[entry_id] = shape_artist
                     # Add label artist
-                    label_artist = self.label(cx, cy, interception_key, fc)
+                    label_artist = self.label(cx, cy, label, fc)
                     label_artist.set_visible(self.show_overlays)
                     self.ax.add_artist(label_artist)
                     self.labels_artists[entry_id] = label_artist
@@ -1956,7 +1965,7 @@ class Plotter:
                         or interception_key == SPRINT_DISTANCE_CODE
                     ):
                         print(
-                            f"[!] Warning: Special keys like '{interception_key}' should be bound to CIRCLE shapes for better visualization. Consider re-binding this key to a circle shape."
+                            f"[!] Warning: Special keys like '{interception_key}' should be bound to CIRCLE shapes for better visualization. Consider re-binding this key to a CIRCLE shape."
                         )
                     else:
                         fc = get_vibrant_random_color(DEFAULT_FACE_COLOR_ALPHA)
@@ -1975,7 +1984,7 @@ class Plotter:
                         self.ax.add_patch(shape_artist)
                         self.shapes_artists[entry_id] = shape_artist
                         # Add label artist
-                        label_artist = self.label(cx, cy, interception_key, fc)
+                        label_artist = self.label(cx, cy, label, fc)
                         label_artist.set_visible(self.show_overlays)
                         self.ax.add_artist(label_artist)
                         self.labels_artists[entry_id] = label_artist
