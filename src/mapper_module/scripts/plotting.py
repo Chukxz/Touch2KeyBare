@@ -1792,7 +1792,7 @@ class Plotter:
             self.last_artist_id = None
 
         print(
-            f'[+] Deleted Shape of type: {shape_type} with ID: {uid} and key: '{interception_key}' (hex: {hex_code})"
+            f'[+] Deleted Shape of type: {shape_type} with ID: {uid} and key: "{interception_key}" (hex: {hex_code})'
         )
 
     # Marking Logic
@@ -1826,7 +1826,7 @@ class Plotter:
                             else "UNMARKED for Camera Follow"
                         )
                         print(
-                            f"[+] {status}: ID {uid} with key '{marked_key['interception_key']}' (hex: {marked_key['m_code']})"
+                            f'[+] {status}: ID {uid} with key "{marked_key['interception_key']}" (hex: {marked_key['m_code']})'
                         )
 
                         if not was_marked:
@@ -1893,7 +1893,7 @@ class Plotter:
         hex_code, interception_key = self.get_interception_code(key_name)
 
         if hex_code is None:
-            print(f"[!] Key '{key_name}' not mapped.")
+            print(f'[!] Key "{key_name}" not mapped.')
             return
 
         cx, cy, r, bb = None, None, None, None
