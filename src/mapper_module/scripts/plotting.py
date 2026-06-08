@@ -316,7 +316,7 @@ class _DraggableLabel(_Draggable):
         if self.press is None or event.inaxes != self.label_artist.axes:
             return
 
-        if self.plotter.current_draggable_id is None and self.plotter.iter_count == 0:
+        if self.plotter.current_draggable_id is None:
             self.plotter.current_draggable_id = self.select_current_draggable_id()
             self.indicate_current_draggable_id()
 
@@ -378,7 +378,6 @@ class _DraggableLabel(_Draggable):
 
     def on_release(self, event):
         self.partial_release()
-        self.cursor_manager.set_state_cursor(self.plotter.state)
 
         if self.plotter.current_draggable_id is None and self.plotter.draggables_ids:
             self.plotter.current_draggable_id = self.select_current_draggable_id()
@@ -499,7 +498,6 @@ class _DraggableShape(_Draggable):
 
         self.cursor_manager.set_state_cursor(self.plotter.state)
         self.canvas.draw_idle()
-        return True
 
     def on_motion(self, event):
         if not self.plotter.fire_on_motion:
@@ -962,7 +960,6 @@ class _DraggableShape(_Draggable):
 
     def on_release(self, event):
         self.partial_release()
-        self.cursor_manager.set_state_cursor(self.plotter.state)
 
         if self.plotter.current_draggable_id is None and self.plotter.draggables_ids:
             self.plotter.current_draggable_id = self.select_current_draggable_id()
