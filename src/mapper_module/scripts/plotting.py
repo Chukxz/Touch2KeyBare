@@ -1792,7 +1792,7 @@ class Plotter:
             self.last_artist_id = None
 
         print(
-            f"[+] Deleted Shape of type: {shape_type} with ID: {uid} and key: '{interception_key}' (hex: {hex_code})"
+            f'[+] Deleted Shape of type: {shape_type} with ID: {uid} and key: '{interception_key}' (hex: {hex_code})"
         )
 
     # Marking Logic
@@ -1923,7 +1923,7 @@ class Plotter:
                     label = label.split("E0_")[-1]
 
                 print(
-                    f"[+] Saved ID {self.count-1}: {self.mode} bound to key '{key_name}' with interception key: '{interception_key}' and labelled as: '{label}'"
+                    f'[+] Saved ID {self.count-1}: {self.mode} bound to key "{key_name}" with interception key: "{interception_key}" and labelled as: "{label}"'
                 )
 
                 if self.mode == CIRCLE and cx and cy and r:
@@ -1962,7 +1962,7 @@ class Plotter:
                         or interception_key == SPRINT_DISTANCE_CODE
                     ):
                         print(
-                            f"[!] Warning: Special keys like '{interception_key}' should be bound to CIRCLE shapes for better visualization. Consider re-binding this key to a CIRCLE shape."
+                            f'[!] Warning: Special keys like "{interception_key}" should be bound to CIRCLE shapes for better visualization. Consider re-binding this key to a CIRCLE shape.'
                         )
                     else:
                         fc = get_vibrant_random_color(DEFAULT_FACE_COLOR_ALPHA)
