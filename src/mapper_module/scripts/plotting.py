@@ -316,7 +316,6 @@ class _DraggableLabel(_Draggable):
             self.shape_artist.set_visible(True)
             self.populate_draggables_list()
 
-        self.cursor_manager.set_state_cursor(self.plotter.state)
         self.canvas.draw_idle()
 
     def on_motion(self, event):
@@ -346,7 +345,6 @@ class _DraggableLabel(_Draggable):
             self.shape_artist.set_edgecolor(ACTIVE_EDGE_COLOR)
             self.shape_artist.set_linewidth(DEFAULT_LARGE_LINE_WIDTH)
 
-            self.cursor_manager.set_state_cursor(self.plotter.state)
             self.canvas.draw()
             self.drag_bg = self.canvas.copy_from_bbox(self.label_artist.axes.bbox)
             self.label_artist.set_visible(True)
@@ -382,7 +380,6 @@ class _DraggableLabel(_Draggable):
         self.press = x, y, xdata_press, ydata_press, xpx_press, ypx_press
 
         self.move_label(dx, dy)
-        self.cursor_manager.set_state_cursor(self.plotter.state)
         self.canvas.draw()
         self.plotter.drawn = False
 
@@ -403,7 +400,6 @@ class _DraggableLabel(_Draggable):
             self.label_artist.remove()
             self.plotter.ax.add_artist(self.label_artist)
 
-        self.cursor_manager.set_state_cursor(self.plotter.state)
         self.canvas.draw_idle()
 
     def partial_release(self):
@@ -506,7 +502,6 @@ class _DraggableShape(_Draggable):
             self.label_artist.set_visible(True)
             self.populate_draggables_list()
 
-        self.cursor_manager.set_state_cursor(self.plotter.state)
         self.canvas.draw_idle()
 
     def on_motion(self, event):
@@ -536,7 +531,6 @@ class _DraggableShape(_Draggable):
                 label_bbox.set_edgecolor(ACTIVE_EDGE_COLOR)
                 label_bbox.set_linewidth(DEFAULT_LARGE_LINE_WIDTH)
 
-            self.cursor_manager.set_state_cursor(self.plotter.state)
             self.canvas.draw()
             self.drag_bg = self.canvas.copy_from_bbox(self.shape_artist.axes.bbox)
             self.shape_artist.set_visible(True)
@@ -964,7 +958,6 @@ class _DraggableShape(_Draggable):
         else:
             return
 
-        self.cursor_manager.set_state_cursor(self.plotter.state)
         self.canvas.draw()
         self.plotter.drawn = False
 
@@ -987,7 +980,6 @@ class _DraggableShape(_Draggable):
             self.shape_artist.remove()
             self.plotter.ax.add_patch(self.shape_artist)
 
-        self.cursor_manager.set_state_cursor(self.plotter.state)
         self.canvas.draw_idle()
 
     def partial_release(self):
@@ -1204,18 +1196,17 @@ class Plotter:
 
     def update_title(self, text, idle_override=False):
         self.ax.set_title(text)
+        self.cursor_manager.set_state_cursor(self.state)
+
         if idle_override:
-            self.cursor_manager.set_state_cursor(self.state)
             self.fig.canvas.draw_idle()
         else:
-            self.cursor_manager.set_state_cursor(self.state)
             self.fig.canvas.draw()
 
     def clear_visuals(self):
         for artist in self.point_artists:
             artist.remove()
         self.point_artists = []
-        self.cursor_manager.set_state_cursor(self.state)
         self.fig.canvas.draw()
 
     def reset_state(self):
@@ -1402,8 +1393,6 @@ class Plotter:
         for artist in self.labels_artists.values():
             artist.set_visible(self.show_overlays)
 
-        self.cursor_manager.set_state_cursor(self.state)
-        self.fig.canvas.draw()
         self.update_title(f"OVERLAYS: {state_str} | {DEF_STR}")
 
     def label(self, center_x, center_y, label, fc):
@@ -1523,7 +1512,6 @@ class Plotter:
             draggable.partial_release()
 
         self.current_draggable_id = None
-        self.cursor_manager.set_state_cursor(self.state)
         self.fig.canvas.draw_idle()
 
     def on_click(self, event):
@@ -1552,7 +1540,6 @@ class Plotter:
 
         (dot,) = self.ax.plot(event.xdata, event.ydata, "ro")
         self.point_artists.append(dot)
-        self.cursor_manager.set_state_cursor(self.state)
         self.fig.canvas.draw()
         self.bg_cache = None
 
@@ -1676,7 +1663,6 @@ class Plotter:
         for label_artist in self.labels_artists.values():
             label_artist.set_fontsize(scaled_font)
 
-        self.cursor_manager.set_state_cursor(self.state)
         self.fig.canvas.draw_idle()
 
     # Delete Logic
@@ -1817,6 +1803,7 @@ class Plotter:
         self.update_title("MARK MODE: Type ID... (Enter to Confirm | Esc to Cancel)")
 
     def handle_marking_input(self, key):
+
         if key == "escape":
             self.reset_state()
             return
