@@ -196,8 +196,13 @@ class _Draggable:
                 if label_bbox:
                     label_bbox.set_edgecolor(INDICATED_EDGE_COLOR)
                     label_bbox.set_linewidth(DEFAULT_MEDIUM_LINE_WIDTH)
+                move_camera_info = (
+                    "Move Camera Enabled"
+                    if self.plotter.shapes[self.entry_id]["move_camera"] == True
+                    else "Move Camera Disabled"
+                )
                 self.plotter.update_title(
-                    f"Current Artist: {curr_id} (ID: {self.entry_id}) | Click to Drag | Arrows to Nudge | {HELP_STR}",
+                    f"Current Artist: {curr_id} (ID: {self.entry_id}) | Click to Drag | Arrows to Nudge | {move_camera_info} | {HELP_STR}",
                     True,
                 )
             self.plotter.current_draggable = draggable_artist
@@ -207,8 +212,13 @@ class _Draggable:
             if draggable_artist and draggable_artist.artist_id == curr_id:
                 draggable_artist.shape_artist.set_edgecolor(INDICATED_EDGE_COLOR)
                 draggable_artist.shape_artist.set_linewidth(DEFAULT_LARGE_LINE_WIDTH)
+                move_camera_info = (
+                    "Move Camera Enabled"
+                    if self.plotter.shapes[self.entry_id]["move_camera"] == True
+                    else "Move Camera Disabled"
+                )
                 self.plotter.update_title(
-                    f"Current Artist: {curr_id} (ID: {self.entry_id}) | Click to Drag or Resize | Arrows to Nudge | {HELP_STR}",
+                    f"Current Artist: {curr_id} (ID: {self.entry_id}) | Click to Drag or Resize | Arrows to Nudge | {move_camera_info} | {HELP_STR}",
                     True,
                 )
             self.plotter.current_draggable = draggable_artist
@@ -1331,8 +1341,8 @@ class Plotter:
                 json_shape["bb"] = ((new_x1, new_y1), (new_x2, new_y2))
                 json_shape["mode"] = RECT
 
-            item_id += 1
             json_shapes[item_id] = json_shape
+            item_id += 1
 
         if item_id > 0:
             w, h, dpi = self.width, self.height, self.dpi
@@ -1686,7 +1696,7 @@ class Plotter:
             self.update_title(f"List empty. Nothing to delete | {HELP_STR}")
             return
 
-        for uid in list(self.shapes.keys()):
+        for uid in self.shapes.keys():
             self.delete_entry(uid)
         self.count = 0
         self.reset_state()
@@ -2359,7 +2369,7 @@ class Plotter:
         )
 
     def calculate_raw_rect(self, values):  # 2 Points
-        if len(self.points) < 2:
+        if len(values) < 2:
             return None, None, None, None
 
         xs = [v[0] for v in values]
