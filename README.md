@@ -71,7 +71,7 @@ Because Touch2Key installs system-level drivers and kernel rules, **simply runni
 *(Note: Windows requires a system reboot after installation to fully load the driver).*
 
 ## Contributing
-Please use `black` for formatting and `pytest` for unit testing.
+Please use `black` for formatting and `pytest` for unit testing (optional).
 
 ## License
 MIT License.
