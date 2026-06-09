@@ -25,8 +25,7 @@ from mapper_module.utils import (
     TOML_PATH,
     MOUSE_WHEEL_CODE,
     SPRINT_DISTANCE_CODE,
-    IDLE,
-    select_image_file,
+    IDLE
     rotate_resolution,
     update_toml,
     get_vibrant_random_color,
@@ -1008,14 +1007,12 @@ class Plotter:
         self.mapping = MappingClass()
 
         # SMART PATH DETECTION
-        base_images_folder = Path(IMAGES_FOLDER)
-        toml_file = Path(TOML_PATH)
         json_file_str = None
 
         if image_path is None:
-            if toml_file.exists():
+            if TOML_PATH.exists():
                 try:
-                    with open(toml_file, "r", encoding="utf-8") as f:
+                    with open(TOML_PATH, "r", encoding="utf-8") as f:
                         doc = tomlkit.load(f)
                     toml_img_str = doc.get("system", {}).get("hud_image_path", "")
                     json_file_str = doc.get("system", {}).get("json_path", "")
@@ -1030,16 +1027,16 @@ class Plotter:
                     pass
 
             if image_path is None:
-                base_images_folder.mkdir(parents=True, exist_ok=True)
+                IMAGES_FOLDER.mkdir(parents=True, exist_ok=True)
                 print(f"[System] No active HUD found in config. Opening selector...")
-                selected = select_image_file(str(base_images_folder))
-                image_path = Path(selected) if selected else None
+                selected = self.select_image_file()
+                image_path = Path(selected) if selected or None
 
         if not image_path:
             print("Exiting: No image selected.")
             return
 
-        self.image_path = Path(image_path)
+        self.image_path = image_path
         img = self.load_image()
         if img is None:
             print("Could not load image, exiting...")
@@ -1089,6 +1086,24 @@ class Plotter:
         plt.show()
 
     # Visual & State Management
+
+from PyQt5.QtWidgets import QFileDialog
+
+    def select_image_file(self) -> str:
+    file_path, _ = QFileDialog.getOpenFileName(
+        None,
+        "Select an Image",
+        IMAGES_FOLDER,
+        "Image Files (*.jpg *.jpeg *.png *.bmp *.webp);;All Files (*.*)"
+    )
+
+    if not file_path:
+        print("[!] Image selection cancelled.")
+        return ""
+
+    return file_path
+
+
     def load_image(self):
         try:
             img = Image.open(self.image_path)
@@ -1240,7 +1255,7 @@ class Plotter:
         )
 
         if not file_path:
-            print("[!] Selection cancelled.")
+            print("[!] JSON selection cancelled.")
             return
 
         self.load_json_from_path(file_path)
@@ -1353,7 +1368,7 @@ class Plotter:
             print(f"Loaded JSON file: {self.json_path.as_posix()}")
 
     def change_image(self):
-        image_path = select_image_file(str(IMAGES_FOLDER))
+        image_path = self.select_image_file()
         if image_path:
             last_image_path = self.image_path
             self.image_path = Path(image_path)
