@@ -528,7 +528,7 @@ def update_toml(
 
         if "system" not in table_keys:
             doc.append("system", tomlkit.table())
-        system = doc.get("system", tomlkit.table())
+        system = doc["system"]
 
         if mouse_wheel_radius is not None:
             joystick.update({"mouse_wheel_radius": mouse_wheel_radius})
