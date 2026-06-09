@@ -255,6 +255,9 @@ class _Engine:
 
 
 def run():
+    if not pre_flight_run():
+        sys.exit(1)
+
     try:
         multiprocessing.set_start_method("spawn", force=True)
     except RuntimeError:
@@ -275,8 +278,5 @@ def run():
         _engine._shutdown()
 
 
-if __name__ == "__main__":
-    if not pre_flight_run():
-        sys.exit(1)
-
+if __name__ == "__main__": 
     run()
