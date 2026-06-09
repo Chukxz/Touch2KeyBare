@@ -13,6 +13,7 @@ This input mapper can be used with `Sunshine/Moonlight` or `Artemis/Apollo` for 
 
 ## Key Features
 * **Platform Native Injection:** Windows (Interception driver) and Linux (evdev/uinput).
+If you're on Linux ensure that your windowing system is using X11.
 
 * **Zero-Latency:** Dedicated isolated background worker processes and background helper threads with heartbeat timers and real-time status logs.
 
