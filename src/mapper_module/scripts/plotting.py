@@ -2149,7 +2149,7 @@ class Plotter:
 
                 save = messagebox.askyesno(
                     "Save", "Mouse Wheel or Sprint Distance has not been configured. Save?"
-            )
+                )
                 root.destroy()
 
                 if not save:
@@ -2215,7 +2215,7 @@ class Plotter:
                     print(
                         f"[!] Mouse Wheel already assigned. Overwriting previous assignment."
                     )
-                    for k, v in self.shapes.items():
+                    for k, v in list(self.shapes.items()):
                         if v["interception_key"] == MOUSE_WHEEL_CODE:
                             uid = k
                             inc_count = False
