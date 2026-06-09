@@ -9,8 +9,7 @@ from PIL import Image
 import tomlkit
 import math
 import os
-import tkinter as tk
-from tkinter import filedialog, messagebox
+from PyQt5.QtWidgets import QFileDialog, QMessageBox
 import json
 import datetime
 from pathlib import Path
@@ -1232,26 +1231,17 @@ class Plotter:
         )
 
     def load_json(self):
-        # Initialize Tkinter and hide the root window
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
-
-        os.makedirs(JSONS_FOLDER, exist_ok=True)
-
-        # Open File Dialog
-        file_path = filedialog.askopenfilename(
-            initialdir=JSONS_FOLDER,
-            title="Select JSON Mapping Profile",
-            filetypes=(("JSON files", "*.json"), ("All files", "*.*")),
+        # Filter for JSON files and set default directory
+        file_path, _ = QFileDialog.getOpenFileName(
+            None, 
+            "Select JSON Mapping Profile", 
+            JSONS_FOLDER, 
+            "JSON files (*.json);;All files (*)"
         )
 
         if not file_path:
             print("[!] Selection cancelled.")
-            root.destroy()
             return
-
-        root.destroy()
 
         self.load_json_from_path(file_path)
 
@@ -2083,16 +2073,16 @@ class Plotter:
             self.buffer_default and self.json_path == file_path
         ):
             # Confirm Overwrite
-            root = tk.Tk()
-            root.withdraw()
-            root.attributes("-topmost", True)
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Question)
+            msg_box.setText("Overwrite Warning")
+            msg_box.setInformativeText(f"File '{file_path.name}' already exists. Overwrite?")
+            msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msg_box.setDefaultButton(QMessageBox.No)
 
-            overwrite = messagebox.askyesno(
-                "Overwrite", f"File '{file_path.name}' already exists. Overwrite?"
-            )
-            root.destroy()
+            ret = msg_box.exec_()
 
-            if not overwrite:
+            if ret == QMessageBox.No:
                 print("[!] Save cancelled by user.")
                 self.update_title(f"Save cancelled | {HELP_STR}")
                 return
@@ -2141,18 +2131,18 @@ class Plotter:
         }
 
         try:
-            if (not self.saved_mouse_wheel) or (not self.saved_sprint_distance):
+            if (not self.saved_mouse_wheel) or (self.saved_sprint_distance == False):
                 # Confirm Save without Mouse Wheel or Sprint Distance
-                root = tk.Tk()
-                root.withdraw()
-                root.attributes("-topmost", True)
+                msg_box = QMessageBox()
+                msg_box.setIcon(QMessageBox.Question)
+                msg_box.setText("Configuration Warning")
+                msg_box.setInformativeText("Mouse Wheel or Sprint Distance has not been configured. Save?")
+                msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+                msg_box.setDefaultButton(QMessageBox.No)
+  
+                ret = msg_box.exec_()
 
-                save = messagebox.askyesno(
-                    "Save", "Mouse Wheel or Sprint Distance has not been configured. Save?"
-                )
-                root.destroy()
-
-                if not save:
+                if ret == QMessageBox.No:
                     print("[!] Save cancelled by user.")
                     self.update_title(f"Save cancelled | {HELP_STR}")
                     return
