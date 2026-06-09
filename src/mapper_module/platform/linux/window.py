@@ -20,7 +20,7 @@ class WindowManager(AbstractWindowManager):
             self.NET_WM_NAME = self.disp.intern_atom("_NET_WM_NAME")
         except Exception as e:
             print(
-                f"[WINDOW MANAGER] - Failed to connect to X11 Display. Ensure you are on X11."
+                f"[WINDOW MANAGER] - Failed to connect to X11 Display. Ensure you are on X11. {e}"
             )
             self.disp = None
 
