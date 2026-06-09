@@ -25,7 +25,7 @@ from mapper_module.utils import (
     TOML_PATH,
     MOUSE_WHEEL_CODE,
     SPRINT_DISTANCE_CODE,
-    IDLE
+    IDLE,
     rotate_resolution,
     update_toml,
     get_vibrant_random_color,
