@@ -1279,8 +1279,8 @@ class Plotter:
             metadata["dpi"]
             metadata["mouse_wheel_radius"]
             metadata["sprint_distance"]
-        except:
-            print(f"Error loading json file")
+        except Exception as e:
+            print(f"Error loading json file: {e}.")
             return
 
         scale_x = self.width / screen_width
