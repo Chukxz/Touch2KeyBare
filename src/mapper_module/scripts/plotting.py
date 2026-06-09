@@ -883,6 +883,7 @@ class _DraggableShape(_Draggable):
         """
         x, y, w, h = int(round(x)), int(round(y)), int(round(w)), int(round(h))
 
+        # Shape freezes instead of flipping
         if w < 0:
             return
 
@@ -1342,7 +1343,7 @@ class Plotter:
             self.reset_state()
             print("Cleared previous shapes and artists, figure reset.")
 
-            for shape in json_shapes.values():
+            for shape in list(json_shapes.values()):
                 cx = shape["cx"]
                 cy = shape["cy"]
                 r = shape.get("r", None)
@@ -1822,8 +1823,10 @@ class Plotter:
                             if not was_marked
                             else "UNMARKED for Camera Follow"
                         )
+                        marked_i_key = marked_key['interception_key']
+                        marked_m_code = marked_key['m_code']
                         print(
-                            f'[+] {status}: ID {uid} with key "{marked_key['interception_key']}" (hex: {marked_key['m_code']})'
+                            f'[+] {status}: ID {uid} with key "{marked_i_key}" (hex: {marked_m_code})'
                         )
 
                         if not was_marked:
@@ -2079,7 +2082,7 @@ class Plotter:
         if file_path.exists() and not (
             self.buffer_default and self.json_path == file_path
         ):
-            # Create a temporary root to show the dialog
+            # Confirm Overwrite
             root = tk.Tk()
             root.withdraw()
             root.attributes("-topmost", True)
@@ -2139,9 +2142,20 @@ class Plotter:
 
         try:
             if (not self.saved_mouse_wheel) or (not self.saved_sprint_distance):
-                print("[!] Error: Mouse wheel or sprint distance not configured.")
-                self.update_title(f"Error saving: {file_path.name} | {HELP_STR}")
-                return
+                # Confirm Save without Mouse Wheel or Sprint Distance
+                root = tk.Tk()
+                root.withdraw()
+                root.attributes("-topmost", True)
+
+                save = messagebox.askyesno(
+                    "Save", "Mouse Wheel or Sprint Distance has not been configured. Save?"
+            )
+                root.destroy()
+
+                if not save:
+                    print("[!] Save cancelled by user.")
+                    self.update_title(f"Save cancelled | {HELP_STR}")
+                    return
 
             with file_path.open("w", encoding="utf-8") as f:
                 json.dump(json_output, f, indent=4)
