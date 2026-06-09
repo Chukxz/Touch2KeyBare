@@ -289,7 +289,7 @@ def run():
         if protocol and protocol == "x11":
             pass
         else:
-            print(f"[MAIN] - Ensure you are on X11")
+            print("[MAIN] - Ensure you are on X11.")
             sys.exit(1)
 
     try:
