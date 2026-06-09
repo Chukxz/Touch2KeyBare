@@ -3,7 +3,7 @@ from .utils import (
     MapperEvent,
     TouchEvent,
     TOML_PATH,
-    ADB_EXE,
+    ADB,
     IMAGES_FOLDER,
     JSONS_FOLDER,
 )
@@ -21,7 +21,7 @@ __all__ = [
     "TouchEvent",
     "MapperEventDispatcher",
     "TOML_PATH",
-    "ADB_EXE",
+    "ADB",
     "IMAGES_FOLDER",
     "JSONS_FOLDER",
     "AppConfig",

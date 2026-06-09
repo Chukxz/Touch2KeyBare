@@ -4,6 +4,8 @@ import matplotlib
 
 matplotlib.use("qt5agg")
 import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, Rectangle
+from matplotlib.text import Text
 from PyQt5.QtCore import Qt
 from PIL import Image
 import tomlkit
@@ -30,7 +32,7 @@ from mapper_module.utils import (
     update_toml,
     get_vibrant_random_color,
     get_dulled_hue_color,
-    get_hue_alpha_from_hsv,
+    get_hue_modified_alpha_from_hsv,
 )
 
 COLLECTING = "COLLECTING"
@@ -241,7 +243,7 @@ class _Draggable:
         if self.is_shape:
             shape = self.plotter.shapes_artists[self.entry_id]
             dulled_face_color = get_dulled_hue_color(
-                *get_hue_alpha_from_hsv(self.default_face_color)
+                *get_hue_modified_alpha_from_hsv(self.default_face_color)
             )
             shape.set_facecolor(dulled_face_color)
 
@@ -250,7 +252,7 @@ class _Draggable:
             label_bbox = label.get_bbox_patch()
             if label_bbox:
                 dulled_face_color = get_dulled_hue_color(
-                    *get_hue_alpha_from_hsv(self.default_face_color)
+                    *get_hue_modified_alpha_from_hsv(self.default_face_color)
                 )
                 label_bbox.set_facecolor(dulled_face_color)
 
@@ -344,7 +346,7 @@ class _DraggableLabel(_Draggable):
             self.shape_artist.set_linewidth(DEFAULT_LARGE_LINE_WIDTH)
 
             self.canvas.draw()
-            self.drag_bg = self.canvas.copy_from_bbox(self.label_artist.axes.bbox)
+            self.drag_bg = self.canvas.copy_from_bbox(self.label_artist.axes.bbox)  # type: ignore
             self.label_artist.set_visible(True)
             self.plotter.drawn = True
 
@@ -357,10 +359,10 @@ class _DraggableLabel(_Draggable):
         self.plotter.current_move_distance = dist_px
 
         # Blitting Loop
-        self.canvas.restore_region(self.drag_bg)
+        self.canvas.restore_region(self.drag_bg)  # type: ignore
         self.move_label(dx, dy)
-        self.label_artist.axes.draw_artist(self.label_artist)
-        self.canvas.blit(self.label_artist.axes.bbox)
+        self.label_artist.axes.draw_artist(self.label_artist)  # type: ignore
+        self.canvas.blit(self.label_artist.axes.bbox)  # type: ignore
 
     def move_label(self, dx, dy):
         if not self.press:
@@ -413,7 +415,7 @@ class _DraggableLabel(_Draggable):
     def disconnect(self):
         for cid in self.cids:
             self.canvas.mpl_disconnect(cid)
-        print(f"[System] Event listeners for {self.label_artist} disconnected.")
+        print(f"[PLOTTER] - Event listeners for {self.label_artist} disconnected.")
 
 
 class _DraggableShape(_Draggable):
@@ -438,13 +440,13 @@ class _DraggableShape(_Draggable):
         )
 
         if self.shape_type == CIRCLE:
-            r = self.shape_artist.get_radius()
+            r = self.shape_artist.get_radius()  # type: ignore
             new_r = max(r, self.min_circ_dist)
-            self.shape_artist.set_radius(new_r)
+            self.shape_artist.set_radius(new_r)  # type: ignore
             self.plotter.shapes[self.entry_id]["r"] = new_r
 
         elif self.shape_type == RECT:
-            x, y = self.shape_artist.get_xy()
+            x, y = self.shape_artist.get_xy()  # type: ignore
             w = self.shape_artist.get_width()
             h = self.shape_artist.get_height()
             self.update_rect_safe(x, y, w, h)
@@ -483,12 +485,12 @@ class _DraggableShape(_Draggable):
             return False
 
         if self.shape_type == CIRCLE:
-            cx, cy = self.shape_artist.get_center()
+            cx, cy = self.shape_artist.get_center()  # type: ignore
             self.shape_mode = self.get_circumference(event, cx, cy)
             self.press = cx, cy, event.xdata, event.ydata, event.x, event.y
 
         elif self.shape_type == RECT:
-            x, y = self.shape_artist.get_xy()
+            x, y = self.shape_artist.get_xy()  # type: ignore
             self.shape_mode = self.get_corner_under_mouse(event)
             if self.shape_mode is None:
                 self.shape_mode = self.get_edge_under_mouse(event)
@@ -530,7 +532,7 @@ class _DraggableShape(_Draggable):
                 label_bbox.set_linewidth(DEFAULT_LARGE_LINE_WIDTH)
 
             self.canvas.draw()
-            self.drag_bg = self.canvas.copy_from_bbox(self.shape_artist.axes.bbox)
+            self.drag_bg = self.canvas.copy_from_bbox(self.shape_artist.axes.bbox)  # type: ignore
             self.shape_artist.set_visible(True)
             self.plotter.drawn = True
 
@@ -541,7 +543,7 @@ class _DraggableShape(_Draggable):
         self.plotter.current_move_distance = dist_px
 
         # Blitting Loop
-        self.canvas.restore_region(self.drag_bg)
+        self.canvas.restore_region(self.drag_bg)  # type: ignore
         if self.shape_type == CIRCLE:
             self.circle_transform(event)
         elif self.shape_type == RECT:
@@ -549,8 +551,8 @@ class _DraggableShape(_Draggable):
         else:
             return
 
-        self.shape_artist.axes.draw_artist(self.shape_artist)
-        self.canvas.blit(self.shape_artist.axes.bbox)
+        self.shape_artist.axes.draw_artist(self.shape_artist)  # type: ignore
+        self.canvas.blit(self.shape_artist.axes.bbox)  # type: ignore
 
     def circle_transform(self, event):
         if self.press is None:
@@ -558,8 +560,8 @@ class _DraggableShape(_Draggable):
         xdata = event.xdata
         ydata = event.ydata
 
-        old_cx, old_cy = self.shape_artist.get_center()
-        old_r = self.shape_artist.get_radius()
+        old_cx, old_cy = self.shape_artist.get_center()  # type: ignore
+        old_r = self.shape_artist.get_radius()  # type: ignore
         new_cx, new_cy = old_cx, old_cy
 
         if self.shape_mode == "resize":
@@ -592,7 +594,7 @@ class _DraggableShape(_Draggable):
                     self.plotter.sprint_artist_id
                 ]
                 sprint_shape = self.plotter.shapes[self.plotter.sprint_artist_id]
-                cx, cy = sprint_artist.shape_artist.get_center()
+                cx, cy = sprint_artist.shape_artist.get_center()  # type: ignore
                 actual_dist = self.plotter.euclidean_distance(cx, cy, new_cx, new_cy)
 
                 # STRICT CHECK: Ensure Sprint is actually outside the Joystick
@@ -604,7 +606,7 @@ class _DraggableShape(_Draggable):
                     )
                     sp_x, sp_y = int(round(sp_x)), int(round(sp_y))
 
-                    sprint_artist.shape_artist.set_center((sp_x, sp_y))
+                    sprint_artist.shape_artist.set_center((sp_x, sp_y))  # type: ignore
                     sprint_shape["cx"] = sp_x
                     sprint_shape["cy"] = sp_y
 
@@ -625,8 +627,8 @@ class _DraggableShape(_Draggable):
 
             # STRICT CHECK: Ensure Sprint is actually outside the Joystick
             if actual_dist <= self.plotter.mouse_wheel_radius:
-                self.shape_artist.set_center((old_cx, old_cy))
-                self.shape_artist.set_radius(old_r)
+                self.shape_artist.set_center((old_cx, old_cy))  # type: ignore
+                self.shape_artist.set_radius(old_r)  # type: ignore
                 current_shape["cx"] = old_cx
                 current_shape["cy"] = old_cy
                 current_shape["r"] = old_r
@@ -651,11 +653,11 @@ class _DraggableShape(_Draggable):
 
     def get_circumference(self, event, cx, cy):
         # Get circle data
-        r = self.shape_artist.get_radius()
+        r = self.shape_artist.get_radius()  # type: ignore
         # Convert center to pixels
-        cx_px, cy_px = self.shape_artist.axes.transData.transform((cx, cy))
+        cx_px, cy_px = self.shape_artist.axes.transData.transform((cx, cy))  # type: ignore
         # Calculate radius in pixels
-        rim_x_px, _ = self.shape_artist.axes.transData.transform((cx + r, cy))
+        rim_x_px, _ = self.shape_artist.axes.transData.transform((cx + r, cy))  # type: ignore
         r_px = abs(rim_x_px - cx_px)
         # Calculate distance from mouse to center
         dist_px = ((event.x - cx_px) ** 2 + (event.y - cy_px) ** 2) ** 0.5
@@ -669,7 +671,7 @@ class _DraggableShape(_Draggable):
 
     def update_radius(self, xdata, ydata):
         # Get the fixed center
-        cx, cy = self.shape_artist.get_center()
+        cx, cy = self.shape_artist.get_center()  # type: ignore
         # Calculate distance from center to mouse
         new_r = int(round(((xdata - cx) ** 2 + (ydata - cy) ** 2) ** 0.5))
         current_shape = self.plotter.shapes[self.entry_id]
@@ -698,7 +700,7 @@ class _DraggableShape(_Draggable):
                 sprint_artist = self.plotter.shape_drag_managers[
                     self.plotter.sprint_artist_id
                 ]
-                sp_r = sprint_artist.shape_artist.get_radius()
+                sp_r = sprint_artist.shape_artist.get_radius()  # type: ignore
                 if new_r < sp_r:
                     new_sp_r = new_r
 
@@ -709,7 +711,7 @@ class _DraggableShape(_Draggable):
             new_r = min(new_r, self.plotter.mouse_wheel_radius)
 
         if new_r >= self.min_circ_dist:
-            self.shape_artist.set_radius(new_r)
+            self.shape_artist.set_radius(new_r)  # type: ignore
             current_shape["r"] = new_r
 
             if new_sp_r is not None and self.plotter.sprint_artist_id is not None:
@@ -717,11 +719,11 @@ class _DraggableShape(_Draggable):
                     self.plotter.sprint_artist_id
                 ]
                 sprint_shape = self.plotter.shapes[self.plotter.sprint_artist_id]
-                sprint_artist.shape_artist.set_radius(new_sp_r)
+                sprint_artist.shape_artist.set_radius(new_sp_r)  # type: ignore
                 sprint_shape["r"] = new_sp_r
 
     def get_corner_under_mouse(self, event):
-        x, y = self.shape_artist.get_xy()
+        x, y = self.shape_artist.get_xy()  # type: ignore
         w, h = self.shape_artist.get_width(), self.shape_artist.get_height()
 
         # VISUAL CORNERS (Adjusted for imshow Y-inversion)
@@ -736,7 +738,7 @@ class _DraggableShape(_Draggable):
 
         # Check pixel distance for each corner
         for name, (cx, cy) in corners.items():
-            cx_px, cy_px = self.shape_artist.axes.transData.transform((cx, cy))
+            cx_px, cy_px = self.shape_artist.axes.transData.transform((cx, cy))  # type: ignore
             dist_px = ((event.x - cx_px) ** 2 + (event.y - cy_px) ** 2) ** 0.5
             if dist_px <= self.vertex_tolerance:
                 return name
@@ -776,7 +778,7 @@ class _DraggableShape(_Draggable):
         xdata, ydata = int(round(xdata)), int(round(ydata))
 
         # Get current RAW bounds (un-normalized)
-        x, y = self.shape_artist.get_xy()
+        x, y = self.shape_artist.get_xy()  # type: ignore
         w = self.shape_artist.get_width()
         h = self.shape_artist.get_height()
 
@@ -823,7 +825,7 @@ class _DraggableShape(_Draggable):
         xdata, ydata = int(round(xdata)), int(round(ydata))
 
         # Get current RAW bounds
-        x, y = self.shape_artist.get_xy()
+        x, y = self.shape_artist.get_xy()  # type: ignore
         w = self.shape_artist.get_width()
         h = self.shape_artist.get_height()
 
@@ -889,19 +891,19 @@ class _DraggableShape(_Draggable):
             return
 
         if w >= self.min_rect_dist:
-            self.shape_artist.set_x(x)
+            self.shape_artist.set_x(x)  # type: ignore
             self.shape_artist.set_width(w)
         else:
-            old_x = int(round(self.shape_artist.get_x()))
+            old_x = int(round(self.shape_artist.get_x()))  # type: ignore
             x = old_x
             old_w = int(round(self.shape_artist.get_width()))
             w = max(old_w, self.min_rect_dist)
 
         if h >= self.min_rect_dist:
-            self.shape_artist.set_y(y)
+            self.shape_artist.set_y(y)  # type: ignore
             self.shape_artist.set_height(h)
         else:
-            old_y = int(round(self.shape_artist.get_y()))
+            old_y = int(round(self.shape_artist.get_y()))  # type: ignore
             y = old_y
             old_h = int(round(self.shape_artist.get_height()))
             h = max(old_h, self.min_rect_dist)
@@ -918,7 +920,7 @@ class _DraggableShape(_Draggable):
             x0, y0, _, _, _, _ = self.press
             new_cx = int(round(x0 + dx))
             new_cy = int(round(y0 + dy))
-            self.shape_artist.set_center((new_cx, new_cy))
+            self.shape_artist.set_center((new_cx, new_cy))  # type: ignore
             self.plotter.shapes[self.entry_id]["cx"] = new_cx
             self.plotter.shapes[self.entry_id]["cy"] = new_cy
             return new_cx, new_cy
@@ -939,17 +941,17 @@ class _DraggableShape(_Draggable):
 
         if self.shape_type == CIRCLE:
             _, _, xdata_press, ydata_press, xpx_press, ypx_press = self.press
-            cx, cy = self.shape_artist.get_center()
+            cx, cy = self.shape_artist.get_center()  # type: ignore
             self.press = cx, cy, xdata_press, ydata_press, xpx_press, ypx_press
 
-            old_cx, old_cy = self.shape_artist.get_center()
-            old_r = self.shape_artist.get_radius()
+            old_cx, old_cy = self.shape_artist.get_center()  # type: ignore
+            old_r = self.shape_artist.get_radius()  # type: ignore
             new_cx, new_cy = self.move_circle(dx, dy)
             self.circle_transform_helper(old_cx, old_cy, old_r, new_cx, new_cy)
 
         elif self.shape_type == RECT:
             _, _, xdata_press, ydata_press, xpx_press, ypx_press = self.press
-            x, y = self.shape_artist.get_xy()
+            x, y = self.shape_artist.get_xy()  # type: ignore
             self.press = x, y, xdata_press, ydata_press, xpx_press, ypx_press
 
             self.move_rect(dx, dy)
@@ -992,7 +994,7 @@ class _DraggableShape(_Draggable):
     def disconnect(self):
         for cid in self.cids:
             self.canvas.mpl_disconnect(cid)
-        print(f"[System] Event listeners for {self.shape_artist} disconnected.")
+        print(f"[PLOTTER] - Event listeners for {self.shape_artist} disconnected.")
 
 
 class Plotter:
@@ -1021,16 +1023,16 @@ class Plotter:
                         if potential_path.exists():
                             image_path = potential_path
                             print(
-                                f"[System] Auto-loading last HUD: {image_path.as_posix()}"
+                                f"[PLOTTER] - Auto-loading last HUD: {image_path.as_posix()}"
                             )
                 except Exception:
                     pass
 
             if image_path is None:
                 IMAGES_FOLDER.mkdir(parents=True, exist_ok=True)
-                print(f"[System] No active HUD found in config. Opening selector...")
+                print(f"[PLOTTER] - No active HUD found in config. Opening selector...")
                 selected = self.select_image_file()
-                image_path = Path(selected) if selected or None
+                image_path = Path(selected) if selected else None
 
         if not image_path:
             print("Exiting: No image selected.")
@@ -1056,8 +1058,8 @@ class Plotter:
         self.mode = None
         self.state = IDLE
         self.input_buffer = ""
-        self.shapes_artists: dict[int, plt.Circle | plt.Rectangle] = {}  # type: ignore
-        self.labels_artists: dict[int, plt.Text] = {}  # type: ignore
+        self.shapes_artists: dict[int, Circle | Rectangle] = {}  # type: ignore
+        self.labels_artists: dict[int, Text] = {}  # type: ignore
         self.label_drag_managers: dict[int, _DraggableLabel] = {}
         self.shape_drag_managers: dict[int, _DraggableShape] = {}
 
@@ -1079,7 +1081,7 @@ class Plotter:
         if json_file_str:
             json_path = Path(json_file_str)
             if json_path.exists():
-                print(f"[System] Auto-loading last JSON: {json_path.as_posix()}")
+                print(f"[PLOTTER] - Auto-loading last JSON: {json_path.as_posix()}")
                 self.load_json_from_path(json_path)
 
         self.fig.subplots_adjust(bottom=0)
@@ -1089,17 +1091,16 @@ class Plotter:
     def select_image_file(self) -> str:
         file_path, _ = QFileDialog.getOpenFileName(
             None,
-            "Select an Image",
-            IMAGES_FOLDER,
-            "Image Files (*.jpg *.jpeg *.png *.bmp *.webp);;All Files (*.*)"
+            "Select an Image (HUD)",
+            str(IMAGES_FOLDER),
+            "Image Files (*.jpg *.jpeg *.png *.bmp *.webp);;All Files (*.*)",
         )
 
         if not file_path:
-            print("[!] Image selection cancelled.")
+            print("[PLOTTER] - Image selection cancelled.")
             return ""
 
         return file_path
-
 
     def load_image(self):
         try:
@@ -1196,6 +1197,7 @@ class Plotter:
         for uid in self.shape_drag_managers:
             self.shape_drag_managers[uid].disconnect()
         self.shape_drag_managers = {}
+
         self.last_artist_id: str | None = None
         self.ignore_current_draggable_id_n = 0
         self.current_draggable_id = None
@@ -1245,14 +1247,14 @@ class Plotter:
     def load_json(self):
         # Filter for JSON files and set default directory
         file_path, _ = QFileDialog.getOpenFileName(
-            None, 
-            "Select JSON Mapping Profile", 
-            JSONS_FOLDER, 
-            "JSON files (*.json);;All files (*)"
+            None,
+            "Select a JSON (Mapping Profile)",
+            str(JSONS_FOLDER),
+            "JSON files (*.json);;All files (*)",
         )
 
         if not file_path:
-            print("[!] JSON selection cancelled.")
+            print("[PLOTTER] - JSON selection cancelled.")
             return
 
         self.load_json_from_path(file_path)
@@ -1389,7 +1391,7 @@ class Plotter:
     def toggle_visibility(self):
         self.show_overlays = not self.show_overlays
         state_str = "VISIBLE" if self.show_overlays else "HIDDEN"
-        print(f"[*] Overlays are now {state_str}")
+        print(f"[PLOTTER] - Overlays are now {state_str}")
 
         for artist in self.shapes_artists.values():
             artist.set_visible(self.show_overlays)
@@ -1403,7 +1405,7 @@ class Plotter:
         fig_height_pts = self.fig.get_size_inches()[1] * 72
         scaled_font = max(5, int(round(fig_height_pts * 0.02)))
 
-        return plt.Text(
+        return Text(
             center_x,
             center_y,
             label,
@@ -1426,10 +1428,10 @@ class Plotter:
             # Capture background if we don't have it yet
             # Note: We do this only when the mouse is actually inside to save memory
             if self.bg_cache is None:
-                self.bg_cache = self.fig.canvas.copy_from_bbox(self.ax.bbox)
+                self.bg_cache = self.fig.canvas.copy_from_bbox(self.ax.bbox)  # type: ignore
 
             # Restore the clean background (removes the crosshair from the previous frame)
-            self.fig.canvas.restore_region(self.bg_cache)
+            self.fig.canvas.restore_region(self.bg_cache)  # type: ignore
 
             # Update and draw Horizontal lines (BG then FG for proper z-order layering)
             for line in [self.crosshair_h_bg, self.crosshair_h_fg]:
@@ -1589,7 +1591,9 @@ class Plotter:
                 print("[-] Action Cancelled.")
                 self.reset_state()
             else:
-                print(f"[!] Blocked: Finish or Cancel (F8) current shape first.")
+                print(
+                    f"[PLOTTER] - Blocked: Finish or Cancel (F8) current shape first."
+                )
             return
 
         if self.state == WAITING_FOR_KEY:
@@ -1671,7 +1675,7 @@ class Plotter:
     # Delete Logic
     def enter_deleting_mode(self):
         if not self.shapes:
-            print("[!] No shapes to delete.")
+            print("[PLOTTER] - No shapes to delete.")
             self.update_title(f"List empty. Nothing to delete | {HELP_STR}")
             return
 
@@ -1681,15 +1685,15 @@ class Plotter:
 
     def delete_all_shapes(self):
         if not self.shapes:
-            print("[!] No shapes to delete.")
+            print("[PLOTTER] - No shapes to delete.")
             self.update_title(f"List empty. Nothing to delete | {HELP_STR}")
             return
 
-        for uid in self.shapes.keys():
+        for uid in list(self.shapes.keys()):
             self.delete_entry(uid)
         self.count = 0
         self.reset_state()
-        print("[+] All shapes deleted.")
+        print("[PLOTTER] - All shapes deleted.")
 
     def handle_deleting_input(self, key):
         if key == "escape":
@@ -1708,7 +1712,7 @@ class Plotter:
                             self.reset_state()
 
                     else:
-                        print(f"[!] ID {uid} not found.")
+                        print(f"[PLOTTER] - ID {uid} not found.")
                         self.update_title(
                             f"Error: ID {uid} not found. Try again or Press ESC to Cancel."
                         )
@@ -1732,7 +1736,7 @@ class Plotter:
                 f"DELETE MODE: ID [{self.input_buffer}] (Enter to delete | Esc to Cancel)"
             )
         else:
-            print("[!] Blocked: Exit Delete Mode (Esc) first.")
+            print("[PLOTTER] - Blocked: Exit Delete Mode (Esc) first.")
 
     def delete_entry(self, uid):
         """Removes a shape and all its associated resources (artists, labels, listeners)."""
@@ -1791,13 +1795,13 @@ class Plotter:
             self.last_artist_id = None
 
         print(
-            f'[+] Deleted Shape of type: {shape_type} with ID: {uid} and key: "{interception_key}" (hex: {hex_code})'
+            f'[PLOTTER] - Deleted Shape of type: {shape_type} with ID: {uid} and key: "{interception_key}" (hex: {hex_code})'
         )
 
     # Marking Logic
     def enter_marking_mode(self):
         if not self.shapes:
-            print("[!] No shapes to mark.")
+            print("[PLOTTER] - No shapes to mark.")
             self.update_title(f"List empty. Nothing to mark | {HELP_STR}")
             return
 
@@ -1825,10 +1829,10 @@ class Plotter:
                             if not was_marked
                             else "UNMARKED for Camera Follow"
                         )
-                        marked_i_key = marked_key['interception_key']
-                        marked_m_code = marked_key['m_code']
+                        marked_i_key = marked_key["interception_key"]
+                        marked_m_code = marked_key["m_code"]
                         print(
-                            f'[+] {status}: ID {uid} with key "{marked_i_key}" (hex: {marked_m_code})'
+                            f'[PLOTTER] - {status}: ID {uid} with key "{marked_i_key}" (hex: {marked_m_code})'
                         )
 
                         if not was_marked:
@@ -1845,7 +1849,7 @@ class Plotter:
                             )
                         self.reset_state()
                     else:
-                        print(f"[!] ID {uid} not found.")
+                        print(f"[PLOTTER] - ID {uid} not found.")
                         self.update_title(
                             f"Error: ID {uid} not found. Try again or Press ESC to Cancel."
                         )
@@ -1869,7 +1873,7 @@ class Plotter:
                 f"MARK MODE: ID [{self.input_buffer}] (Enter to mark | Esc to Cancel)"
             )
         else:
-            print("[!] Blocked: Exit Mark Mode (Esc) first.")
+            print("[PLOTTER] - Blocked: Exit Mark Mode (Esc) first.")
 
     # Shape Calculation & Finalization
     def get_specific_key(self, event):
@@ -1895,7 +1899,7 @@ class Plotter:
         hex_code, interception_key = self.get_interception_code(key_name)
 
         if hex_code is None:
-            print(f'[!] Key "{key_name}" not mapped.')
+            print(f'[PLOTTER] - Key "{key_name}" not mapped.')
             return
 
         cx, cy, r, bb = None, None, None, None
@@ -1925,7 +1929,7 @@ class Plotter:
                     label = label.split("E0_")[-1]
 
                 print(
-                    f'[+] Saved ID {self.count-1}: {self.mode} bound to key "{key_name}" with interception key: "{interception_key}" and labelled as: "{label}"'
+                    f'[PLOTTER] - Saved ID {self.count-1}: {self.mode} bound to key "{key_name}" with interception key: "{interception_key}" and labelled as: "{label}"'
                 )
 
                 if self.mode == CIRCLE and cx and cy and r:
@@ -1936,7 +1940,7 @@ class Plotter:
                     else:
                         fc = get_vibrant_random_color(DEFAULT_FACE_COLOR_ALPHA)
                     # Add shape artist
-                    shape_artist = plt.Circle(
+                    shape_artist = Circle(
                         (cx, cy), r, fill=True, lw=2, fc=fc, ec=DEFAULT_EDGE_COLOR
                     )
                     shape_artist.set_visible(self.show_overlays)
@@ -1964,13 +1968,13 @@ class Plotter:
                         or interception_key == SPRINT_DISTANCE_CODE
                     ):
                         print(
-                            f'[!] Warning: Special keys like "{interception_key}" should be bound to CIRCLE shapes for better visualization. Consider re-binding this key to a CIRCLE shape.'
+                            f'[PLOTTER] - Warning: Special keys like "{interception_key}" should be bound to CIRCLE shapes for better visualization. Consider re-binding this key to a CIRCLE shape.'
                         )
                     else:
                         fc = get_vibrant_random_color(DEFAULT_FACE_COLOR_ALPHA)
                         (x1, y1), (x2, y2) = bb
                         # Add shape artist
-                        shape_artist = plt.Rectangle(
+                        shape_artist = Rectangle(
                             (x1, y1),
                             x2 - x1,
                             y2 - y1,
@@ -2060,8 +2064,25 @@ class Plotter:
 
     def export_data(self, user_name):
         if self.buffer_default and self.json_path and self.json_path.exists():
+            # Confirm Overwrite
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Question)
+            msg_box.setText("Overwrite Warning")
+            msg_box.setInformativeText(
+                f"File '{self.json_path.name}' already exists in the current folder. Overwrite?"
+            )
+            msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msg_box.setDefaultButton(QMessageBox.No)
+
+            ret = msg_box.exec_()
+
+            if ret == QMessageBox.No:
+                print("[PLOTTER] - Save cancelled by user.")
+                self.update_title(f"Save cancelled | {HELP_STR}")
+                return
+
             file_path = self.json_path
-            print(f"[System] Overwriting existing file: {file_path.as_posix()}")
+            print(f"[PLOTTER] - Overwriting existing file: {file_path.as_posix()}")
 
         else:
             if not user_name:
@@ -2075,29 +2096,11 @@ class Plotter:
                 target_dir = Path(JSONS_FOLDER) / relative_path_parent
             except ValueError:
                 # Fallback if image is outside the project folder
-                print("[!] Image is external. Saving JSON to root folder.")
+                print("[PLOTTER] - Image is external. Saving JSON to root folder.")
                 target_dir = Path(JSONS_FOLDER)
 
             file_path = target_dir / f"{user_name}.json"
             target_dir.mkdir(parents=True, exist_ok=True)
-
-        if file_path.exists() and not (
-            self.buffer_default and self.json_path == file_path
-        ):
-            # Confirm Overwrite
-            msg_box = QMessageBox()
-            msg_box.setIcon(QMessageBox.Question)
-            msg_box.setText("Overwrite Warning")
-            msg_box.setInformativeText(f"File '{file_path.name}' already exists. Overwrite?")
-            msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-            msg_box.setDefaultButton(QMessageBox.No)
-
-            ret = msg_box.exec_()
-
-            if ret == QMessageBox.No:
-                print("[!] Save cancelled by user.")
-                self.update_title(f"Save cancelled | {HELP_STR}")
-                return
 
         output = []
 
@@ -2148,21 +2151,23 @@ class Plotter:
                 msg_box = QMessageBox()
                 msg_box.setIcon(QMessageBox.Question)
                 msg_box.setText("Configuration Warning")
-                msg_box.setInformativeText("Mouse Wheel or Sprint Distance has not been configured. Save?")
+                msg_box.setInformativeText(
+                    "Mouse Wheel or Sprint Distance has not been configured. Save?"
+                )
                 msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
                 msg_box.setDefaultButton(QMessageBox.No)
-  
+
                 ret = msg_box.exec_()
 
                 if ret == QMessageBox.No:
-                    print("[!] Save cancelled by user.")
+                    print("[PLOTTER] - Save cancelled by user.")
                     self.update_title(f"Save cancelled | {HELP_STR}")
                     return
 
             with file_path.open("w", encoding="utf-8") as f:
                 json.dump(json_output, f, indent=4)
 
-            print(f"[+] JSON file saved to: {file_path.as_posix()}")
+            print(f"[PLOTTER] - JSON file saved to: {file_path.as_posix()}")
 
             update_toml(
                 self.width,
@@ -2178,7 +2183,7 @@ class Plotter:
             self.json_path = file_path
 
         except Exception as e:
-            print(f"[!] Export Error: {e}")
+            print(f"[PLOTTER] - Export Error: {e}")
             self.update_title(f"Error saving: {file_path.name} | {HELP_STR}")
             return
 
@@ -2215,7 +2220,7 @@ class Plotter:
             if self.mode == CIRCLE:
                 if self.saved_mouse_wheel:
                     print(
-                        f"[!] Mouse Wheel already assigned. Overwriting previous assignment."
+                        f"[PLOTTER] - Mouse Wheel already assigned. Overwriting previous assignment."
                     )
                     for k, v in list(self.shapes.items()):
                         if v["interception_key"] == MOUSE_WHEEL_CODE:
@@ -2244,7 +2249,7 @@ class Plotter:
 
             elif self.mode == RECT:
                 print(
-                    f"[!] Error: Mouse Wheel can only be assigned to '{CIRCLE}' not '{RECT}' shapes."
+                    f"[PLOTTER] - Error: Mouse Wheel can only be assigned to '{CIRCLE}' not '{RECT}' shapes."
                 )
                 return saved, uid
 
@@ -2252,15 +2257,15 @@ class Plotter:
             if self.mode == CIRCLE:
                 if not self.saved_mouse_wheel:
                     print(
-                        f"[!] Error: Mouse Wheel not assigned yet. Please assign it first."
+                        f"[PLOTTER] - Error: Mouse Wheel not assigned yet. Please assign it first."
                     )
                     return saved, uid
 
                 if self.saved_sprint_distance:
                     print(
-                        f"[!] Error: Sprint Threshold already assigned. Overwriting previous assignment."
+                        f"[PLOTTER] - Error: Sprint Threshold already assigned. Overwriting previous assignment."
                     )
-                    for k, v in self.shapes.items():
+                    for k, v in list(self.shapes.items()):
                         if v["interception_key"] == SPRINT_DISTANCE_CODE:
                             uid = k
                             inc_count = False
@@ -2286,7 +2291,7 @@ class Plotter:
                 # STRICT CHECK: Ensure Sprint is actually outside the Joystick
                 if actual_dist <= self.mouse_wheel_radius:
                     print(
-                        f"[!] Error: Sprint point must be OUTSIDE the joystick radius!"
+                        f"[PLOTTER] - Error: Sprint point must be OUTSIDE the joystick radius!"
                     )
                     return False, uid
 
@@ -2296,7 +2301,7 @@ class Plotter:
 
             elif self.mode == RECT:
                 print(
-                    f"[!] Error: Sprint Distance can only be assigned to '{CIRCLE}' not '{RECT}' shapes."
+                    f"[PLOTTER] - Error: Sprint Distance can only be assigned to '{CIRCLE}' not '{RECT}' shapes."
                 )
                 return saved, uid
 
@@ -2320,7 +2325,7 @@ class Plotter:
 
     def print_data(self):
         if not self.shapes:
-            print("[!] No shapes to print.")
+            print("[PLOTTER] - No shapes to print.")
             self.update_title(f"List empty. Nothing to print | {HELP_STR}")
             return
 

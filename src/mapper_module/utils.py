@@ -1,8 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-import tkinter as tk
-from tkinter import filedialog
 import subprocess
 import os
 import tomlkit
@@ -31,7 +29,7 @@ SYSTEM = platform.system()
 
 # Path Assignments
 ADB_NAME = "adb.exe" if SYSTEM == "Windows" else "adb"
-ADB_EXE = PROJECT_ROOT / "bin" / "platform-tools" / ADB_NAME
+ADB = PROJECT_ROOT / "bin" / "platform-tools" / ADB_NAME
 
 TOML_PATH = PROJECT_ROOT / "settings.toml"
 IMAGES_FOLDER = SRC_DIR / "resources" / "images"
@@ -309,7 +307,7 @@ class MapperEventDispatcher:
         registry_key = event_object.action
 
         if registry_key:
-            for func in self.callback_registry[registry_key]:
+            for func in self.callback_registry.get(registry_key, []):
                 if event_object.action in [
                     "ON_CONFIG_RELOAD",
                     "ON_JSON_RELOAD",
@@ -328,9 +326,7 @@ class MapperEventDispatcher:
 
 
 def get_adb_device():
-    out = (
-        subprocess.check_output([ADB_EXE, "devices"], timeout=10).decode().splitlines()
-    )
+    out = subprocess.check_output([ADB, "devices"], timeout=10).decode().splitlines()
     real = [
         d.split()[0] for d in out[1:] if "device" in d and not d.startswith("emulator-")
     ]
@@ -344,7 +340,7 @@ def get_adb_device():
 def get_screen_size(device):
     """Detect screen resolution (portrait natural)."""
     result = subprocess.run(
-        ["adb", "-s", device, "shell", "wm", "size"],
+        [ADB, "-s", device, "shell", "wm", "size"],
         capture_output=True,
         text=True,
         timeout=10,
@@ -361,7 +357,7 @@ def get_dpi(device: str):
     """Detect screen DPI, fallback to 160."""
     try:
         result = subprocess.run(
-            [ADB_EXE, "-s", device, "shell", "getprop", "ro.sf.lcd_density"],
+            [ADB, "-s", device, "shell", "getprop", "ro.sf.lcd_density"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -375,7 +371,7 @@ def get_dpi(device: str):
 def is_device_online(device: str):
     try:
         res = subprocess.run(
-            [ADB_EXE, "-s", device, "get-state"],
+            [ADB, "-s", device, "get-state"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -403,14 +399,14 @@ def wireless_connect(device: str | None = None, continuous=True):
                     time.sleep(SHORT_DELAY)
                     continue
                 else:
-                    return True, ""
+                    return False, ""
 
             error_1 = False
 
         try:
             routes = (
                 subprocess.check_output(
-                    [ADB_EXE, "-s", device, "shell", "ip", "route"], timeout=10
+                    [ADB, "-s", device, "shell", "ip", "route"], timeout=10
                 )
                 .decode()
                 .splitlines()
@@ -428,10 +424,10 @@ def wireless_connect(device: str | None = None, continuous=True):
             if device == socket_path:
                 print(f"\n[UTILITY] - Connected successfully to device: {socket_path}.")
             else:
-                subprocess.run([ADB_EXE, "-s", device, "tcpip", PORT], timeout=10)
+                subprocess.run([ADB, "-s", device, "tcpip", PORT], timeout=10)
                 final = (
                     subprocess.check_output(
-                        [ADB_EXE, "-s", device, "connect", socket_path], timeout=10
+                        [ADB, "-s", device, "connect", socket_path], timeout=10
                     )
                     .decode()
                     .splitlines()[0]
@@ -451,7 +447,7 @@ def wireless_connect(device: str | None = None, continuous=True):
             if continuous:
                 running = False
             else:
-                return False, socket_path
+                return True, socket_path
 
         except Exception as e:
             if continuous:
@@ -461,7 +457,7 @@ def wireless_connect(device: str | None = None, continuous=True):
                 time.sleep(SHORT_DELAY)
                 continue
             else:
-                return True, ""
+                return False, ""
 
         error_2 = False
 
@@ -525,14 +521,14 @@ def update_toml(
             doc = tomlkit.load(f)
 
         table_keys = doc.keys()
+
         if "joystick" not in doc:
-            joystick = doc.append("joystick", tomlkit.table())
-        else:
-            joystick = doc.get("joystick", tomlkit.table)
+            doc.append("joystick", tomlkit.table())
+        joystick = doc["joystick"]
+
         if "system" not in table_keys:
-            system = doc.append("system", tomlkit.table())
-        else:
-            system = doc.get("system", tomlkit.table())
+            doc.append("system", tomlkit.table())
+        system = doc.get("system", tomlkit.table())
 
         if mouse_wheel_radius is not None:
             joystick.update({"mouse_wheel_radius": mouse_wheel_radius})
@@ -576,7 +572,7 @@ def get_rotation(device):
     ]
     try:
         result = subprocess.run(
-            [ADB_EXE, "-s", device, "shell", "dumpsys", "display"],
+            [ADB, "-s", device, "shell", "dumpsys", "display"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -626,7 +622,11 @@ def get_dulled_hue_color(hue, alpha=1.0):
     return (r, g, b, alpha)
 
 
-def get_hue_alpha_from_hsv(color):
+def get_hue_modified_alpha_from_hsv(color):
+    """
+    Returns a heavily modified alpha of the form 1.0 - alpha**2
+    """
+
     r, g, b, a = color
     h, _, _ = colorsys.rgb_to_hsv(r, g, b)
     return h, 1.0 - a**2

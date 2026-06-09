@@ -13,7 +13,7 @@ from mapper_module.utils import (
     SHORT_DELAY,
     PPS,
     EMULATORS,
-    ADB_EXE,
+    ADB,
     DEF_EMULATOR_ID,
     SYSTEM,
     TouchEvent,
@@ -38,25 +38,25 @@ NAME = "Touch2Key__Engine"
 
 def get_display_protocol():
     """
-    Returns the display protocol or None if the session is not 
+    Returns the display protocol or None if the session is not
     X11, Wayland, or XWayland.
     """
     # Normalize to lowercase and handle missing environment variables
-    session = os.environ.get('XDG_SESSION_TYPE', '').lower()
-    
+    session = os.environ.get("XDG_SESSION_TYPE", "").lower()
+
     # 1. Handle Wayland and XWayland
-    if session == 'wayland':
+    if session == "wayland":
         # If we are in Wayland but DISPLAY is set, it is XWayland
-        if 'DISPLAY' in os.environ:
-            return 'xwayland'
-        return 'wayland'
-    
+        if "DISPLAY" in os.environ:
+            return "xwayland"
+        return "wayland"
+
     # 2. Handle X11
-    # Check session type, but also allow DISPLAY variable 
+    # Check session type, but also allow DISPLAY variable
     # as a secondary check for legacy X11 sessions
-    if session == 'x11' or 'DISPLAY' in os.environ:
-        return 'x11'
-    
+    if session == "x11" or "DISPLAY" in os.environ:
+        return "x11"
+
     # 3. Default for TTY, SSH, or other headless environments
     return None
 
@@ -187,7 +187,7 @@ class _Engine:
         self.system_config.set_high_priority(os.getpid(), "Main Loop")
 
         print("\n[MAIN] - Initializing Dual-_Engine Mapper... Press 'ESC' to Stop.")
-        print(f"\n[MAIN] - ADB Executable File Path: {ADB_EXE}.")
+        print(f"\n[MAIN] - ADB Executable File Path: {ADB}.")
 
         emulator = _select_emulator(self.window_manager)
         if emulator is None:
@@ -283,7 +283,7 @@ class _Engine:
 def run():
     if not pre_flight_run():
         sys.exit(1)
-    
+
     if SYSTEM == "Linux":
         protocol = get_display_protocol()
         if protocol and protocol == "x11":
@@ -312,5 +312,5 @@ def run():
         _engine._shutdown()
 
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     run()

@@ -6,7 +6,7 @@ from PIL import Image
 from mapper_module.utils import (
     IMAGES_FOLDER,
     TOML_PATH,
-    ADB_EXE,
+    ADB,
     get_adb_device,
     get_screen_size,
     get_dpi,
@@ -48,12 +48,12 @@ def _capture_android_screen(
         android_tmp = "/data/local/tmp/temp_cap.png"
 
         subprocess.run(
-            [ADB_EXE, "-s", device_id, "shell", "screencap", "-p", android_tmp],
+            [ADB, "-s", device_id, "shell", "screencap", "-p", android_tmp],
             check=True,
             timeout=30,
         )
         subprocess.run(
-            [ADB_EXE, "-s", device_id, "pull", android_tmp, str(full_save_path)],
+            [ADB, "-s", device_id, "pull", android_tmp, str(full_save_path)],
             check=True,
             timeout=20,
         )
@@ -67,7 +67,7 @@ def _capture_android_screen(
         try:
             # We don't strictly need check=True here since failure just means the file isn't deleted
             subprocess.run(
-                [ADB_EXE, "-s", device_id, "shell", "rm", android_tmp],
+                [ADB, "-s", device_id, "shell", "rm", android_tmp],
                 timeout=10,
                 stderr=subprocess.DEVNULL,
             )

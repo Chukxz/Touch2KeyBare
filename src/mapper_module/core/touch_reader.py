@@ -8,7 +8,7 @@ import re
 
 from mapper_module.utils import (
     TouchEvent,
-    ADB_EXE,
+    ADB,
     DOWN,
     UP,
     PRESSED,
@@ -151,12 +151,9 @@ class TouchReader:
 
             ret = wireless_connect(device, False)
             if ret:
-                error, dev = ret
+                success, dev = ret
 
-                if error:
-                    time.sleep(LONG_DELAY)
-                    continue
-                else:
+                if success:
                     connecting = False
                     try:
                         with self.config.config_lock:
@@ -169,11 +166,15 @@ class TouchReader:
                         with self.rotation_lock:
                             self._update_matrix()
 
+                else:
+                    time.sleep(LONG_DELAY)
+                    continue
+
     def _find_touch_device_event(self):
-        if not ADB_EXE is None and not self.device is None:
+        if not ADB is None and not self.device is None:
             try:
                 result = subprocess.run(
-                    [ADB_EXE, "-s", self.device, "shell", "getevent", "-lp"],
+                    [ADB, "-s", self.device, "shell", "getevent", "-lp"],
                     capture_output=True,
                     text=True,
                     timeout=2,
@@ -203,21 +204,21 @@ class TouchReader:
 
         else:
             print(
-                f"\n[TOUCHREADER] - ADB not configured properly. Check ADB_EXE path and device connection."
+                f"\n[TOUCHREADER] - ADB not configured properly. Check ADB path and device connection."
             )
 
         return None
 
     def _get_max_slots(self):
         if (
-            not ADB_EXE is None
+            not ADB is None
             and not self.device is None
             and not self.device_touch_event is None
         ):
             try:
                 result = subprocess.run(
                     [
-                        ADB_EXE,
+                        ADB,
                         "-s",
                         self.device,
                         "shell",
@@ -237,7 +238,7 @@ class TouchReader:
 
         else:
             print(
-                f"\n[TOUCHREADER] - ADB not configured properly. Check ADB_EXE path and device connection."
+                f"\n[TOUCHREADER] - ADB not configured properly. Check ADB path and device connection."
             )
 
         return 10
@@ -278,7 +279,7 @@ class TouchReader:
 
             try:
                 result = subprocess.run(
-                    [ADB_EXE, "-s", self.device, "shell", "dumpsys", "display"],
+                    [ADB, "-s", self.device, "shell", "dumpsys", "display"],
                     capture_output=True,
                     text=True,
                     timeout=2,
@@ -416,13 +417,13 @@ class TouchReader:
             self.touch_lost = False
 
             if (
-                ADB_EXE is not None
+                ADB is not None
                 and self.device is not None
                 and self.device_touch_event is not None
             ):
                 self.process = subprocess.Popen(
                     [
-                        ADB_EXE,
+                        ADB,
                         "-s",
                         self.device,
                         "shell",
@@ -513,7 +514,7 @@ class TouchReader:
 
             else:
                 print(
-                    f"\n[TOUCHREADER] - ADB not configured properly. Check ADB_EXE path and device connection."
+                    f"\n[TOUCHREADER] - ADB not configured properly. Check ADB path and device connection."
                 )
                 time.sleep(LONG_DELAY)
 

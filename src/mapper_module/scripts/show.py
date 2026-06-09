@@ -1,9 +1,9 @@
-from mapper_module.utils import ADB_EXE
+from mapper_module.utils import ADB
 
 
 def run():
-    if ADB_EXE.exists():
-        print(f"ADB Executable found at: {ADB_EXE}")
+    if ADB.exists():
+        print(f"ADB Executable found at: {ADB}")
     else:
         print("ADB Executable not found.")
 
