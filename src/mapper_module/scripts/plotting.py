@@ -1086,22 +1086,19 @@ class Plotter:
         plt.show()
 
     # Visual & State Management
-
-from PyQt5.QtWidgets import QFileDialog
-
     def select_image_file(self) -> str:
-    file_path, _ = QFileDialog.getOpenFileName(
-        None,
-        "Select an Image",
-        IMAGES_FOLDER,
-        "Image Files (*.jpg *.jpeg *.png *.bmp *.webp);;All Files (*.*)"
-    )
+        file_path, _ = QFileDialog.getOpenFileName(
+            None,
+            "Select an Image",
+            IMAGES_FOLDER,
+            "Image Files (*.jpg *.jpeg *.png *.bmp *.webp);;All Files (*.*)"
+        )
 
-    if not file_path:
-        print("[!] Image selection cancelled.")
-        return ""
+        if not file_path:
+            print("[!] Image selection cancelled.")
+            return ""
 
-    return file_path
+        return file_path
 
 
     def load_image(self):
