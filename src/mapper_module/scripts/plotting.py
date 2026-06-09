@@ -1036,7 +1036,7 @@ class Plotter:
             print("Exiting: No image selected.")
             return
 
-        self.image_path = image_path
+        self.image_path = Path(image_path)
         img = self.load_image()
         if img is None:
             print("Could not load image, exiting...")
