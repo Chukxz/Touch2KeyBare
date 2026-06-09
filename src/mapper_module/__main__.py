@@ -15,6 +15,7 @@ from mapper_module.utils import (
     EMULATORS,
     ADB_EXE,
     DEF_EMULATOR_ID,
+    SYSTEM,
     TouchEvent,
     stop_process,
 )
@@ -33,6 +34,31 @@ from mapper_module import (
 from mapper_module.scripts.pre_flight import run as pre_flight_run
 
 NAME = "Touch2Key__Engine"
+
+
+def get_display_protocol():
+    """
+    Returns the display protocol or None if the session is not 
+    X11, Wayland, or XWayland.
+    """
+    # Normalize to lowercase and handle missing environment variables
+    session = os.environ.get('XDG_SESSION_TYPE', '').lower()
+    
+    # 1. Handle Wayland and XWayland
+    if session == 'wayland':
+        # If we are in Wayland but DISPLAY is set, it is XWayland
+        if 'DISPLAY' in os.environ:
+            return 'xwayland'
+        return 'wayland'
+    
+    # 2. Handle X11
+    # Check session type, but also allow DISPLAY variable 
+    # as a secondary check for legacy X11 sessions
+    if session == 'x11' or 'DISPLAY' in os.environ:
+        return 'x11'
+    
+    # 3. Default for TTY, SSH, or other headless environments
+    return None
 
 
 def _construct_titles_dict(emulators: dict) -> dict:
@@ -257,6 +283,14 @@ class _Engine:
 def run():
     if not pre_flight_run():
         sys.exit(1)
+    
+    if SYSTEM == "Linux":
+        protocol = get_display_protocol()
+        if protocol and protocol == "x11":
+            pass
+        else:
+            print()
+            sys.exit(1)
 
     try:
         multiprocessing.set_start_method("spawn", force=True)
