@@ -466,23 +466,6 @@ def wireless_connect(device: str | None = None, continuous=True):
         error_2 = False
 
 
-def select_image_file(base_dir: str | None = None):
-    root = tk.Tk()
-    root.withdraw()
-    root.attributes("-topmost", True)
-
-    file_path = filedialog.askopenfilename(
-        initialdir=base_dir,
-        title="Select an Image",
-        filetypes=[
-            ("Image Files", "*.jpg *.jpeg *.png *.bmp *.webp"),
-            ("All Files", "*.*"),
-        ],
-    )
-    root.destroy()
-    return file_path
-
-
 def is_in_circle(px: float, py: float, cx: float, cy: float, r: float):
     return (px - cx) ** 2 + (py - cy) ** 2 <= r * r
 
