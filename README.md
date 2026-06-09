@@ -23,7 +23,7 @@ If you're on Linux ensure that your windowing system is using X11.
 
 * **Camera Movement Support for Touchzones:** The user can decide to give selected touch zones a camera movement ability.
 
-* **Handedness and Hot-Reloading:** Configuration or mapping sources (json files) can be reloaded at runtime and handedness (Mouse/WASD finger side) can be swapped at runtime with hot-reloading.
+* **Handedness and Hot-Reloading:** Configuration or mapping sources (JSON files) can be reloaded at runtime and handedness (Mouse/WASD finger side) can be swapped at runtime with hot-reloading.
 
 * **Anti-Cheat Safe:** Humanized dwell times and randomized click durations for strictly user-initiated actions. No custom bot scripts or cheating. A basic toggler is provided to ensure seamless normal or menu mode in-gaming by inspecting cursor visibility and using the game's/emulator's toggle button if any.
 
@@ -31,7 +31,7 @@ If you're on Linux ensure that your windowing system is using X11.
 
 * **Targeted Audience:** Optimized for FPS and RPG style games.
 
-* **Shareable Resources:** HUD Images and mapping Json files can be shared by simple copying and pasting and then using the plotter to validate and/or set the current HUD and/or Json.
+* **Shareable Resources:** HUD Image files and mapping JSON files can be shared by simple copying and pasting and then using the plotter to validate and/or set the current HUD and/or JSON.
 
 * **Automatic Program Detection:** Supported programs (eg. games or emulators), which are currently running are automatically detected and a selection is made as the automatic choice subject to user confirmation/override, else the user chooses the program of their choice.
 
