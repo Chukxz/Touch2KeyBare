@@ -39,7 +39,7 @@ If you're on Linux ensure that your windowing system is using X11.
 1. **Prerequisites:** Python 3.10+.
 2. **Install:**
    ```bash
-   git clone [https://github.com/Chukxz/Touch2Key.git](https://github.com/Chukxz/Touch2Key.git)
+   git clone https://github.com/Chukxz/Touch2Key.git
    cd Touch2Key
    pip install .
 3. **Setup:** Run setup (Usually requires an internet connection).
