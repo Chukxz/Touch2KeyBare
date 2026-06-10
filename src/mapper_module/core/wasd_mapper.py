@@ -163,7 +163,7 @@ class WASDMapper:
 
         print(
             f"\n[WASDMAPPER] - Shared Sensitivity: {sens}x\
-                \n             - Walk Distance: {dz_px:.1f}px (was {self.raw_inner_radius * self.deadzone:.1f}px\
+                \n             - Walk Distance: {dz_px:.1f}px (was {self.raw_inner_radius * self.deadzone:.1f}px)\
                 \n             - Sprint Distance: {effective_inner:.1f}px (was {self.raw_inner_radius:.1f}px)"
         )
 
