@@ -82,7 +82,7 @@ def _select_emulator(window_manager) -> dict | None:
     for id, name in enumerate(emulators_list):
         print(f"    ID: [{id}] Name: {name}")
 
-    current_windows_titles = window_manager.find_window_titles()
+    current_windows_titles = window_manager.find_visible_window_titles()
     titles_dict = _construct_titles_dict(EMULATORS)
     titles = list(titles_dict.keys())
 

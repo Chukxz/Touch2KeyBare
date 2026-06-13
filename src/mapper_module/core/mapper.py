@@ -46,7 +46,7 @@ class Mapper:
 
         # Window Tracking Setup
         self.window_manager = WindowMgrClass()
-        self.screen_w, self.screen_h = self.window_manager.get_screen_metrics()
+        self.screen_w, self.screen_h = self.window_manager.get_screen_dimensions()
         self.lock = threading.Lock()
         self.agg_lock = threading.Lock()
         self.last_cursor_state = True  # Cursor showing (Default)
@@ -111,7 +111,7 @@ class Mapper:
 
     def _get_window_info(self, window_id):
         # Get the Client Area (The pure game content size)
-        width, height = self.window_manager.get_client_rect(window_id)
+        width, height = self.window_manager.get_window_dimensions(window_id)
 
         # Find where top-left (0,0) of the Client Area is on the Screen
         x, y = self.window_manager.get_window_position(window_id)

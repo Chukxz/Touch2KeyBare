@@ -28,7 +28,7 @@ class AbstractWindowManager(ABC):
         pass
 
     @abstractmethod
-    def get_client_rect(self, window_id) -> tuple[int, int]:
+    def get_window_dimensions(self, window_id) -> tuple[int, int]:
         pass
 
     @abstractmethod
@@ -42,11 +42,11 @@ class AbstractWindowManager(ABC):
         pass
 
     @abstractmethod
-    def get_screen_metrics(self) -> tuple[int, int]:
+    def get_screen_dimensions(self) -> tuple[int, int]:
         pass
 
     @abstractmethod
-    def find_window_titles(self) -> dict:
+    def find_visible_window_titles(self) -> dict:
         pass
 
 

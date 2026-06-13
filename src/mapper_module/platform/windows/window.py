@@ -23,7 +23,7 @@ class _POINT(ctypes.Structure):
 
 
 class WindowManager(AbstractWindowManager):
-    EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
+    _EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
 
     def get_foreground_window(self) -> int:
         return win32gui.GetForegroundWindow()
@@ -63,11 +63,11 @@ class WindowManager(AbstractWindowManager):
         results = []
         data = ctypes.py_object({"class_name": class_name, "results": results})
         ctypes.windll.user32.EnumWindows(
-            self.EnumWindowsProc(self._enum_class_windows_callback), ctypes.byref(data)
+            self._EnumWindowsProc(self._enum_class_windows_callback), ctypes.byref(data)
         )
         return results
 
-    def get_client_rect(self, window_id: wintypes.HWND) -> tuple[int, int]:
+    def get_window_dimensions(self, window_id: wintypes.HWND) -> tuple[int, int]:
         rect = _RECT()
         ctypes.windll.user32.GetClientRect(window_id, ctypes.byref(rect))
         width = rect.right - rect.left
@@ -94,7 +94,7 @@ class WindowManager(AbstractWindowManager):
         except Exception:
             return last_state, now
 
-    def get_screen_metrics(self) -> tuple[int, int]:
+    def get_screen_dimensions(self) -> tuple[int, int]:
         w = ctypes.windll.user32.GetSystemMetrics(0)
         h = ctypes.windll.user32.GetSystemMetrics(1)
         return w, h
@@ -105,7 +105,7 @@ class WindowManager(AbstractWindowManager):
             if title:
                 results[hwnd] = title
 
-    def find_window_titles(self) -> dict:
+    def find_visible_window_titles(self) -> dict:
         current_windows_titles = {}
         win32gui.EnumWindows(self._enum_title_windows_callback, current_windows_titles)
         return current_windows_titles

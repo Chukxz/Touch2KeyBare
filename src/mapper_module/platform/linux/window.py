@@ -98,7 +98,7 @@ class WindowManager(AbstractWindowManager):
         if not self.disp:
             return None
         # X11 requires searching the tree to find titles
-        titles_dict = self.find_window_titles()
+        titles_dict = self._find_window_titles()
         for hwnd, win_title in titles_dict.items():
             if win_title == title:
                 return hwnd
@@ -117,7 +117,7 @@ class WindowManager(AbstractWindowManager):
                 continue
         return results
 
-    def get_client_rect(self, window_id: int) -> tuple[int, int]:
+    def get_window_dimensions(self, window_id: int) -> tuple[int, int]:
         if window_id == 0:
             return 0, 0
         try:
@@ -183,13 +183,32 @@ class WindowManager(AbstractWindowManager):
         cursor = xfixes.get_cursor_image(self.disp, self.root)
         return cursor.width > 0 and cursor.height > 0, now
 
-    def get_screen_metrics(self) -> tuple[int, int]:
+    def get_screen_dimensions(self) -> tuple[int, int]:
         if not self.disp:
             return 1920, 1080  # Safe fallback
         screen = self.disp.screen()
         return screen.width_in_pixels, screen.height_in_pixels
 
-    def find_window_titles(self) -> dict:
+    def _find_window_titles(self) -> dict:
+        if not self.disp:
+            return {}
+        results = {}
+        for win in self._get_all_windows():
+            try:
+                # Check legacy WM_NAME first
+                name = win.get_wm_name()
+                if not name:
+                    # Fallback to modern EWMH _NET_WM_NAME
+                    net_name = win.get_full_property(self.NET_WM_NAME, 0)
+                    if net_name:
+                        name = net_name.value.decode("utf-8", errors="ignore")
+                if name:
+                    results[win.id] = name
+            except Exception:
+                continue
+        return results
+
+    def find_visible_window_titles(self) -> dict:
         if not self.disp:
             return {}
         results = {}
