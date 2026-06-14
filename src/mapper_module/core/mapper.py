@@ -27,7 +27,7 @@ class Mapper:
         touch_reader: TouchReader,
         interception_bridge: AbstractBridge,
         pps: float,
-        emulator: dict[str, str],
+        emulator: dict[str, str | None],
     ):
         _, WindowMgrClass, _, _ = get_platform()
 
@@ -38,11 +38,13 @@ class Mapper:
         self.touch_reader = touch_reader
         self.interception_bridge = interception_bridge
         self.emulator = emulator
-        self.window_title = emulator["window_title"]
-        self.toggle_key_scancode: int | None = SCANCODES[emulator["toggle_key"]]
         self.pps = pps
         self.event_count = 0
         self.last_pulse_time = time.perf_counter()
+
+        # Toggle key — required but guard defensively
+        toggle_key = emulator.get("toggle_key")
+        self.toggle_key_scancode: int | None = SCANCODES.get(toggle_key) if toggle_key else None
 
         # Window Tracking Setup
         self.window_manager = WindowMgrClass()
@@ -51,9 +53,23 @@ class Mapper:
         self.agg_lock = threading.Lock()
         self.last_cursor_state = True  # Cursor showing (Default)
         self.last_cursor_check_time = 0
-        self.game_window_class_name = None
-        self.game_window_info = None
         self.window_update_interval = WINDOW_UPDATE_INTERVAL
+
+        # Use the selected window ID directly instead of scanning by title
+        self.window_id: int = json_loader.window_id
+        self.game_window_class_name: str | None = (
+            self.window_manager.get_window_class_name(self.window_id) or None
+        )
+
+        # Seed with the selected window so the tracker doesn't start in lost state
+        self.game_window_info: dict | None = {
+            "window_id": self.window_id,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+        }
+        self.window_lost = False
 
         # Config & State
         self.wasd_block = 0
@@ -66,7 +82,6 @@ class Mapper:
 
         # Start the window tracking thread
         self.running = True
-        self.window_lost = False
         self.window_thread = threading.Thread(
             target=self._update_game_window_info, daemon=True
         )
@@ -94,38 +109,18 @@ class Mapper:
             )
 
     # Window Management
-    def _get_game_window_class_name(self, window_title):
-        """Gets the game window classname."""
-        if window_title is None:
-            raise ValueError("Window_title must be provided.")
-
-        class_name = None
-        window_id = self.window_manager.find_window_by_title(window_title)
-        if window_id is not None:
-            class_name = self.window_manager.get_window_class_name(window_id)
-            print(f"\n[MAPPER] - Found window '{window_title}' (Class: {class_name}).")
-        else:
-            _str = f"\n[MAPPER] - Window class name could not be gotten for window: '{window_title}'."
-            raise RuntimeError(_str)
-        return class_name
-
-    def _get_window_info(self, window_id):
-        # Get the Client Area (The pure game content size)
+    def _get_window_info(self, window_id: int) -> dict:
         width, height = self.window_manager.get_window_dimensions(window_id)
-
-        # Find where top-left (0,0) of the Client Area is on the Screen
         x, y = self.window_manager.get_window_position(window_id)
 
         self._pulse_status()
 
-        # Check Cursor Visibility
         is_visible, self.last_cursor_check_time = self.window_manager.is_cursor_visible(
             self.last_cursor_state, self.last_cursor_check_time
         )
 
         if not is_visible == self.last_cursor_state:
             self.last_cursor_state = is_visible
-            # Signal the rest of the app to switch modes
             self.mapper_event_dispatcher.dispatch(
                 MapperEvent(action="ON_MENU_MODE_TOGGLE", is_visible=is_visible)
             )
@@ -139,10 +134,9 @@ class Mapper:
         }
 
     def _update_game_window_info(self):
-        """Background thread for updating the game window info - optimized to minimize lock hold time."""
+        """Background thread for updating the game window info."""
         while self.running:
             try:
-                # Check if current window_id is still valid
                 current_window_id = None
                 with self.lock:
                     if self.game_window_info:
@@ -151,19 +145,16 @@ class Mapper:
                 if current_window_id and self.window_manager.is_window_valid(
                     current_window_id
                 ):
-                    # WINDOW IS ACTIVE: Get fresh coordinates
                     new_info = self._get_window_info(current_window_id)
 
                     if self.window_lost:
                         print(f"\n[MAPPER] - Acquired game window!")
 
-                    # ATOMIC SWAP: Only hold lock to update the dict reference
                     with self.lock:
                         self.game_window_info = new_info
                         self.window_lost = False
 
                 else:
-                    # WINDOW IS LOST: Handle scanning
                     if not self.window_lost:
                         print(
                             "\n[MAPPER] - Game window lost! Scanning for new window..."
@@ -173,36 +164,32 @@ class Mapper:
                             self.game_window_info = None
 
                     try:
-                        # Get window title class name if it doesn't exist
-
+                        # Re-scan by class name (survives window handle changes)
                         if not self.game_window_class_name:
-                            self.game_window_class_name = (
-                                self._get_game_window_class_name(self.window_title)
+                            raise RuntimeError(
+                                f"\n[MAPPER] - No class name available to scan for window."
                             )
 
-                        # Scan for the window
                         discovered_info = self._get_game_window_info()
 
-                        # If we found it, swap it in
                         with self.lock:
                             self.game_window_info = discovered_info
                             self.window_lost = False
                         print("\n[MAPPER] - New window handle bound.")
 
-                    except RuntimeError:
+                    except RuntimeError as e:
+                        print(e)
                         with self.lock:
                             self.game_window_info = None
-                            # Game isn't open yet, just keep waiting
-                        pass
 
             except Exception as e:
                 print(f"\n[MAPPER] - Window tracking error: {e}.")
 
-            # Dynamic Sleep: Constant from utils
             sleep_time = LONG_DELAY if self.window_lost else self.window_update_interval
             time.sleep(sleep_time)
 
-    def _get_game_window_info(self):
+    def _get_game_window_info(self) -> dict:
+        """Scans all windows matching the known class name and picks the largest visible one."""
         window_ids = self.window_manager.find_window_ids_by_class(
             self.game_window_class_name
         )
@@ -222,15 +209,15 @@ class Mapper:
                 target_info = info
 
         if target_info is None:
-            _str = f"\n[MAPPER] - No visible window found for class: '{self.game_window_class_name}'."
-            raise RuntimeError(_str)
+            raise RuntimeError(
+                f"\n[MAPPER] - No visible window found for class: '{self.game_window_class_name}'."
+            )
 
         return target_info
 
     def device_to_game_abs(self, x, y):
         """Thread-safe absolute mapping."""
         rot = self.touch_reader.get_rotation()
-
         rot_dev_w, rot_dev_h = rotate_resolution(
             self.device_width, self.device_height, rot
         )
@@ -252,7 +239,6 @@ class Mapper:
             self.last_pulse_time = now
             pps = current_count / elapsed
 
-            # Check if we are lagging
             status = "HEALTHY" if pps >= self.pps else "LOW RATE"
             if pps == 0:
                 status = "IDLE/DISCONNECTED"
@@ -265,19 +251,17 @@ class Mapper:
             )
 
     def _aggregate_mouse_moves(self):
-        """Background thread for aggregating secondary mouse input - optimized to minimize lock hold time."""
+        """Background thread for aggregating secondary mouse input."""
         while self.running:
             start_time = time.perf_counter()
 
             if self.touch_reader.active_touches > 0:
-                snapshot = []
-
                 with self.agg_lock:
                     snapshot = self.aggregated_mouse_moves.copy()
                     self.aggregated_mouse_moves = []
 
-                sum_dx = sum([v[0] for v in snapshot])
-                sum_dy = sum([v[1] for v in snapshot])
+                sum_dx = sum(v[0] for v in snapshot)
+                sum_dy = sum(v[1] for v in snapshot)
 
                 self.mapper_event_dispatcher.dispatch(
                     MapperEvent(
