@@ -110,7 +110,6 @@ class _Engine:
         if selected_window_id is None:
             print("\n[MAIN] - No window selected. Exiting...")
             return
-        self.foreground_window = selected_window_id
 
         visible = self.window_manager.find_visible_windows()
         window_title = visible.get(selected_window_id, {}).get("title", "")
@@ -160,7 +159,7 @@ class _Engine:
         json_loader = JSONLoader(config, self.foreground_window)
         self.touch_reader = TouchReader(config, mapper_event_dispatcher, rate_cap)
         self.mapper = Mapper(
-            json_loader, self.touch_reader, self.bridge_class, pps, emulator
+            json_loader, self.touch_reader, self.bridge_class, pps, emulator, selected_window_id
         )
 
         self.mouse_mapper = MouseMapper(self.mapper)
