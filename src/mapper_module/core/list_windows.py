@@ -1,137 +1,144 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QListWidget, QPushButton
-from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QPushButton, QLabel
+from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtGui import QFont
 from mapper_module.platform import get_platform
-from mapper_module.utils import MIN_STR_LEN, WINDOWS_HEADERS
+from mapper_module.utils import MIN_STR_LEN, WINDOWS_HEADERS, COL_WIDTHS
 
 
 class ListApp(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Dynamic List Selector")
+        self.setWindowTitle("Select Target Window")
+        self.selected_window_id = None  # None = no confirmed selection
+
         self.v_layout = QVBoxLayout()
 
+        # Monospace label as header (immune to list reordering)
+        self.header_label = QLabel(self._format_row(WINDOWS_HEADERS))
+        self.header_label.setFont(QFont("Courier", 9))
+        self.v_layout.addWidget(self.header_label)
+
         self.list_widget = QListWidget()
+        self.list_widget.setFont(QFont("Courier", 9))
         self.v_layout.addWidget(self.list_widget)
 
-        self.enter_btn = QPushButton("Enter (Confirm Selection)")
-        self.enter_btn.clicked.connect(self.handle_enter)
+        self.enter_btn = QPushButton("Confirm Selection")
+        self.enter_btn.clicked.connect(self._handle_enter)
         self.v_layout.addWidget(self.enter_btn)
 
         self.setLayout(self.v_layout)
+        self.resize(900, 500)
 
-        self.windows_id_mapping = {}
-        self.main_store = set()
-        self.tmp_store = set()
-        self.added_window_ids = []
-        self.removed_window_ids = []
-        self.windows_data = {}
+        # State
+        self.windows_id_mapping: dict[int, int] = {}  # window_id -> list row index
+        self.main_store: set[int] = set()
+        self.tmp_store: set[int] = set()
+        self.windows_data: dict[int, list] = {}
+
         _, WindowMgrClass, _, _ = get_platform()
         self.window_manager = WindowMgrClass()
 
-        # Setup Timer for polling (1000ms = 1s)
         self.timer = QTimer()
-        self.timer.timeout.connect(self.update_list)
+        self.timer.timeout.connect(self._update_list)
         self.timer.start(1000)
 
-        header_data = self.format_windows_data_item(WINDOWS_HEADERS)
-        self.list_widget.addItem(header_data)
 
-    def update_list(self):
-
-        self.get_windows_data()
-        n = len(self.list_widget)
-        adds = 0
-
-        for window_id in self.removed_window_ids:
-            deletion_index = self.windows_id_mapping.pop(window_id, None)
-            if deletion_index == None:
-                continue
-
-            taken_item = self.list_widget.takeItem(deletion_index)
-            del taken_item
-
-            for window_id in self.windows_data:
-                index = self.windows_id_mapping.get(window_id, None)
-
-                if index is None:
-                    continue
-
-                if index > deletion_index:
-                    self.windows_id_mapping[window_id] = index - 1
-
-            n -= 1
-
-        for window_id in self.added_window_ids:
-            data = self.format_windows_data_item(self.windows_data[window_id])
-            self.list_widget.addItem(data)
-
-            self.windows_id_mapping[window_id] = n + adds
-            adds += 1
-
-    def handle_enter(self):
-        selected = self.list_widget.currentItem()
-        if selected:
-            print(f"User confirmed: {selected.text()}")
-
-    def get_windows_data(self):
+    # Data layer
+    def _get_windows_data(self):
         titles = self.window_manager.find_visible_window_titles()
         self.windows_data.clear()
+        self.tmp_store.clear()
 
-        for window_id in titles:
-            title = titles[window_id]
-            class_name = self.window_manager.get_window_class_name(window_id)
-            self.tmp_store.add(window_id)
+        for window_id, title in titles.items():
             left, top = self.window_manager.get_window_position(window_id)
             width, height = self.window_manager.get_window_dimensions(window_id)
 
+            # Skip zero-dimension windows — they'd cause ZeroDivisionError in mapper
+            if width == 0 or height == 0:
+                continue
+
+            class_name = self.window_manager.get_window_class_name(window_id)
+            self.tmp_store.add(window_id)
             self.windows_data[window_id] = [
-                window_id,
-                title,
-                class_name,
-                left,
-                top,
-                width,
-                height,
+                window_id, title, class_name, left, top, width, height
             ]
 
         added = self.tmp_store - self.main_store
         removed = self.main_store - self.tmp_store
-        self.added_window_ids = [window_id for window_id in added]
-        self.removed_window_ids = [window_id for window_id in removed]
 
         self.main_store.clear()
         self.main_store.update(self.tmp_store)
-        self.tmp_store.clear()
 
-    def format_windows_data_item(self, data):
-        print(data)
-        data_0 = self.format_helper(data[0], 20)
-        data_1 = self.format_helper(data[1], 60)
-        data_2 = self.format_helper(data[2], 60)
-        data_3 = self.format_helper(data[3], 10)
-        data_4 = self.format_helper(data[4], 10)
-        data_5 = self.format_helper(data[5], 10)
-        data_6 = self.format_helper(data[6], 10)
-
-        return f"{data_0}{data_1}{data_2}{data_3}{data_4}{data_5}{data_6}"
-
-    def format_helper(self, subdata, _len):
-        new_str_len = max(MIN_STR_LEN, _len)
-        _str = str(subdata)
-        str_len = len(_str)
-
-        if str_len > new_str_len:
-            _str = _str[0 : (new_str_len - 3)] + "..."
-        elif str_len <= new_str_len:
-            diff = new_str_len - str_len
-            _str = _str + " " * diff
-
-        return _str
+        return (
+            [wid for wid in added],
+            [wid for wid in removed],
+        )
 
 
-def list():
-    app = QApplication(sys.argv)
-    window = ListApp()
-    window.show()
-    sys.exit(app.exec_())
+    # UI update
+    def _update_list(self):
+        added_ids, removed_ids = self._get_windows_data()
+
+        for window_id in removed_ids:
+            deletion_index = self.windows_id_mapping.pop(window_id, None)
+            if deletion_index is None:
+                continue
+
+            item = self.list_widget.takeItem(deletion_index)
+            del item
+
+            # Shift all indices that were after the deleted row
+            for wid, idx in self.windows_id_mapping.items():
+                if idx > deletion_index:
+                    self.windows_id_mapping[wid] = idx - 1
+
+        for window_id in added_ids:
+            row = self.list_widget.count()
+            data = self.windows_data[window_id]
+            item = QListWidgetItem(self._format_row(data))
+            # Store the window_id in the item so selection doesn't need the mapping
+            item.setData(Qt.UserRole, window_id)
+            self.list_widget.addItem(item)
+            self.windows_id_mapping[window_id] = row
+
+    
+    # Formatting
+    def _format_row(self, data: list) -> str:
+        return "".join(
+            self._pad(str(data[i]), _COL_WIDTHS[i]) for i in range(len(COL_WIDTHS))
+        )
+
+    @staticmethod
+    def _pad(s: str, width: int) -> str:
+        width = max(MIN_STR_LEN, width)
+        if len(s) > width:
+            return s[: width - 3] + "..."
+        return s.ljust(width)
+
+
+    # Confirm / close
+    def _handle_enter(self):
+        item = self.list_widget.currentItem()
+        if not item:
+            return
+        self.selected_window_id = item.data(Qt.UserRole)
+        self.timer.stop()
+        self.close()
+
+    def closeEvent(self, event):
+        # Covers both the X button and programmatic close()
+        self.timer.stop()
+        super().closeEvent(event)
+
+
+def select_window() -> int | None:
+    """
+    Opens the window selector. Returns the selected window_id on confirm,
+    or None if the user closed the dialog without confirming.
+    """
+    app = QApplication.instance() or QApplication(sys.argv)
+    dialog = ListApp()
+    dialog.show()
+    app.exec_()
+    return dialog.selected_window_id
