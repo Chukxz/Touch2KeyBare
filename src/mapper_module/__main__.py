@@ -117,7 +117,7 @@ class _Engine:
             (name for name, data in PRESETS.items() if data.get("window_title") == window_title),
             None,
         )
-
+      
         result = capture_keys(preset_name)
         if result is None:
             print("\n[MAIN] - Key configuration cancelled. Exiting...")
