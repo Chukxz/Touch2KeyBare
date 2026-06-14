@@ -46,7 +46,11 @@ class AbstractWindowManager(ABC):
         pass
 
     @abstractmethod
-    def find_visible_window_titles(self) -> dict:
+    def find_visible_windows(self) -> dict[int, dict]:
+        """
+        Returns visible windows with pre-fetched metadata in a single pass.
+        Keys are window IDs. Values are dicts with 'title': str, 'class_name': str.
+        """
         pass
 
 
