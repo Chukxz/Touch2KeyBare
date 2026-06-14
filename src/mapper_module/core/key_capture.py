@@ -2,21 +2,24 @@ import sys
 from mapper_module.utils import PRESETS, get_keys_from_toml, update_toml_keys
 from mapper_module.platform import get_platform
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QDialog
+    QApplication, QDialog, QVBoxLayout, QHBoxLayout,
+    QLabel, QPushButton,
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
 
 class KeyCaptureDialog(QDialog):
-    def __init__(self, prompt: str, skippable: bool = False):
+    def __init__(self, prompt: str, skippable: bool = False, default_key: str | None = None):
         super().__init__()
         self.setWindowTitle("Key Capture")
         self.setFixedSize(400, 200)
         self.captured_key: str | None = None
         self.skippable = skippable
         self._listening = True
+
+        _, _, _, MappingClass = get_platform()
+        self.mapping = MappingClass()
 
         layout = QVBoxLayout()
 
@@ -54,26 +57,32 @@ class KeyCaptureDialog(QDialog):
         layout.addLayout(btn_layout)
         self.setLayout(layout)
 
+        # Pre-fill default if provided
+        if default_key:
+            self.captured_key = default_key
+            self.key_label.setText(f"Captured: {default_key} (default)")
+            self._listening = False
+            self.retry_btn.setEnabled(True)
+            self.confirm_btn.setEnabled(True)
+
     def keyPressEvent(self, event):
         if not self._listening:
             return
 
-        # Qt key name — convert to scancode key name format
         scan_code = event.nativeScanCode()
         key_name = self.mapping.get_key_from_scancode(scan_code)
 
-        # Fall back to Qt key map for non-modifier keys
         if not key_name:
             key_name = self._qt_key_to_name(event.key())
 
         if key_name is None:
             return
 
-    self.captured_key = key_name
-    self.key_label.setText(f"Captured: {key_name}")
-    self._listening = False
-    self.retry_btn.setEnabled(True)
-    self.confirm_btn.setEnabled(True)
+        self.captured_key = key_name
+        self.key_label.setText(f"Captured: {key_name}")
+        self._listening = False
+        self.retry_btn.setEnabled(True)
+        self.confirm_btn.setEnabled(True)
 
     def _retry(self):
         self.captured_key = None
@@ -87,20 +96,18 @@ class KeyCaptureDialog(QDialog):
 
     def _skip(self):
         self.captured_key = None
-        self.done(QDialog.Accepted)  # Accepted but captured_key stays None
+        self.done(QDialog.Accepted)
 
     def _cancel(self):
         self.captured_key = None
         self.done(QDialog.Rejected)
 
     @staticmethod
-    def _qt_key_to_name(key: int, modifiers) -> str | None:
-        """Map Qt key codes to your SCANCODES key name format."""
+    def _qt_key_to_name(key: int) -> str | None:
         _MAP = {
             Qt.Key_Escape: "ESC",
             Qt.Key_Tab: "TAB",
             Qt.Key_Return: "ENTER",
-            # Shift/Ctrl/Alt intentionally omitted — handled by scancode path above
             Qt.Key_Space: "SPACE",
             Qt.Key_CapsLock: "CAPSLOCK",
             Qt.Key_F1: "F1", Qt.Key_F2: "F2", Qt.Key_F3: "F3",
@@ -121,24 +128,21 @@ class KeyCaptureDialog(QDialog):
             Qt.Key_Up: "E0_UP",
             Qt.Key_Down: "E0_DOWN",
         }
-
         if key in _MAP:
             return _MAP[key]
-
-        # Single printable ASCII (a-z, 0-9, etc.)
         if 32 <= key <= 126:
             return chr(key).lower()
-
-        return None  # Ignore unknown keys (mouse buttons, media keys, etc.)
+        return None
 
 
 def capture_keys(preset_name: str | None = None) -> tuple[str | None, str | None] | None:
-    
     preset = PRESETS.get(preset_name, {}) if preset_name else {}
     last_toggle, last_sprint = get_keys_from_toml()
 
     default_toggle = last_toggle or preset.get("toggle_key")
     default_sprint = last_sprint or preset.get("sprint_key")
+
+    app = QApplication.instance() or QApplication(sys.argv)
 
     toggle_dialog = KeyCaptureDialog(
         "Press the key to toggle between MOUSE MODE and CURSOR MODE.",
