@@ -87,15 +87,9 @@ MIN_STR_LEN = 5
 WINDOWS_HEADERS = ["Window ID", "Title", "Class Name", "Left", "Top", "Width", "Height"]
 COL_WIDTHS = [20, 50, 30, 8, 8, 8, 8]
 
-PRESETS: dict[str, dict] = {
-    "GameLoop": {
-        "toggle_key": "LCTRL",
-        "sprint_key": None,
-    },
-    "Tenstore Android Connect": {
-        "toggle_key": "LCTRL",
-        "sprint_key": "LSHIFT",
-    },
+PRESETS = {
+    "GameLoop": {"window_title": "Gameloop(64beta)", "toggle_key": "LCTRL", "sprint_key": None},
+    "Tenstore Android Connect": {"window_title": "Call of Duty", "toggle_key": "LCTRL", "sprint_key": "LSHIFT"},
 }
 
 PORT = "5555"
