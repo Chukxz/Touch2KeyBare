@@ -105,7 +105,6 @@ class _Engine:
 
         print("\n[MAIN] - Initializing Touch2Key... Press 'ESC' to Stop.")
         print(f"\n[MAIN] - ADB Executable File Path: {ADB}.")
-        app = QApplication(sys.argv)
 
         selected_window_id = select_window()
         if selected_window_id is None:
@@ -220,7 +219,8 @@ def run():
     if not success:
         print("[MAIN] - Another instance of Touch2Key is already running. Exiting this instance.")
         os._exit(0)
-
+    
+    QApplication(sys.argv)
     _engine = _Engine()
     try:
         _engine._start()
