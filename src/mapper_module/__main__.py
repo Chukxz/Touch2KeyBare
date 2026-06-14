@@ -109,7 +109,8 @@ class _Engine:
         w_result = select_window()
         if w_result is None:
             print("\n[MAIN] - No window selected. Exiting...")
-            return selected_window_id, window_title = w_result
+            return
+        selected_window_id, window_title = w_result
 
         preset_name = next(
             (name for name, data in PRESETS.items() if data.get("window_title") == window_title), None,
