@@ -213,8 +213,6 @@ SCANCODES = {
     "E0_NUM_ENTER": 0xE01C,
 }
 
-SCANCODE_TO_KEY = {v: k for k, v in SCANCODES.items()}
-
 # Note: Non standard, just for internal recognition
 SCANCODES.update(
     {
@@ -223,6 +221,8 @@ SCANCODES.update(
         "MOUSE_MIDDLE": M_MIDDLE,
     }
 )
+
+SCANCODE_TO_KEY = {v: k for k, v in SCANCODES.items()}
 
 SCANCODES.update(
     {
