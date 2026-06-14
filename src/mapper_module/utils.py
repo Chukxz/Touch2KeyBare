@@ -87,6 +87,17 @@ MIN_STR_LEN = 5
 WINDOWS_HEADERS = ["Window ID", "Title", "Class Name", "Left", "Top", "Width", "Height"]
 COL_WIDTHS = [20, 50, 30, 8, 8, 8, 8]
 
+PRESETS: dict[str, dict] = {
+    "GameLoop": {
+        "toggle_key": "LCTRL",
+        "sprint_key": None,
+    },
+    "Tenstore Android Connect": {
+        "toggle_key": "LCTRL",
+        "sprint_key": "LSHIFT",
+    },
+}
+
 PORT = "5555"
 
 EVENT_TYPE = Literal[
