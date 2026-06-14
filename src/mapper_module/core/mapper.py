@@ -28,6 +28,7 @@ class Mapper:
         interception_bridge: AbstractBridge,
         pps: float,
         emulator: dict[str, str | None],
+        window_id: int
     ):
         _, WindowMgrClass, _, _ = get_platform()
 
@@ -56,7 +57,7 @@ class Mapper:
         self.window_update_interval = WINDOW_UPDATE_INTERVAL
 
         # Use the selected window ID directly instead of scanning by title
-        self.window_id: int = json_loader.window_id
+        self.window_id: int = window_id
         self.game_window_class_name: str | None = (
             self.window_manager.get_window_class_name(self.window_id) or None
         )
