@@ -1,4 +1,3 @@
-import sys
 from mapper_module.utils import PRESETS, get_keys_from_toml, update_toml_keys
 from mapper_module.platform import get_platform
 from PyQt5.QtWidgets import (
