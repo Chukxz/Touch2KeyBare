@@ -87,21 +87,6 @@ MIN_STR_LEN = 5
 WINDOWS_HEADERS = ["Window ID", "Title", "Class Name", "Left", "Top", "Width", "Height"]
 COL_WIDTHS = [20, 50, 30, 8, 8, 8, 8]
 
-
-DEF_EMULATOR_ID = 0
-EMULATORS = {
-    "GameLoop": {
-        "window_title": "Gameloop(64beta)",
-        "sprint_key": None,
-        "toggle_key": "LCTRL",
-    },
-    "Tenstore Android Connect": {
-        "window_title": "Call of Duty",
-        "sprint_key": "LSHIFT",
-        "toggle_key": "LCTRL",
-    },
-}
-
 PORT = "5555"
 
 EVENT_TYPE = Literal[
@@ -502,12 +487,46 @@ def create_default_toml():
     joystick.add("sprint_distance", 10.0)
     doc.add("joystick", joystick)
 
+    keys = tomlkit.table()
+    keys.add("toggle_key", "")
+    keys.add("sprint_key", "")
+    doc.add("keys", keys)
+
     try:
         with open(TOML_PATH, "w", encoding="utf-8") as f:
             tomlkit.dump(doc, f)
         print(f"\n[UTILITY] - Successfully created settings.toml at '{TOML_PATH}'.")
     except Exception as e:
         print(f"\n[UTILITY] - Failed to create settings.toml: {e}.")
+
+def get_keys_from_toml() -> tuple[str | None, str | None]:
+    try:
+        if not TOML_PATH.exists():
+            return None, None
+        with open(TOML_PATH, "r", encoding="utf-8") as f:
+            doc = tomlkit.load(f)
+        keys = doc.get("keys", {})
+        toggle = keys.get("toggle_key") or None
+        sprint = keys.get("sprint_key") or None
+        return toggle, sprint
+    except Exception:
+        return None, None
+
+
+def update_toml_keys(toggle_key: str | None, sprint_key: str | None):
+    try:
+        if not TOML_PATH.exists():
+            create_default_toml()
+        with open(TOML_PATH, "r", encoding="utf-8") as f:
+            doc = tomlkit.load(f)
+        if "keys" not in doc:
+            doc.append("keys", tomlkit.table())
+        doc["keys"]["toggle_key"] = toggle_key or ""
+        doc["keys"]["sprint_key"] = sprint_key or ""
+        with open(TOML_PATH, "w", encoding="utf-8") as f:
+            tomlkit.dump(doc, f)
+    except Exception as e:
+        print(f"\n[UTILITY] - Could not save key config: {e}.")
 
 
 def update_toml(
