@@ -135,31 +135,29 @@ class KeyCaptureDialog(QDialog):
         return None
 
 
-def capture_keys(preset_name: str | None = None) -> tuple[str | None, str | None] | None:
-    preset = PRESETS.get(preset_name, {}) if preset_name else {}
-    last_toggle, last_sprint = get_keys_from_toml()
+    def capture_keys(preset_name: str | None = None) -> tuple[str | None, str | None] | None:
+        preset = PRESETS.get(preset_name, {}) if preset_name else {}
+        last_toggle, last_sprint = get_keys_from_toml()
 
-    default_toggle = last_toggle or preset.get("toggle_key")
-    default_sprint = last_sprint or preset.get("sprint_key")
+        default_toggle = last_toggle or preset.get("toggle_key")
+        default_sprint = last_sprint or preset.get("sprint_key")
 
-    app = QApplication.instance() or QApplication(sys.argv)
+        app = QApplication.instance() or QApplication(sys.argv)
 
-    toggle_dialog = KeyCaptureDialog(
-        "Press the key to toggle between MOUSE MODE and CURSOR MODE.",
-        skippable=False,
+        toggle_dialog = KeyCaptureDialog(
+            "Press the key to toggle between MOUSE MODE and CURSOR MODE.\n(or click Skip if not needed)",
+        skippable=True,
         default_key=default_toggle,
     )
     if toggle_dialog.exec_() == QDialog.Rejected:
         return None
     toggle_key = toggle_dialog.captured_key
-    if toggle_key is None:
-        return None
 
-    sprint_dialog = KeyCaptureDialog(
-        "Press the key to use as the SPRINT key\n(or click Skip if not needed)",
-        skippable=True,
-        default_key=default_sprint,
-    )
+        sprint_dialog = KeyCaptureDialog(
+            "Press the key to use as the SPRINT key\n(or click Skip if not needed)",
+            skippable=True,
+            default_key=default_sprint,
+        )
     if sprint_dialog.exec_() == QDialog.Rejected:
         return None
     sprint_key = sprint_dialog.captured_key
