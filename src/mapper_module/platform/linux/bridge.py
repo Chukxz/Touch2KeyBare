@@ -24,7 +24,7 @@ class UInputBridge(AbstractBridge):
     def __init__(self, window_manager, system_config):
         self.window_manager = window_manager
         self.system_config = system_config
-        self.screen_w, self.screen_h = window_manager.get_screen_metrics()
+        self.screen_w, self.screen_h = window_manager.get_screen_dimensions()
         self.bridge_lock = threading.RLock()
 
         self.k_queue = multiprocessing.Queue()

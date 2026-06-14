@@ -139,7 +139,10 @@ class KeyMapper:
                         hit = True
 
                 if is_visible:
-                    if self.mapper.toggle_key_scancode is None or scancode != self.mapper.toggle_key_scancode:
+                    if (
+                        self.mapper.toggle_key_scancode is None
+                        or scancode != self.mapper.toggle_key_scancode
+                    ):
                         hit = False
 
                 if hit:

@@ -23,8 +23,7 @@ if TYPE_CHECKING:
 
 class JSONLoader:
     def __init__(self, config: AppConfig, foreground_window):
-        _, WindowMgrClass, _, _ = get_platform()
-        self.window_manager = WindowMgrClass()
+        self.window_manager = get_platform().WindowManager()
 
         self.config = config
         self.mapper_event_dispatcher = config.mapper_event_dispatcher

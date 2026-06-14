@@ -1,11 +1,21 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QListWidget,
-    QListWidgetItem, QPushButton, QLabel
+    QWidget,
+    QVBoxLayout,
+    QListWidget,
+    QListWidgetItem,
+    QPushButton,
+    QLabel,
 )
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QFont
 from mapper_module.platform import get_platform
 from mapper_module.utils import MIN_STR_LEN, WINDOWS_HEADERS, COL_WIDTHS
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QApplication
 
 
 class ListApp(QWidget):
@@ -36,9 +46,7 @@ class ListApp(QWidget):
         self.main_store: set[int] = set()
         self.tmp_store: set[int] = set()
         self.windows_data: dict[int, list] = {}
-
-        _, WindowMgrClass, _, _ = get_platform()
-        self.window_manager = WindowMgrClass()
+        self.window_manager = get_platform().WindowManager()
 
         self.timer = QTimer()
         self.timer.timeout.connect(self._update_list)
@@ -61,7 +69,10 @@ class ListApp(QWidget):
                 window_id,
                 meta["title"],
                 meta["class_name"],
-                left, top, width, height,
+                left,
+                top,
+                width,
+                height,
             ]
 
         added = self.tmp_store - self.main_store
@@ -87,8 +98,10 @@ class ListApp(QWidget):
             row = self.list_widget.count()
             data = self.windows_data[window_id]
             item = QListWidgetItem(self._format_row(data))
-            item.setData(Qt.UserRole, window_id)
-            item.setData(Qt.UserRole + 1, self.windows_data[window_id][1]) # title is index 1
+            item.setData(Qt.ItemDataRole.UserRole, window_id)
+            item.setData(
+                Qt.ItemDataRole.UserRole + 1, self.windows_data[window_id][1]
+            )  # title is index 1
             self.list_widget.addItem(item)
             self.windows_id_mapping[window_id] = row
 
@@ -100,28 +113,27 @@ class ListApp(QWidget):
     @staticmethod
     def _pad(s: str, width: int) -> str:
         width = max(MIN_STR_LEN, width)
-        if len(s) > width:
-            return s[:width - 3] + "..."
+        if len(s) >= width:
+            return s[: width - 4] + "... "
         return s.ljust(width)
 
     def _handle_enter(self):
         item = self.list_widget.currentItem()
         if not item:
             return
-        self.selected_window_id = item.data(Qt.UserRole)
-        self.selected_window_title = item.data(Qt.UserRole + 1)
-        self.timer.stop()
+        self.selected_window_id = item.data(Qt.ItemDataRole.UserRole)
+        self.selected_window_title = item.data(Qt.ItemDataRole.UserRole + 1)
         self.close()
 
     def closeEvent(self, event):
-        self.timer.stop()
         super().closeEvent(event)
 
 
-def select_window() -> tuple[int, str] | None:
+def select_window(app: QApplication) -> tuple[int, str] | None:
     dialog = ListApp()
     dialog.show()
-    QApplication.instance().exec_()
+    app.exec_()
+    dialog.timer.stop()
     if dialog.selected_window_id is None:
         return None
     return dialog.selected_window_id, dialog.selected_window_title

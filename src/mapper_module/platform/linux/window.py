@@ -30,17 +30,15 @@ class WindowManager(AbstractWindowManager):
             return None
         return self.disp.create_resource_object("window", xid)
 
-    def _get_all_windows(self, window=None) -> list:
-        """Helper to recursively traverse the X11 window tree."""
-        if window is None:
-            window = self.root
-        windows = [window]
+    def _get_all_top_level_windows(self) -> list:
+        """Returns a flat list of immediate top-level windows under the X11 root."""
+        if not self.disp:
+            return []
+
         try:
-            for child in window.query_tree().children:
-                windows.extend(self._get_all_windows(child))
+            return self.root.query_tree().children
         except error.BadWindow:
-            pass
-        return windows
+            return []
 
     def get_foreground_window(self) -> int:
         if not self.disp:
@@ -108,7 +106,7 @@ class WindowManager(AbstractWindowManager):
         if not self.disp or not class_name:
             return []
         results = []
-        for win in self._get_all_windows():
+        for win in self._get_all_top_level_windows():
             try:
                 wm_class = win.get_wm_class()
                 if wm_class and len(wm_class) > 1 and wm_class[1] == class_name:
@@ -178,7 +176,10 @@ class WindowManager(AbstractWindowManager):
 
         # Check if XFixes is supported before attempting to use it
         if not self._ensure_xfixes():
-            return last_state, last_check_time # Fallback if xFixes extension is not available
+            return (
+                last_state,
+                last_check_time,
+            )  # Fallback if xFixes extension is not available
 
         cursor = xfixes.get_cursor_image(self.disp, self.root)
         return cursor.width > 0 and cursor.height > 0, now
@@ -193,7 +194,7 @@ class WindowManager(AbstractWindowManager):
         if not self.disp:
             return {}
         results = {}
-        for win in self._get_all_windows():
+        for win in self._get_all_top_level_windows():
             try:
                 # Check legacy WM_NAME first
                 name = win.get_wm_name()
@@ -212,11 +213,11 @@ class WindowManager(AbstractWindowManager):
         if not self.disp:
             return {}
         results = {}
-        for win in self._get_all_windows():
+        for win in self._get_all_top_level_windows():
             try:
                 attr = win.get_attributes()
                 if attr.map_state != X.IsViewable:
-                     continue
+                    continue
 
                 name = win.get_wm_name()
                 if not name:

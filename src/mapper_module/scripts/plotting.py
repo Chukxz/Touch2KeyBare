@@ -16,11 +16,10 @@ import json
 import datetime
 from pathlib import Path
 
-from mapper_module.platform import get_platform
+from mapper_module.platform import get_platform, get_specific_mt_key
 from mapper_module.utils import (
     CIRCLE,
     RECT,
-    SCANCODES,
     DEF_DPI,
     IMAGES_FOLDER,
     JSONS_FOLDER,
@@ -28,6 +27,8 @@ from mapper_module.utils import (
     MOUSE_WHEEL_CODE,
     SPRINT_DISTANCE_CODE,
     IDLE,
+    get_scancode_and_bridge_key_from_key,
+    get_key_from_scancode,
     rotate_resolution,
     update_toml,
     get_vibrant_random_color,
@@ -49,56 +50,6 @@ DEF_STR = "MODE: IDLE | F3 (Load JSON) | F5 (Load Image) | F12 (Save) | Esc (Exi
     F6 (Circle) | F7 (Rect) | F8 (Cancel) | Del (Delete) | F2 (Delete All) | F9 (List Current Shapes in Terminal)\n\
     F4 (Toggle Artist Visibility) | [ (Sprint Threshold) | ] (Mouse Wheel) | Space (Toggle Move Camera)\n\
     Arrows: Nudge | Shift+Arrows: Fast Nudge | Double Click: Change Selected Artist"
-
-SPECIAL_MAP = {
-    "escape": "ESC",
-    "enter": "ENTER",
-    "backspace": "BACKSPACE",
-    "tab": "TAB",
-    "f1": "F1",
-    "f2": "F2",
-    "f3": "F3",
-    "f4": "F4",
-    "f5": "F5",
-    "f6": "F6",
-    "f7": "F7",
-    "f8": "F8",
-    "f9": "F9",
-    "f10": "F10",
-    "f11": "F11",
-    "f12": "F12",
-    "=": "EQUAL",
-    "-": "MINUS",
-    "[": "LEFT_BRACKET",
-    "]": "RIGHT_BRACKET",
-    ";": "SEMICOLON",
-    "'": "APOSTROPHE",
-    "`": "GRAVE",
-    "\\": "BACKSLASH",
-    ",": "COMMA",
-    ".": "DOT",
-    "/": "SLASH",
-    "lshift": "LSHIFT",
-    "rshift": "RSHIFT",
-    "lalt": "LALT",
-    "ralt": "RALT",
-    "shift": "LSHIFT",
-    "alt": "LALT",
-    "control": "LCTRL",
-    "lctrl": "LCTRL",
-    "rctrl": "RCTRL",
-    " ": "SPACE",
-    "*": "NUM_MULTIPLY",
-    "caps_lock": "CAPSLOCK",
-    "num_lock": "NUMLOCK",
-    "scroll_lock": "SCROLLLOCK",
-    "up": "E0_UP",
-    "left": "E0_LEFT",
-    "right": "E0_RIGHT",
-    "down": "E0_DOWN",
-    "insert": "E0_INSERT",
-    "delete": "E0_DELETE",
-}
 
 INDICATED_EDGE_COLOR = (0.85, 0.88, 0.92)
 ACTIVE_EDGE_COLOR = (0.7, 0.7, 0.7, 0.8)
@@ -580,7 +531,7 @@ class _DraggableShape(_Draggable):
 
         if (
             self.plotter.saved_mouse_wheel
-            and current_shape["interception_key"] == MOUSE_WHEEL_CODE
+            and current_shape["bridge_key"] == MOUSE_WHEEL_CODE
         ):
             self.plotter.mouse_wheel_cx = new_cx
             self.plotter.mouse_wheel_cy = new_cy
@@ -619,7 +570,7 @@ class _DraggableShape(_Draggable):
 
         if (
             self.plotter.saved_sprint_distance
-            and current_shape["interception_key"] == SPRINT_DISTANCE_CODE
+            and current_shape["bridge_key"] == SPRINT_DISTANCE_CODE
         ):
             actual_dist = self.plotter.euclidean_distance(
                 new_cx, new_cy, self.plotter.mouse_wheel_cx, self.plotter.mouse_wheel_cy
@@ -679,7 +630,7 @@ class _DraggableShape(_Draggable):
 
         if (
             self.plotter.saved_mouse_wheel
-            and current_shape["interception_key"] == MOUSE_WHEEL_CODE
+            and current_shape["bridge_key"] == MOUSE_WHEEL_CODE
         ):
             new_r = min(
                 new_r,
@@ -706,7 +657,7 @@ class _DraggableShape(_Draggable):
 
         if (
             self.plotter.saved_sprint_distance
-            and current_shape["interception_key"] == SPRINT_DISTANCE_CODE
+            and current_shape["bridge_key"] == SPRINT_DISTANCE_CODE
         ):
             new_r = min(new_r, self.plotter.mouse_wheel_radius)
 
@@ -999,14 +950,8 @@ class _DraggableShape(_Draggable):
 
 class Plotter:
     def __init__(self, image_path=None):
-        # Unpack the system configuration and mapping classes dynamically
-        _, _, SysConfigClass, MappingClass = get_platform()
-
-        # Platform-independent environment setup
-        self.system_config = SysConfigClass()
+        self.system_config = get_platform().SystemConfig()
         self.system_config.set_dpi_awareness()
-
-        self.mapping = MappingClass()
 
         # SMART PATH DETECTION
         json_file_str = None
@@ -1312,17 +1257,15 @@ class Plotter:
                 continue
 
             json_shape = {}
-            key_name = self.get_event_key(scancode)
-            _, interception_key = self.get_interception_code(key_name)
+            key_name = get_key_from_scancode(scancode)
+            _, bridge_key = get_scancode_and_bridge_key_from_key(key_name)
             json_shape["key_name"] = key_name
             json_shape["m_code"] = scancode
             json_shape["type"] = zone_type
             json_shape["cx"] = int(round(cx * scale_x))
             json_shape["cy"] = int(round(cy * scale_y))
             json_shape["move_camera"] = move_camera
-            json_shape["interception_key"] = (
-                interception_key if interception_key is not None else ""
-            )
+            json_shape["bridge_key"] = bridge_key if bridge_key is not None else ""
 
             if zone_type == CIRCLE:
                 scale_r = (scale_x + scale_y) / 2
@@ -1354,12 +1297,12 @@ class Plotter:
                 bb = shape.get("bb", None)
                 key_name = shape["key_name"]
                 l_move_camera = shape["move_camera"]
-                interception_key = shape["interception_key"]
+                bridge_key = shape["bridge_key"]
                 hex_code = shape["m_code"]
                 self.mode = shape["mode"]
 
                 self.finalize_shape(
-                    cx, cy, r, bb, key_name, interception_key, hex_code, l_move_camera
+                    cx, cy, r, bb, key_name, bridge_key, hex_code, l_move_camera
                 )
 
             self.reset_state()
@@ -1597,7 +1540,7 @@ class Plotter:
             return
 
         if self.state == WAITING_FOR_KEY:
-            precise_key = self.get_specific_key(event)
+            precise_key = get_specific_mt_key(event)
             self.calculate_shape(precise_key)
             return
 
@@ -1744,17 +1687,17 @@ class Plotter:
             return
 
         shape_data = self.shapes[uid]
-        interception_key = shape_data["interception_key"]
+        bridge_key = shape_data["bridge_key"]
         shape_type = shape_data["type"]
         hex_code = shape_data["m_code"]
 
         # CENTRALIZED CASCADE LOGIC
-        if interception_key == MOUSE_WHEEL_CODE:
+        if bridge_key == MOUSE_WHEEL_CODE:
             # Delete dependent Sprint points automatically
             sprint_uids = [
                 k
                 for k, v in self.shapes.items()
-                if v["interception_key"] == SPRINT_DISTANCE_CODE
+                if v["bridge_key"] == SPRINT_DISTANCE_CODE
             ]
             for sid in sprint_uids:
                 self.delete_entry(sid)  # Recursive call cleans the child
@@ -1764,7 +1707,7 @@ class Plotter:
             self.mouse_wheel_cx = 0.0
             self.mouse_wheel_cy = 0.0
 
-        elif interception_key == SPRINT_DISTANCE_CODE:
+        elif bridge_key == SPRINT_DISTANCE_CODE:
             self.saved_sprint_distance = False
             self.sprint_artist_id = None
             self.sprint_distance = 0.0
@@ -1795,7 +1738,7 @@ class Plotter:
             self.last_artist_id = None
 
         print(
-            f'[PLOTTER] - Deleted Shape of type: {shape_type} with ID: {uid} and key: "{interception_key}" (hex: {hex_code})'
+            f'[PLOTTER] - Deleted Shape of type: {shape_type} with ID: {uid} and key: "{bridge_key}" (hex: {hex_code})'
         )
 
     # Marking Logic
@@ -1829,7 +1772,7 @@ class Plotter:
                             if not was_marked
                             else "UNMARKED for Camera Follow"
                         )
-                        marked_i_key = marked_key["interception_key"]
+                        marked_i_key = marked_key["bridge_key"]
                         marked_m_code = marked_key["m_code"]
                         print(
                             f'[PLOTTER] - {status}: ID {uid} with key "{marked_i_key}" (hex: {marked_m_code})'
@@ -1876,27 +1819,10 @@ class Plotter:
             print("[PLOTTER] - Blocked: Exit Mark Mode (Esc) first.")
 
     # Shape Calculation & Finalization
-    def get_specific_key(self, event):
-        """
-        Returns a specific string like 'lshift' or 'rshift'
-        by inspecting the low-level Qt event.
-        """
-        gui_event = event.guiEvent
-        if not gui_event:
-            return event.key
-
-        # Cross-platform way to get the native scancode
-        scan_code = gui_event.nativeScanCode()
-
-        # Ask the abstracted mapping layer for the translation
-        mapped_key = self.mapping.get_key_from_scancode(scan_code)
-
-        # Fallback to the standard matplotlib key if it wasn't in our modifier map
-        return mapped_key if mapped_key else event.key
 
     def calculate_shape(self, key_name):
         # 'key_name' might be a key string ('a', 'f1') OR a mouse string ('MOUSE_LEFT')
-        hex_code, interception_key = self.get_interception_code(key_name)
+        hex_code, bridge_key = get_scancode_and_bridge_key_from_key(key_name)
 
         if hex_code is None:
             print(f'[PLOTTER] - Key "{key_name}" not mapped.')
@@ -1908,34 +1834,34 @@ class Plotter:
         elif self.mode == RECT:
             cx, cy, r, bb = self.calculate_rect()
 
-        self.finalize_shape(cx, cy, r, bb, key_name, interception_key, hex_code)
+        self.finalize_shape(cx, cy, r, bb, key_name, bridge_key, hex_code)
         self.reset_state()
 
     def finalize_shape(
-        self, cx, cy, r, bb, key_name, interception_key, hex_code, move_camera=False
+        self, cx, cy, r, bb, key_name, bridge_key, hex_code, move_camera=False
     ):
         if cx is not None:
             saved, entry_id = self.save_entry(
-                interception_key, hex_code, cx, cy, r, bb, move_camera
+                bridge_key, hex_code, cx, cy, r, bb, move_camera
             )
 
             if saved:
-                label = interception_key
-                if interception_key == MOUSE_WHEEL_CODE:
+                label = bridge_key
+                if bridge_key == MOUSE_WHEEL_CODE:
                     label = "MOUSE_WHEEL"
-                elif interception_key == SPRINT_DISTANCE_CODE:
+                elif bridge_key == SPRINT_DISTANCE_CODE:
                     label = "SPRINT_DISTANCE"
                 else:
                     label = label.split("E0_")[-1]
 
                 print(
-                    f'[PLOTTER] - Saved ID {self.count-1}: {self.mode} bound to key "{key_name}" with interception key: "{interception_key}" and labelled as: "{label}"'
+                    f'[PLOTTER] - Saved ID {self.count-1}: {self.mode} bound to key "{key_name}" with interception key: "{bridge_key}" and labelled as: "{label}"'
                 )
 
                 if self.mode == CIRCLE and cx and cy and r:
-                    if interception_key == MOUSE_WHEEL_CODE:
+                    if bridge_key == MOUSE_WHEEL_CODE:
                         fc = DEFAULT_MOUSE_WHEEL_FACE_COLOR  # Bright Cyan/Teal
-                    elif interception_key == SPRINT_DISTANCE_CODE:
+                    elif bridge_key == SPRINT_DISTANCE_CODE:
                         fc = DEFAULT_SPRINT_DISTANCE_FACE_COLOR  # Bright Red
                     else:
                         fc = get_vibrant_random_color(DEFAULT_FACE_COLOR_ALPHA)
@@ -1964,11 +1890,11 @@ class Plotter:
 
                 elif self.mode == RECT and cx and cy and bb:
                     if (
-                        interception_key == MOUSE_WHEEL_CODE
-                        or interception_key == SPRINT_DISTANCE_CODE
+                        bridge_key == MOUSE_WHEEL_CODE
+                        or bridge_key == SPRINT_DISTANCE_CODE
                     ):
                         print(
-                            f'[PLOTTER] - Warning: Special keys like "{interception_key}" should be bound to CIRCLE shapes for better visualization. Consider re-binding this key to a CIRCLE shape.'
+                            f'[PLOTTER] - Warning: Special keys like "{bridge_key}" should be bound to CIRCLE shapes for better visualization. Consider re-binding this key to a CIRCLE shape.'
                         )
                     else:
                         fc = get_vibrant_random_color(DEFAULT_FACE_COLOR_ALPHA)
@@ -2106,7 +2032,7 @@ class Plotter:
 
         for _, data in self.shapes.items():
             entry = {
-                "name": data["interception_key"],  # Interception Key Name
+                "name": data["bridge_key"],  # Interception Key Name
                 "scancode": data["m_code"],  # Saved as hex string "0x..."
                 "type": data["type"],
                 "cx": data["cx"],
@@ -2189,41 +2115,19 @@ class Plotter:
 
         self.update_title(f"SAVED: {file_path.name} | {HELP_STR}")
 
-    # Helper Functions
-    def get_interception_code(self, key):
-        mapped_key = key
-        val = SCANCODES.get(mapped_key)
-        if val is None:
-            mapped_key = SPECIAL_MAP.get(key)
-            if mapped_key:
-                val = SCANCODES.get(mapped_key)
-        return hex(val) if val is not None else None, (
-            mapped_key if val is not None else None
-        )
-
-    def get_event_key(self, scancode):
-        mapped_scancode = scancode
-        for key, val in SCANCODES.items():
-            if hex(val) == mapped_scancode:
-                for sp_key, sp_val in SPECIAL_MAP.items():
-                    if sp_val == key:
-                        return sp_key
-                return key
-        return ""
-
-    def save_entry(self, interception_key, hex_code, cx, cy, r, bb, move_camera):
+    def save_entry(self, bridge_key, hex_code, cx, cy, r, bb, move_camera):
         uid = self.count
         inc_count = True
         saved = False
 
-        if interception_key == MOUSE_WHEEL_CODE:
+        if bridge_key == MOUSE_WHEEL_CODE:
             if self.mode == CIRCLE:
                 if self.saved_mouse_wheel:
                     print(
                         f"[PLOTTER] - Mouse Wheel already assigned. Overwriting previous assignment."
                     )
                     for k, v in list(self.shapes.items()):
-                        if v["interception_key"] == MOUSE_WHEEL_CODE:
+                        if v["bridge_key"] == MOUSE_WHEEL_CODE:
                             uid = k
                             inc_count = False
                             self.shapes.pop(k)
@@ -2253,7 +2157,7 @@ class Plotter:
                 )
                 return saved, uid
 
-        elif interception_key == SPRINT_DISTANCE_CODE:
+        elif bridge_key == SPRINT_DISTANCE_CODE:
             if self.mode == CIRCLE:
                 if not self.saved_mouse_wheel:
                     print(
@@ -2266,7 +2170,7 @@ class Plotter:
                         f"[PLOTTER] - Error: Sprint Threshold already assigned. Overwriting previous assignment."
                     )
                     for k, v in list(self.shapes.items()):
-                        if v["interception_key"] == SPRINT_DISTANCE_CODE:
+                        if v["bridge_key"] == SPRINT_DISTANCE_CODE:
                             uid = k
                             inc_count = False
                             self.shapes.pop(k)
@@ -2306,7 +2210,7 @@ class Plotter:
                 return saved, uid
 
         entry = {
-            "interception_key": interception_key,
+            "bridge_key": bridge_key,
             "m_code": hex_code,
             "type": self.mode,
             "cx": cx,

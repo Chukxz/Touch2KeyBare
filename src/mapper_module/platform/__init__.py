@@ -1,7 +1,25 @@
 from __future__ import annotations
+from typing import TYPE_CHECKING, NamedTuple
+
 from mapper_module.utils import SYSTEM
 
-# --- Single Instance Logic ---
+if TYPE_CHECKING:
+    from .windows.bridge import InterceptionBridge
+    from .windows.window import WindowManager
+    from .windows.system import SystemConfig
+    from .windows.mapping import Mapping
+
+    from .linux.bridge import UInputBridge
+    from .linux.window import WindowManager
+    from .linux.system import SystemConfig
+    from .linux.mapping import Mapping
+
+
+class PlatformModules(NamedTuple):
+    Bridge: type[InterceptionBridge] | type[UInputBridge]
+    WindowManager: type[WindowManager]
+    SystemConfig: type[SystemConfig]
+    Mapping: type[Mapping]
 
 
 def _check_single_instance_windows(instance_name: str) -> tuple[bool, int | None]:
@@ -38,32 +56,65 @@ def check_single_instance(instance_name: str) -> tuple[bool, object | None]:
     return False, None
 
 
-# --- Platform Bridge ---
-
-
 def get_platform():
     """
     Returns the platform-specific modules.
     Imports are deferred inside the function to avoid circular imports.
     """
     if SYSTEM == "Windows":
-        from .windows.bridge import InterceptionBridge
+        from .windows.bridge import InterceptionBridge as Bridge
         from .windows.window import WindowManager
         from .windows.system import SystemConfig
         from .windows.mapping import Mapping
 
-        return InterceptionBridge, WindowManager, SystemConfig, Mapping
+        return PlatformModules(Bridge, WindowManager, SystemConfig, Mapping)
 
     elif SYSTEM == "Linux":
-        from .linux.bridge import UInputBridge as InterceptionBridge
+        from .linux.bridge import UInputBridge as Bridge
         from .linux.window import WindowManager
         from .linux.system import SystemConfig
         from .linux.mapping import Mapping
 
-        return InterceptionBridge, WindowManager, SystemConfig, Mapping
+        return PlatformModules(Bridge, WindowManager, SystemConfig, Mapping)
 
     else:
         raise RuntimeError(f"Unsupported platform: {SYSTEM}")
+
+
+def get_specific_mt_key(event):
+    """
+    Returns a specific string like 'lshift' or 'rshift'
+    by inspecting the low-level Qt event in the Matplotlib event.
+    """
+
+    gui_event = event.guiEvent
+    if not gui_event:
+        return event.key
+
+    # Cross-platform way to get the native scancode
+    scan_code = gui_event.nativeScanCode()
+
+    # Use the abstracted mapping layer for the translation
+    mapped_key = get_platform().Mapping().get_key_from_scancode(scan_code)
+
+    # Fallback to the standard key if it wasn't in our modifier map
+    return mapped_key if mapped_key else event.key
+
+
+def get_specific_qt_key(event):
+    """
+    Returns a specific string like 'lshift' or 'rshift'
+    by inspecting the Qt event.
+    """
+
+    # Cross-platform way to get the native scancode
+    scan_code = event.nativeScanCode()
+
+    # Use the abstracted mapping layer for the translation
+    mapped_key = get_platform().Mapping().get_key_from_scancode(scan_code)
+
+    # Fallback to the standard key if it wasn't in our modifier map
+    return mapped_key if mapped_key else event.text()
 
 
 __all__ = ["check_single_instance", "get_platform"]

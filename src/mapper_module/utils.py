@@ -88,8 +88,16 @@ WINDOWS_HEADERS = ["Window ID", "Title", "Class Name", "Left", "Top", "Width", "
 COL_WIDTHS = [20, 50, 30, 8, 8, 8, 8]
 
 PRESETS = {
-    "GameLoop": {"window_title": "Gameloop(64beta)", "toggle_key": "LCTRL", "sprint_key": None},
-    "Tenstore Android Connect": {"window_title": "Call of Duty", "toggle_key": "LCTRL", "sprint_key": "LSHIFT"},
+    "GameLoop": {
+        "window_title": "Gameloop(64beta)",
+        "toggle_key": "lctrl",
+        "sprint_key": None,
+    },
+    "Tenstore Android Connect": {
+        "window_title": "Call of Duty",
+        "toggle_key": "LCTRL",
+        "sprint_key": "LSHIFT",
+    },
 }
 
 PORT = "5555"
@@ -205,6 +213,8 @@ SCANCODES = {
     "E0_NUM_ENTER": 0xE01C,
 }
 
+SCANCODE_TO_KEY = {v: k for k, v in SCANCODES.items()}
+
 # Note: Non standard, just for internal recognition
 SCANCODES.update(
     {
@@ -213,6 +223,70 @@ SCANCODES.update(
         "MOUSE_MIDDLE": M_MIDDLE,
     }
 )
+
+SCANCODES.update(
+    {
+        transformed: v
+        for k, v in list(SCANCODES.items())
+        for transformed in (
+            [k.upper()]
+            if k.islower()
+            else [k.lower()] if k.startswith("F") and k[1:].isdigit() else []
+        )
+    }
+)
+
+SPECIAL_MAP = {
+    "escape": "ESC",
+    "enter": "ENTER",
+    "backspace": "BACKSPACE",
+    "tab": "TAB",
+    "f1": "F1",
+    "f2": "F2",
+    "f3": "F3",
+    "f4": "F4",
+    "f5": "F5",
+    "f6": "F6",
+    "f7": "F7",
+    "f8": "F8",
+    "f9": "F9",
+    "f10": "F10",
+    "f11": "F11",
+    "f12": "F12",
+    "=": "EQUAL",
+    "-": "MINUS",
+    "[": "LEFT_BRACKET",
+    "]": "RIGHT_BRACKET",
+    ";": "SEMICOLON",
+    "'": "APOSTROPHE",
+    "`": "GRAVE",
+    "\\": "BACKSLASH",
+    ",": "COMMA",
+    ".": "DOT",
+    "/": "SLASH",
+    "lshift": "LSHIFT",
+    "rshift": "RSHIFT",
+    "lalt": "LALT",
+    "ralt": "RALT",
+    "shift": "LSHIFT",
+    "alt": "LALT",
+    "control": "LCTRL",
+    "lctrl": "LCTRL",
+    "rctrl": "RCTRL",
+    " ": "SPACE",
+    "*": "NUM_MULTIPLY",
+    "caps_lock": "CAPSLOCK",
+    "num_lock": "NUMLOCK",
+    "scroll_lock": "SCROLLLOCK",
+    "up": "E0_UP",
+    "left": "E0_LEFT",
+    "right": "E0_RIGHT",
+    "down": "E0_DOWN",
+    "insert": "E0_INSERT",
+    "delete": "E0_DELETE",
+}
+
+SPECIAL_MAP_INV = {v: k for k, v in SPECIAL_MAP.items()}
 
 
 class TouchEvent:
@@ -504,6 +578,7 @@ def create_default_toml():
     except Exception as e:
         print(f"\n[UTILITY] - Failed to create settings.toml: {e}.")
 
+
 def get_keys_from_toml() -> tuple[str | None, str | None]:
     try:
         if not TOML_PATH.exists():
@@ -661,3 +736,22 @@ def get_hue_modified_alpha_from_hsv(color):
     r, g, b, a = color
     h, _, _ = colorsys.rgb_to_hsv(r, g, b)
     return h, 1.0 - a**2
+
+
+def get_scancode_and_bridge_key_from_key(key):
+    mapped_key = key
+    val = SCANCODES.get(mapped_key)
+    if val is None:
+        mapped_key = SPECIAL_MAP.get(key)
+        if mapped_key:
+            val = SCANCODES.get(mapped_key)
+    return hex(val) if val is not None else None, (
+        mapped_key if val is not None else None
+    )
+
+
+def get_key_from_scancode(scancode):
+    key = SCANCODE_TO_KEY.get(int(scancode, 16))
+    if key is None:
+        return ""
+    return SPECIAL_MAP_INV.get(key, key)

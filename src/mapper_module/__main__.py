@@ -48,11 +48,11 @@ def get_display_protocol():
 
 class _Engine:
     def __init__(self):
-        BridgeClass, WindowMgrClass, SysConfigClass, _ = get_platform()
+        _Platform = get_platform()
 
-        self.window_manager = WindowMgrClass()
-        self.system_config = SysConfigClass()
-        self.bridge_class = BridgeClass(self.window_manager, self.system_config)
+        self.window_manager = _Platform.WindowManager()
+        self.system_config = _Platform.SystemConfig()
+        self.bridge_class = _Platform.Bridge(self.window_manager, self.system_config)
 
         self.system_config.set_dpi_awareness()
         self.system_config.set_timer_resolution()
@@ -99,22 +99,27 @@ class _Engine:
         if touch_event.is_wasd:
             self.wasd_mapper.process_touch(action, touch_event, self.is_visible)
 
-    def _start(self):
+    def _start(self, app: QApplication):
         keyboard.add_hotkey("esc", self._shutdown)
         self.system_config.set_high_priority(os.getpid(), "Main Loop")
 
         print("\n[MAIN] - Initializing Touch2Key... Press 'ESC' to Stop.")
         print(f"\n[MAIN] - ADB Executable File Path: {ADB}.")
 
-        w_result = select_window()
+        w_result = select_window(app)
         if w_result is None:
             print("\n[MAIN] - No window selected. Exiting...")
             return
         selected_window_id, window_title = w_result
 
         preset_name = next(
-            (name for name, data in PRESETS.items() if data.get("window_title") == window_title), None,
-            )
+            (
+                name
+                for name, data in PRESETS.items()
+                if data.get("window_title") == window_title
+            ),
+            None,
+        )
 
         c_result = capture_keys(preset_name)
         if c_result is None:
@@ -131,7 +136,9 @@ class _Engine:
             rate_input = input(
                 f"\nEnter ADB rate cap [Default {DEFAULT_ADB_RATE_CAP}, Min 60, Blank for Default]: "
             ).strip()
-            rate_cap = max(60.0, float(rate_input)) if rate_input else DEFAULT_ADB_RATE_CAP
+            rate_cap = (
+                max(60.0, float(rate_input)) if rate_input else DEFAULT_ADB_RATE_CAP
+            )
 
             pps_input = input(
                 f"Enter Alert Threshold [Default {PPS}, Range 30-120]: "
@@ -150,14 +157,21 @@ class _Engine:
         if hasattr(self.bridge_class, "m_proc"):
             self.system_config.set_high_priority(self.bridge_class.m_proc.pid, "Mouse")
         if hasattr(self.bridge_class, "k_proc"):
-            self.system_config.set_high_priority(self.bridge_class.k_proc.pid, "Keyboard")
+            self.system_config.set_high_priority(
+                self.bridge_class.k_proc.pid, "Keyboard"
+            )
 
         time.sleep(SHORT_DELAY)
 
         json_loader = JSONLoader(config, self.foreground_window)
         self.touch_reader = TouchReader(config, mapper_event_dispatcher, rate_cap)
         self.mapper = Mapper(
-            json_loader, self.touch_reader, self.bridge_class, pps, emulator, selected_window_id
+            json_loader,
+            self.touch_reader,
+            self.bridge_class,
+            pps,
+            emulator,
+            selected_window_id,
         )
 
         self.mouse_mapper = MouseMapper(self.mapper)
@@ -165,7 +179,9 @@ class _Engine:
         self.wasd_mapper = WASDMapper(self.mapper)
 
         self.touch_reader.bind_touch_event(self._process_touch_event)
-        mapper_event_dispatcher.register_callback("ON_MENU_MODE_TOGGLE", self._set_is_visible)
+        mapper_event_dispatcher.register_callback(
+            "ON_MENU_MODE_TOGGLE", self._set_is_visible
+        )
 
         threading.Thread(target=self._check_workers, daemon=True).start()
         keyboard.wait()
@@ -215,13 +231,15 @@ def run():
 
     success, _ = check_single_instance(NAME)
     if not success:
-        print("[MAIN] - Another instance of Touch2Key is already running. Exiting this instance.")
+        print(
+            "[MAIN] - Another instance of Touch2Key is already running. Exiting this instance."
+        )
         os._exit(0)
-    
-    QApplication(sys.argv)
+
+    _app = QApplication(sys.argv)
     _engine = _Engine()
     try:
-        _engine._start()
+        _engine._start(_app)
     except KeyboardInterrupt:
         _engine._shutdown()
 

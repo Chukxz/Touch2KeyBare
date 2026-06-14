@@ -28,9 +28,8 @@ class Mapper:
         interception_bridge: AbstractBridge,
         pps: float,
         emulator: dict[str, str | None],
-        window_id: int
+        window_id: int,
     ):
-        _, WindowMgrClass, _, _ = get_platform()
 
         # Setup Dependencies
         self.json_loader = json_loader
@@ -45,10 +44,12 @@ class Mapper:
 
         # Toggle key — required but guard defensively
         toggle_key = emulator.get("toggle_key")
-        self.toggle_key_scancode: int | None = SCANCODES.get(toggle_key) if toggle_key else None
+        self.toggle_key_scancode: int | None = (
+            SCANCODES.get(toggle_key) if toggle_key else None
+        )
 
         # Window Tracking Setup
-        self.window_manager = WindowMgrClass()
+        self.window_manager = get_platform().WindowManager()
         self.screen_w, self.screen_h = self.window_manager.get_screen_dimensions()
         self.lock = threading.Lock()
         self.agg_lock = threading.Lock()
