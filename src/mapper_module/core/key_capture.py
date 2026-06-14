@@ -1,4 +1,5 @@
 import sys
+from mapper_module.utils import PRESETS, get_keys_from_toml, update_toml_keys
 from mapper_module.platform import get_platform
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
@@ -132,8 +133,7 @@ class KeyCaptureDialog(QDialog):
 
 
 def capture_keys(preset_name: str | None = None) -> tuple[str | None, str | None] | None:
-    from mapper_module.utils import PRESETS, get_keys_from_toml, update_toml_keys
-
+    
     preset = PRESETS.get(preset_name, {}) if preset_name else {}
     last_toggle, last_sprint = get_keys_from_toml()
 
