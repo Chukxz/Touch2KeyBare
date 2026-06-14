@@ -99,13 +99,18 @@ class WindowManager(AbstractWindowManager):
         h = ctypes.windll.user32.GetSystemMetrics(1)
         return w, h
 
-    def _enum_title_windows_callback(self, hwnd, results: dict) -> None:
-        if win32gui.IsWindowVisible(hwnd):
-            title = win32gui.GetWindowText(hwnd)
-            if title:
-                results[hwnd] = title
+    def _enum_visible_windows_callback(self, hwnd: wintypes.HWND, results: dict) -> bool:
+        if not win32gui.IsWindowVisible(hwnd):
+            return True
+        title = win32gui.GetWindowText(hwnd)
+        buffer = ctypes.create_unicode_buffer(MAX_CLASS_NAME)
+        ctypes.windll.user32.GetClassNameW(hwnd, buffer, MAX_CLASS_NAME)
+        class_name = buffer.value
+        if title or class_name:
+        results[hwnd] = {"title": title, "class_name": class_name}
+        return True
 
-    def find_visible_window_titles(self) -> dict:
-        current_windows_titles = {}
-        win32gui.EnumWindows(self._enum_title_windows_callback, current_windows_titles)
-        return current_windows_titles
+    def find_visible_windows(self) -> dict[int, dict]:
+        results = {}
+        win32gui.EnumWindows(self._enum_visible_windows_callback, results)
+        return results
