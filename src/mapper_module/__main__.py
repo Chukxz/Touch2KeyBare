@@ -106,23 +106,20 @@ class _Engine:
         print("\n[MAIN] - Initializing Touch2Key... Press 'ESC' to Stop.")
         print(f"\n[MAIN] - ADB Executable File Path: {ADB}.")
 
-        selected_window_id = select_window()
-        if selected_window_id is None:
+        w_result = select_window()
+        if w_result is None:
             print("\n[MAIN] - No window selected. Exiting...")
-            return
+            return selected_window_id, window_title = w_result
 
-        visible = self.window_manager.find_visible_windows()
-        window_title = visible.get(selected_window_id, {}).get("title", "")
         preset_name = next(
-            (name for name, data in PRESETS.items() if data.get("window_title") == window_title),
-            None,
-        )
-      
-        result = capture_keys(preset_name)
-        if result is None:
+            (name for name, data in PRESETS.items() if data.get("window_title") == window_title), None,
+            )
+
+        c_result = capture_keys(preset_name)
+        if c_result is None:
             print("\n[MAIN] - Key configuration cancelled. Exiting...")
             return
-        toggle_key, sprint_key = result
+        toggle_key, sprint_key = c_result
 
         emulator = {
             "toggle_key": toggle_key,
