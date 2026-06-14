@@ -111,7 +111,7 @@ class WindowManager(AbstractWindowManager):
         for win in self._get_all_windows():
             try:
                 wm_class = win.get_wm_class()
-                if wm_class and len(wm_class) > 1 and wm_class == class_name:
+                if wm_class and len(wm_class) > 1 and wm_class[1] == class_name:
                     results.append(win.id)
             except error.BadWindow:
                 continue
@@ -178,7 +178,7 @@ class WindowManager(AbstractWindowManager):
 
         # Check if XFixes is supported before attempting to use it
         if not self._ensure_xfixes():
-            return last_state, now  # Fallback if extension not available
+            return last_state, last_check_time # Fallback if xFixes extension is not available
 
         cursor = xfixes.get_cursor_image(self.disp, self.root)
         return cursor.width > 0 and cursor.height > 0, now
