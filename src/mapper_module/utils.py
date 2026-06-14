@@ -90,7 +90,7 @@ COL_WIDTHS = [20, 50, 30, 8, 8, 8, 8]
 PRESETS = {
     "GameLoop": {
         "window_title": "Gameloop(64beta)",
-        "toggle_key": "lctrl",
+        "toggle_key": "LCTRL",
         "sprint_key": None,
     },
     "Tenstore Android Connect": {
