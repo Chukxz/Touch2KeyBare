@@ -2,7 +2,7 @@ import sys
 from mapper_module.utils import PRESETS, get_keys_from_toml, update_toml_keys
 from mapper_module.platform import get_platform
 from PyQt5.QtWidgets import (
-    QApplication, QDialog, QVBoxLayout, QHBoxLayout,
+    QDialog, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton,
 )
 from PyQt5.QtCore import Qt
@@ -141,8 +141,6 @@ def capture_keys(preset_name: str | None = None) -> tuple[str | None, str | None
 
     default_toggle = last_toggle or preset.get("toggle_key")
     default_sprint = last_sprint or preset.get("sprint_key")
-
-    app = QApplication.instance() or QApplication(sys.argv)
 
     toggle_dialog = KeyCaptureDialog(
         "Press the key to toggle between MOUSE MODE and CURSOR MODE.\n(or click Skip if not needed)",
