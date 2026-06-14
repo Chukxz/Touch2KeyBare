@@ -137,8 +137,8 @@ def capture_keys(preset_name: str | None = None) -> tuple[str | None, str | None
     preset = PRESETS.get(preset_name, {}) if preset_name else {}
     last_toggle, last_sprint = get_keys_from_toml()
 
-    default_toggle = preset.get("toggle_key") or last_toggle
-    default_sprint = preset.get("sprint_key") or last_sprint
+    default_toggle = last_toggle or preset.get("toggle_key")
+    default_sprint = last_sprint or preset.get("sprint_key")
 
     toggle_dialog = KeyCaptureDialog(
         "Press the key to toggle between MOUSE MODE and CURSOR MODE.",
