@@ -115,8 +115,10 @@ class ListApp(QWidget):
         super().closeEvent(event)
 
 
-def select_window() -> int | None:
+def select_window() -> tuple[int, str] | None:
     dialog = ListApp()
     dialog.show()
     QApplication.instance().exec_()
-    return dialog.selected_window_id
+    if dialog.selected_window_id is None:
+        return None
+    return dialog.selected_window_id, dialog.selected_window_title
