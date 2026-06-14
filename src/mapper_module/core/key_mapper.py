@@ -139,7 +139,7 @@ class KeyMapper:
                         hit = True
 
                 if is_visible:
-                    if scancode != SCANCODES[self.mapper.emulator["toggle_key"]]:
+                    if self.mapper.toggle_key_scancode is None or scancode != self.mapper.toggle_key_scancode:
                         hit = False
 
                 if hit:
