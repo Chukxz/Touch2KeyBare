@@ -1,4 +1,3 @@
-import sys
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QListWidget,
     QListWidgetItem, QPushButton, QLabel
@@ -117,8 +116,7 @@ class ListApp(QWidget):
 
 
 def select_window() -> int | None:
-    app = QApplication.instance() or QApplication(sys.argv)
     dialog = ListApp()
     dialog.show()
-    app.exec_()
+    QApplication.instance().exec_()
     return dialog.selected_window_id
