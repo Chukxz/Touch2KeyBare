@@ -6,7 +6,7 @@ import os
 import threading
 import time
 import sys
-
+from PyQt5.QtWidgets import QApplication
 from mapper_module.platform import check_single_instance, get_platform
 from mapper_module.utils import (
     DEFAULT_ADB_RATE_CAP,
@@ -105,6 +105,7 @@ class _Engine:
 
         print("\n[MAIN] - Initializing Touch2Key... Press 'ESC' to Stop.")
         print(f"\n[MAIN] - ADB Executable File Path: {ADB}.")
+        app = QApplication(sys.argv)
 
         selected_window_id = select_window()
         if selected_window_id is None:
