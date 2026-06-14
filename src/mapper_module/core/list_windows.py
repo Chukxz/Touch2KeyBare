@@ -1,5 +1,8 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QPushButton, QLabel
+from PyQt5.QtWidgets import (
+    QWidget, QVBoxLayout, QListWidget,
+    QListWidgetItem, QPushButton, QLabel
+)
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QFont
 from mapper_module.platform import get_platform
