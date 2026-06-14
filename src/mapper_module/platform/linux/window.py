@@ -208,23 +208,27 @@ class WindowManager(AbstractWindowManager):
                 continue
         return results
 
-    def find_visible_window_titles(self) -> dict:
+    def find_visible_windows(self) -> dict[int, dict]:
         if not self.disp:
             return {}
         results = {}
         for win in self._get_all_windows():
             try:
                 attr = win.get_attributes()
-                if attr.map_state == X.IsViewable:
-                    # Check legacy WM_NAME first
-                    name = win.get_wm_name()
-                    if not name:
-                        # Fallback to modern EWMH _NET_WM_NAME
-                        net_name = win.get_full_property(self.NET_WM_NAME, 0)
-                        if net_name:
-                            name = net_name.value.decode("utf-8", errors="ignore")
-                    if name:
-                        results[win.id] = name
+                if attr.map_state != X.IsViewable:
+                     continue
+
+                name = win.get_wm_name()
+                if not name:
+                    net_name = win.get_full_property(self.NET_WM_NAME, 0)
+                    if net_name:
+                        name = net_name.value.decode("utf-8", errors="ignore")
+
+                wm_class = win.get_wm_class()
+                class_name = wm_class[1] if wm_class and len(wm_class) > 1 else ""
+
+                if name or class_name:
+                    results[win.id] = {"title": name or "", "class_name": class_name}
             except Exception:
                 continue
         return results
