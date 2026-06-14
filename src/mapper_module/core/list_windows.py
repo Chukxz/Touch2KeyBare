@@ -88,7 +88,7 @@ class ListApp(QWidget):
             data = self.windows_data[window_id]
             item = QListWidgetItem(self._format_row(data))
             item.setData(Qt.UserRole, window_id)
-            item.setData(Qt.UserRole + 1, self.windows_data[window_id][1])  # title is index 1
+            item.setData(Qt.UserRole + 1, self.windows_data[window_id][1]) # title is index 1
             self.list_widget.addItem(item)
             self.windows_id_mapping[window_id] = row
 
