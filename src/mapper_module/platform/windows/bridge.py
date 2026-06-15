@@ -78,6 +78,7 @@ class InterceptionBridge(AbstractBridge):
         # Windows Interception uses a normalized 0-65535 coordinate system
         abs_x = int((x * 65535) / self.screen_w)
         abs_y = int((y * 65535) / self.screen_h)
+        self.m_pipe_parent.send(("move_abs", (abs_x, abs_y)))
 
     def left_click_down(self):
         self.m_pipe_parent.send(("button", LEFT_BUTTON_DOWN))
