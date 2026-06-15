@@ -83,7 +83,6 @@ RIGHT_BUTTON_DOWN, RIGHT_BUTTON_UP = 0x0004, 0x0008
 MIDDLE_BUTTON_DOWN, MIDDLE_BUTTON_UP = 0x0010, 0x0020
 
 # Window Selection
-MIN_STR_LEN = 5
 WINDOWS_HEADERS = ["Window ID", "Title", "Class Name", "Left", "Top", "Width", "Height"]
 COL_WIDTHS = [20, 50, 30, 8, 8, 8, 8]
 
