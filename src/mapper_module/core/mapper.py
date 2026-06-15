@@ -121,6 +121,10 @@ class Mapper:
             self.last_cursor_state, self.last_cursor_check_time
         )
 
+        ##########################################
+        is_visible = not is_visible
+        ##########################################
+
         if not is_visible == self.last_cursor_state:
             self.last_cursor_state = is_visible
             self.mapper_event_dispatcher.dispatch(
@@ -265,15 +269,15 @@ class Mapper:
                 sum_dx = sum(v[0] for v in snapshot)
                 sum_dy = sum(v[1] for v in snapshot)
 
-                self.mapper_event_dispatcher.dispatch(
-                    MapperEvent(
-                        action="ON_AGGREGATION",
-                        sum_dx=sum_dx,
-                        sum_dy=sum_dy,
-                        acc_x=self.acc_x,
-                        acc_y=self.acc_y,
-                    )
-                )
+                # self.mapper_event_dispatcher.dispatch(
+                #     MapperEvent(
+                #         action="ON_AGGREGATION",
+                #         sum_dx=sum_dx,
+                #         sum_dy=sum_dy,
+                #         acc_x=self.acc_x,
+                #         acc_y=self.acc_y,
+                #     )
+                # )
             else:
                 self.acc_x = 0.0
                 self.acc_y = 0.0

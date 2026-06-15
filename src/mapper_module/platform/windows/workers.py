@@ -75,8 +75,8 @@ def keyboard_worker(k_queue: Queue):
             running = False
 
 
-# Worker: Mouse (Isolated with Coalescing)
-def mouse_worker(m_queue: Queue):
+# Worker: Mouse (Isolated with Coalescing + Lock-Free Pipe)
+def mouse_worker(m_pipe_child):
     """Dedicated process for Mouse events only (Windows Interception driver)."""
 
     import ctypes
@@ -104,11 +104,24 @@ def mouse_worker(m_queue: Queue):
             # Check for a pending task from the previous coalesce loop
             if pending_task:
                 task, data = pending_task
-                pending_task = (
-                    None  # CRITICAL FIX: Clear the task so we don't infinite loop!
-                )
+                pending_task = None  # CRITICAL FIX: Clear the task
             else:
-                task, data = m_queue.get(timeout=15.0)
+                # Wait up to 15 seconds for new data
+                if m_pipe_child.poll(15.0):
+                    task, data = m_pipe_child.recv()
+                else:
+                    # 15 seconds passed with no input. Release stuck buttons
+                    pressed_buttons = sum([left_down, right_down, middle_down])
+                    if pressed_buttons > 0:
+                        print(f"\n[UTILITY] - Mouse worker timed out. Releasing {pressed_buttons} buttons.")
+                        if left_down:
+                            m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, LEFT_BUTTON_UP, 0, 0, 0))
+                        if right_down:
+                            m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, RIGHT_BUTTON_UP, 0, 0, 0))
+                        if middle_down:
+                            m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, MIDDLE_BUTTON_UP, 0, 0, 0))
+                        left_down = right_down = middle_down = False
+                    continue
 
             if task == "button":
                 if data == LEFT_BUTTON_DOWN:
@@ -132,21 +145,20 @@ def mouse_worker(m_queue: Queue):
                     _sleep(CONSTANT_DWELL)
 
             elif task == "move_rel":
-                acc_dx += data[0]
-                acc_dy += data[1]
+                acc_dx += data
+                acc_dy += data
 
                 coalesce_count = 0
-                while not m_queue.empty() and coalesce_count < MAX_COALESCE:
-                    try:
-                        next_task, next_data = m_queue.get_nowait()
-                        if next_task == "move_rel":
-                            acc_dx += next_data
-                            acc_dy += next_data
-                            coalesce_count += 1
-                        else:
-                            pending_task = (next_task, next_data)
-                            break
-                    except queue.Empty:
+                # Use poll() instead of empty() - practically zero overhead
+                while m_pipe_child.poll() and coalesce_count < MAX_COALESCE:
+                    next_task, next_data = m_pipe_child.recv()
+                    
+                    if next_task == "move_rel":
+                        acc_dx += next_data
+                        acc_dy += next_data
+                        coalesce_count += 1
+                    else:
+                        pending_task = (next_task, next_data)
                         break
 
                 if acc_dx != 0 or acc_dy != 0:
@@ -174,30 +186,10 @@ def mouse_worker(m_queue: Queue):
                 )
                 _sleep(CONSTANT_DWELL)
 
-        except queue.Empty:
-            # 15 seconds passed with no input. Release stuck buttons
-            pressed_buttons = sum([left_down, right_down, middle_down])
-            if pressed_buttons > 0:
-                print(
-                    f"\n[UTILITY] - Mouse worker timed out. Releasing {pressed_buttons} buttons."
-                )
-                if left_down:
-                    m_ctx.send(
-                        m_handle,
-                        MouseStroke(MOUSE_MOVE_RELATIVE, LEFT_BUTTON_UP, 0, 0, 0),
-                    )
-                if right_down:
-                    m_ctx.send(
-                        m_handle,
-                        MouseStroke(MOUSE_MOVE_RELATIVE, RIGHT_BUTTON_UP, 0, 0, 0),
-                    )
-                if middle_down:
-                    m_ctx.send(
-                        m_handle,
-                        MouseStroke(MOUSE_MOVE_RELATIVE, MIDDLE_BUTTON_UP, 0, 0, 0),
-                    )
-                left_down = right_down = middle_down = False
-            continue
+        except EOFError:
+            # The parent closed the pipe (Scorched Earth reset)
+            print("\n[UTILITY] - Mouse Pipe closed by parent.")
+            running = False
 
         except Exception as e:
             # Fatal error/crash
@@ -206,18 +198,9 @@ def mouse_worker(m_queue: Queue):
             if pressed_buttons > 0:
                 print(f"[UTILITY] - Releasing {pressed_buttons} buttons before exit.")
                 if left_down:
-                    m_ctx.send(
-                        m_handle,
-                        MouseStroke(MOUSE_MOVE_RELATIVE, LEFT_BUTTON_UP, 0, 0, 0),
-                    )
+                    m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, LEFT_BUTTON_UP, 0, 0, 0))
                 if right_down:
-                    m_ctx.send(
-                        m_handle,
-                        MouseStroke(MOUSE_MOVE_RELATIVE, RIGHT_BUTTON_UP, 0, 0, 0),
-                    )
+                    m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, RIGHT_BUTTON_UP, 0, 0, 0))
                 if middle_down:
-                    m_ctx.send(
-                        m_handle,
-                        MouseStroke(MOUSE_MOVE_RELATIVE, MIDDLE_BUTTON_UP, 0, 0, 0),
-                    )
+                    m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, MIDDLE_BUTTON_UP, 0, 0, 0))
             running = False

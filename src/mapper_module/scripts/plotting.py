@@ -1,22 +1,9 @@
 from __future__ import annotations
 
-import matplotlib
-
-matplotlib.use("qt5agg")
-import matplotlib.pyplot as plt
-from matplotlib.patches import Circle, Rectangle
-from matplotlib.text import Text
-from PySide6.QtCore import Qt
-from PIL import Image
-import tomlkit
-import math
-import os
-from PySide6.QtWidgets import QFileDialog, QMessageBox
-import json
-import datetime
-from pathlib import Path
-
 from mapper_module.platform import get_platform, get_specific_mt_key
+
+get_platform().SystemConfig().set_dpi_awareness()
+
 from mapper_module.utils import (
     CIRCLE,
     RECT,
@@ -27,6 +14,7 @@ from mapper_module.utils import (
     MOUSE_WHEEL_CODE,
     SPRINT_DISTANCE_CODE,
     IDLE,
+    SYSTEM,
     get_scancode_and_bridge_key_from_key,
     get_key_from_scancode,
     rotate_resolution,
@@ -35,6 +23,27 @@ from mapper_module.utils import (
     get_dulled_hue_color,
     get_hue_modified_alpha_from_hsv,
 )
+
+import os
+
+if SYSTEM == "Windows":
+    # Suppress Qt QPA Windows-specific warnings
+    os.environ["QT_LOGGING_RULES"] = "qt.qpa.window=false"
+
+import matplotlib
+
+matplotlib.use("qtagg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, Rectangle
+from matplotlib.text import Text
+from PySide6.QtCore import Qt
+from PIL import Image
+import tomlkit
+import math
+from PySide6.QtWidgets import QFileDialog, QMessageBox
+import json
+import datetime
+from pathlib import Path
 
 COLLECTING = "COLLECTING"
 WAITING_FOR_KEY = "WAITING_FOR_KEY"
@@ -950,9 +959,6 @@ class _DraggableShape(_Draggable):
 
 class Plotter:
     def __init__(self, image_path=None):
-        self.system_config = get_platform().SystemConfig()
-        self.system_config.set_dpi_awareness()
-
         # SMART PATH DETECTION
         json_file_str = None
 
@@ -1053,7 +1059,7 @@ class Plotter:
         except Exception as e:
             print(f"Error loading image: {e}")
             return None
-        print(f"Image:{self.image_path.as_posix()} loaded successfully.")
+        print(f"[PLOTTER] - Image: {self.image_path.as_posix()} loaded successfully.")
         return img
 
     def update_image_params(self, img):
@@ -1307,7 +1313,7 @@ class Plotter:
 
             self.reset_state()
             self.json_path = Path(file_path)
-            print(f"Loaded JSON file: {self.json_path.as_posix()}")
+            print(f"[PLOTTER] - Loaded JSON file: {self.json_path.as_posix()}")
 
     def change_image(self):
         image_path = self.select_image_file()

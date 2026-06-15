@@ -15,6 +15,7 @@ from mapper_module.utils import (
 
 if TYPE_CHECKING:
     from multiprocessing import Queue
+    from multiprocessing.connection import Connection
 
 MAX_COALESCE = 20
 DOWN_TUPLE = (LEFT_BUTTON_DOWN, RIGHT_BUTTON_DOWN, MIDDLE_BUTTON_DOWN)
@@ -27,12 +28,11 @@ MIN_MOUSE_DWELL = 0.0008
 MAX_MOUSE_DWELL = 0.0012
 
 
-# Worker: Keyboard (Isolated)
+# Worker: Keyboard (Queue - Unchanged)
 def keyboard_worker(k_queue: Queue):
     """Dedicated process for Linux evdev virtual keyboard."""
     from evdev import UInput, ecodes
 
-    # Create a virtual keyboard capable of sending all standard keys
     cap = {ecodes.EV_KEY: list(range(1, 256))}
     ui = UInput(cap, name="Touch2Key-Keyboard")
 
@@ -42,8 +42,6 @@ def keyboard_worker(k_queue: Queue):
     while running:
         try:
             code, state = k_queue.get(timeout=15.0)
-
-            # Linux evdev uses 1 for DOWN and 0 for UP.
             linux_value = 1 if state == 0 else 0
 
             if linux_value == 1:
@@ -75,9 +73,9 @@ def keyboard_worker(k_queue: Queue):
     ui.close()
 
 
-# Worker: Mouse (Isolated with Coalescing)
-def mouse_worker(m_queue: Queue):
-    """Dedicated process for Linux evdev virtual mouse."""
+# Worker: Mouse (Pipe + Coalescing)
+def mouse_worker(m_pipe_child: Connection):
+    """Dedicated process for Linux evdev virtual mouse (Lock-Free Pipe)."""
     from evdev import UInput, ecodes, AbsInfo
 
     # Define Mouse Capabilities
@@ -85,7 +83,6 @@ def mouse_worker(m_queue: Queue):
         ecodes.EV_KEY: [ecodes.BTN_LEFT, ecodes.BTN_RIGHT, ecodes.BTN_MIDDLE],
         ecodes.EV_REL: [ecodes.REL_X, ecodes.REL_Y, ecodes.REL_WHEEL],
         ecodes.EV_ABS: [
-            # Max 65535 maps proportionally to screen size in X11/Wayland
             (
                 ecodes.ABS_X,
                 AbsInfo(value=0, min=0, max=65535, fuzz=0, flat=0, resolution=0),
@@ -98,7 +95,7 @@ def mouse_worker(m_queue: Queue):
     }
     ui = UInput(cap, name="Touch2Key-Mouse")
 
-    # Mapping Windows button constants to Linux (Button Code, Value)
+    # Mapping Windows button constants to Linux
     BTN_MAP = {
         LEFT_BUTTON_DOWN: (ecodes.BTN_LEFT, 1),
         LEFT_BUTTON_UP: (ecodes.BTN_LEFT, 0),
@@ -122,7 +119,25 @@ def mouse_worker(m_queue: Queue):
                 task, data = pending_task
                 pending_task = None
             else:
-                task, data = m_queue.get(timeout=15.0)
+                # Wait up to 15 seconds for data
+                if m_pipe_child.poll(15.0):
+                    task, data = m_pipe_child.recv()
+                else:
+                    # Timeout logic for stuck buttons
+                    pressed_buttons = sum([left_down, right_down, middle_down])
+                    if pressed_buttons > 0:
+                        print(
+                            f"\n[UTILITY] - Mouse worker timed out. Releasing {pressed_buttons} buttons."
+                        )
+                        if left_down:
+                            ui.write(ecodes.EV_KEY, ecodes.BTN_LEFT, 0)
+                        if right_down:
+                            ui.write(ecodes.EV_KEY, ecodes.BTN_RIGHT, 0)
+                        if middle_down:
+                            ui.write(ecodes.EV_KEY, ecodes.BTN_MIDDLE, 0)
+                        ui.syn()
+                        left_down = right_down = middle_down = False
+                    continue
 
             if task == "button":
                 if data == LEFT_BUTTON_DOWN:
@@ -148,21 +163,19 @@ def mouse_worker(m_queue: Queue):
                     _sleep(CONSTANT_DWELL)
 
             elif task == "move_rel":
-                acc_dx += data[0]
-                acc_dy += data[1]
+                acc_dx += data
+                acc_dy += data
 
                 coalesce_count = 0
-                while not m_queue.empty() and coalesce_count < MAX_COALESCE:
-                    try:
-                        next_task, next_data = m_queue.get_nowait()
-                        if next_task == "move_rel":
-                            acc_dx += next_data
-                            acc_dy += next_data
-                            coalesce_count += 1
-                        else:
-                            pending_task = (next_task, next_data)
-                            break
-                    except queue.Empty:
+                # Fast polling to drain the pipe
+                while m_pipe_child.poll() and coalesce_count < MAX_COALESCE:
+                    next_task, next_data = m_pipe_child.recv()
+                    if next_task == "move_rel":
+                        acc_dx += next_data
+                        acc_dy += next_data
+                        coalesce_count += 1
+                    else:
+                        pending_task = (next_task, next_data)
                         break
 
                 if acc_dx != 0 or acc_dy != 0:
@@ -180,21 +193,9 @@ def mouse_worker(m_queue: Queue):
                 ui.syn()
                 _sleep(CONSTANT_DWELL)
 
-        except queue.Empty:
-            pressed_buttons = sum([left_down, right_down, middle_down])
-            if pressed_buttons > 0:
-                print(
-                    f"\n[UTILITY] - Mouse worker timed out. Releasing {pressed_buttons} buttons."
-                )
-                if left_down:
-                    ui.write(ecodes.EV_KEY, ecodes.BTN_LEFT, 0)
-                if right_down:
-                    ui.write(ecodes.EV_KEY, ecodes.BTN_RIGHT, 0)
-                if middle_down:
-                    ui.write(ecodes.EV_KEY, ecodes.BTN_MIDDLE, 0)
-                ui.syn()
-                left_down = right_down = middle_down = False
-            continue
+        except EOFError:
+            print("\n[UTILITY] - Mouse Pipe closed by parent.")
+            running = False
 
         except Exception as e:
             pressed_buttons = sum([left_down, right_down, middle_down])

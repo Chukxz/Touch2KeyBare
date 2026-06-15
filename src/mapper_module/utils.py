@@ -84,12 +84,11 @@ MIDDLE_BUTTON_DOWN, MIDDLE_BUTTON_UP = 0x0010, 0x0020
 
 # Window Selection
 WINDOWS_HEADERS = ["Window ID", "Title", "Class Name", "Left", "Top", "Width", "Height"]
-COL_WIDTHS = [20, 50, 30, 8, 8, 8, 8]
 
 PRESETS = {
     "GameLoop": {
         "window_title": "Gameloop(64beta)",
-        "toggle_key": "LCTRL",
+        "toggle_key": "lctrl",
         "sprint_key": None,
     },
     "Tenstore Android Connect": {
@@ -221,7 +220,7 @@ SCANCODES.update(
     }
 )
 
-SCANCODE_TO_KEY = {v: k for k, v in SCANCODES.items()}
+SCANCODES_INV = {v: k for k, v in SCANCODES.items()}
 
 SCANCODES.update(
     {
@@ -750,7 +749,7 @@ def get_scancode_and_bridge_key_from_key(key):
 
 
 def get_key_from_scancode(scancode):
-    key = SCANCODE_TO_KEY.get(int(scancode, 16))
+    key = SCANCODES_INV.get(int(scancode, 16))
     if key is None:
         return ""
     return SPECIAL_MAP_INV.get(key, key)

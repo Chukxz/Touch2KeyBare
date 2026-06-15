@@ -34,9 +34,13 @@ class InterceptionBridge(AbstractBridge):
             daemon=True,
         )
 
-        self.m_queue = multiprocessing.Queue(maxsize=64)
+        self.m_pipe_parent, self.m_pipe_child = multiprocessing.Pipe(duplex=False)
+
         self.m_proc = multiprocessing.Process(
-            target=mouse_worker, name="Mouse Worker", args=(self.m_queue,), daemon=True
+            target=mouse_worker,
+            name="Mouse Worker",
+            args=(self.m_pipe_child,),
+            daemon=True,
         )
 
         self.k_proc.start()
@@ -48,7 +52,9 @@ class InterceptionBridge(AbstractBridge):
             f"M-PID: {self.m_proc.pid}."
         )
 
-    # KEYBOARD API
+    # -----------------------------------------
+    # KEYBOARD API (Queue)
+    # -----------------------------------------
     def key_down(self, code):
         try:
             self.k_queue.put_nowait((code, 0))
@@ -57,76 +63,53 @@ class InterceptionBridge(AbstractBridge):
 
     def key_up(self, code):
         try:
-            self.k_queue.put((code, 1), timeout=0.2)
+            self.k_queue.put((code, 1))
         except queue.Full:
             print(f"[WARNING] - Key UP event ({code}) dropped! Triggering rescue...")
             self.health_check()
 
-    # MOUSE API
+    # -----------------------------------------
+    # MOUSE API (Pipe)
+    # -----------------------------------------
     def mouse_move_rel(self, dx, dy):
-        try:
-            self.m_queue.put_nowait(("move_rel", (dx, dy)))
-        except queue.Full:
-            pass
+        self.m_pipe_parent.send(("move_rel", (dx, dy)))
 
     def mouse_move_abs(self, x, y):
         # Windows Interception uses a normalized 0-65535 coordinate system
         abs_x = int((x * 65535) / self.screen_w)
         abs_y = int((y * 65535) / self.screen_h)
-        try:
-            self.m_queue.put_nowait(("move_abs", (abs_x, abs_y)))
-        except queue.Full:
-            pass
-
-    # --- Mouse Clicks (Downs: Fast Fail | Ups: High Priority + Rescue) ---
 
     def left_click_down(self):
-        try:
-            self.m_queue.put_nowait(("button", LEFT_BUTTON_DOWN))
-        except queue.Full:
-            pass
+        self.m_pipe_parent.send(("button", LEFT_BUTTON_DOWN))
 
     def left_click_up(self):
-        try:
-            self.m_queue.put(("button", LEFT_BUTTON_UP), timeout=0.2)
-        except queue.Full:
-            print("[WARNING] - Left Click UP event dropped! Triggering rescue...")
-            self.health_check()
+        self.m_pipe_parent.send(("button", LEFT_BUTTON_UP))
 
     def right_click_down(self):
-        try:
-            self.m_queue.put_nowait(("button", RIGHT_BUTTON_DOWN))
-        except queue.Full:
-            pass
+        self.m_pipe_parent.send(("button", RIGHT_BUTTON_DOWN))
 
     def right_click_up(self):
-        try:
-            self.m_queue.put(("button", RIGHT_BUTTON_UP), timeout=0.2)
-        except queue.Full:
-            print("[WARNING] - Right Click UP event dropped! Triggering rescue...")
-            self.health_check()
+        self.m_pipe_parent.send(("button", RIGHT_BUTTON_UP))
 
     def middle_click_down(self):
-        try:
-            self.m_queue.put_nowait(("button", MIDDLE_BUTTON_DOWN))
-        except queue.Full:
-            pass
+        self.m_pipe_parent.send(("button", MIDDLE_BUTTON_DOWN))
 
-    def middle_click_up(self):
-        try:
-            self.m_queue.put(("button", MIDDLE_BUTTON_UP), timeout=0.2)
-        except queue.Full:
-            print("[WARNING] - Middle Click UP event dropped! Triggering rescue...")
-            self.health_check()
-
+    # -----------------------------------------
     # SYSTEM API
+    # -----------------------------------------
     def health_check(self):
         with self.bridge_lock:
-            # Check Keyboard Worker
+            # Check Keyboard Worker (Queue)
             if not self.k_proc.is_alive():
                 print(
                     f"\n[UTILITY] - Keyboard Worker Died: {_datetime.now().strftime('%H:%M:%S')}!"
                 )
+
+                # SCORCHED EARTH: Close the old queue, make a new one.
+                self.k_queue.close()
+                self.k_queue = multiprocessing.Queue()
+
+                # Start new worker with the FRESH queue
                 self.k_proc = multiprocessing.Process(
                     target=keyboard_worker,
                     name="Keyboard Worker",
@@ -138,33 +121,28 @@ class InterceptionBridge(AbstractBridge):
                     self.k_proc.pid, "Revived Keyboard"
                 )
 
-                # Safety flush
-                while not self.k_queue.empty():
-                    try:
-                        self.k_queue.get_nowait()
-                    except queue.Empty:
-                        break
-
-            # Check Mouse Worker
+            # Check Mouse Worker (Pipe)
             if not self.m_proc.is_alive():
                 print(
                     f"\n[UTILITY] - Mouse Worker Died: {_datetime.now().strftime('%H:%M:%S')}!"
                 )
+
+                # SCORCHED EARTH: Close old pipes, make new ones.
+                self.m_pipe_parent.close()
+                self.m_pipe_child.close()
+                self.m_pipe_parent, self.m_pipe_child = multiprocessing.Pipe(
+                    duplex=False
+                )
+
+                # Start new worker with the FRESH pipe child
                 self.m_proc = multiprocessing.Process(
                     target=mouse_worker,
                     name="Mouse Worker",
-                    args=(self.m_queue,),
+                    args=(self.m_pipe_child,),
                     daemon=True,
                 )
                 self.m_proc.start()
                 self.system_config.set_high_priority(self.m_proc.pid, "Revived Mouse")
-
-                # Safety flush
-                while not self.m_queue.empty():
-                    try:
-                        self.m_queue.get_nowait()
-                    except queue.Empty:
-                        break
 
     def release_all(self):
         print("\n[BRIDGE] - Emergency Release...")
@@ -172,7 +150,7 @@ class InterceptionBridge(AbstractBridge):
             self.health_check()
             for btn_up in [LEFT_BUTTON_UP, RIGHT_BUTTON_UP, MIDDLE_BUTTON_UP]:
                 try:
-                    self.m_queue.put_nowait(("button", btn_up))
+                    self.m_pipe_parent.send(("button", btn_up))
                 except queue.Full:
                     pass
 

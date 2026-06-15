@@ -120,27 +120,27 @@ class MouseMapper:
             self.bridge.left_click_up()
             self.left_down = False
 
-        if touchevent is not None and not is_visible:
-            if not self.tap_in_progress:
-                self.tap_in_progress = True
-                now = touchevent.timestamp
-                temporal_diff = now - self.timestamp
-                spatial_diff_squared = (touchevent.sx - touchevent.x) ** 2 + (
-                    touchevent.sy - touchevent.y
-                ) ** 2
-                tap_slop_px_squared = self.mapper.dp_to_px(TAP_SLOP_DP) ** 2
+        # if touchevent is not None and not is_visible:
+        #     if not self.tap_in_progress:
+        #         self.tap_in_progress = True
+        #         now = touchevent.timestamp
+        #         temporal_diff = now - self.timestamp
+        #         spatial_diff_squared = (touchevent.sx - touchevent.x) ** 2 + (
+        #             touchevent.sy - touchevent.y
+        #         ) ** 2
+        #         tap_slop_px_squared = self.mapper.dp_to_px(TAP_SLOP_DP) ** 2
 
-                if (
-                    temporal_diff <= TAP_MAX_TIME
-                    and spatial_diff_squared <= tap_slop_px_squared
-                ):
-                    threading.Thread(
-                        target=self._toggle_key_mouse_sequence,
-                        args=(touchevent,),
-                        daemon=True,
-                    ).start()
-                else:
-                    self.tap_in_progress = False
+        #         if (
+        #             temporal_diff <= TAP_MAX_TIME
+        #             and spatial_diff_squared <= tap_slop_px_squared
+        #         ):
+        #             threading.Thread(
+        #                 target=self._toggle_key_mouse_sequence,
+        #                 args=(touchevent,),
+        #                 daemon=True,
+        #             ).start()
+        #         else:
+        #             self.tap_in_progress = False
 
         self.timestamp = 0.0
 
@@ -191,8 +191,6 @@ class MouseMapper:
         # Save remainders for next packet
         acc_x = calc_dx - final_dx
         acc_y = calc_dy - final_dy
-
-        print(final_dx, final_dy)
 
         # Physical movement execution
         self.bridge.mouse_move_rel(final_dx, final_dy)
