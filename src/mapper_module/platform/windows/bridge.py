@@ -95,6 +95,9 @@ class InterceptionBridge(AbstractBridge):
     def middle_click_down(self):
         self.m_pipe_parent.send(("button", MIDDLE_BUTTON_DOWN))
 
+    def middle_click_up(self):
+        self.m_pipe_parent.send(("button", MIDDLE_BUTTON_UP))
+
     # -----------------------------------------
     # SYSTEM API
     # -----------------------------------------
