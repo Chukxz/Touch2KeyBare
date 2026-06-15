@@ -63,7 +63,7 @@ class InterceptionBridge(AbstractBridge):
 
     def key_up(self, code):
         try:
-            self.k_queue.put((code, 1))
+            self.k_queue.put((code, 1), timeout=0.2)
         except queue.Full:
             print(f"[WARNING] - Key UP event ({code}) dropped! Triggering rescue...")
             self.health_check()
@@ -150,10 +150,7 @@ class InterceptionBridge(AbstractBridge):
         with self.bridge_lock:
             self.health_check()
             for btn_up in [LEFT_BUTTON_UP, RIGHT_BUTTON_UP, MIDDLE_BUTTON_UP]:
-                try:
-                    self.m_pipe_parent.send(("button", btn_up))
-                except queue.Full:
-                    pass
+                self.m_pipe_parent.send(("button", btn_up))
 
             internal_mouse_codes = {M_LEFT, M_RIGHT, M_MIDDLE}
             unique_codes = set(SCANCODES.values()) - internal_mouse_codes
