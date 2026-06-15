@@ -6,12 +6,12 @@ matplotlib.use("qt5agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, Rectangle
 from matplotlib.text import Text
-from PyQt5.QtCore import Qt
+from PySide6.QtCore import Qt
 from PIL import Image
 import tomlkit
 import math
 import os
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
+from PySide6.QtWidgets import QFileDialog, QMessageBox
 import json
 import datetime
 from pathlib import Path
@@ -65,7 +65,7 @@ DEFAULT_LARGE_LINE_WIDTH = 3
 class _CursorManager:
     def __init__(self, canvas):
         self.canvas = canvas
-        # Map application states to PyQt5 cursor shapes
+        # Map application states to PySide6 cursor shapes
         self.state_map = {
             "IDLE": Qt.CursorShape.ArrowCursor,
             "COLLECTING": Qt.CursorShape.CrossCursor,
@@ -1992,17 +1992,19 @@ class Plotter:
         if self.buffer_default and self.json_path and self.json_path.exists():
             # Confirm Overwrite
             msg_box = QMessageBox()
-            msg_box.setIcon(QMessageBox.Question)
+            msg_box.setIcon(QMessageBox.Icon.Question)
             msg_box.setText("Overwrite Warning")
             msg_box.setInformativeText(
                 f"File '{self.json_path.name}' already exists in the current folder. Overwrite?"
             )
-            msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-            msg_box.setDefaultButton(QMessageBox.No)
+            msg_box.setStandardButtons(
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            msg_box.setDefaultButton(QMessageBox.StandardButton.No)
 
             ret = msg_box.exec_()
 
-            if ret == QMessageBox.No:
+            if ret == QMessageBox.StandardButton.No:
                 print("[PLOTTER] - Save cancelled by user.")
                 self.update_title(f"Save cancelled | {HELP_STR}")
                 return
@@ -2075,17 +2077,19 @@ class Plotter:
             if (not self.saved_mouse_wheel) or (self.saved_sprint_distance == False):
                 # Confirm Save without Mouse Wheel or Sprint Distance
                 msg_box = QMessageBox()
-                msg_box.setIcon(QMessageBox.Question)
+                msg_box.setIcon(QMessageBox.Icon.Question)
                 msg_box.setText("Configuration Warning")
                 msg_box.setInformativeText(
                     "Mouse Wheel or Sprint Distance has not been configured. Save?"
                 )
-                msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-                msg_box.setDefaultButton(QMessageBox.No)
+                msg_box.setStandardButtons(
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                )
+                msg_box.setDefaultButton(QMessageBox.StandardButton.No)
 
                 ret = msg_box.exec_()
 
-                if ret == QMessageBox.No:
+                if ret == QMessageBox.StandardButton.No:
                     print("[PLOTTER] - Save cancelled by user.")
                     self.update_title(f"Save cancelled | {HELP_STR}")
                     return
@@ -2295,7 +2299,7 @@ class Plotter:
         )
 
     def euclidean_distance(self, x1, y1, x2, y2):
-        return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+        return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
     def constrain_point_to_rect_radial(self, cx, cy, px, py, rect_bb):
         """

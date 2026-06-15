@@ -5,15 +5,15 @@ from mapper_module.utils import (
     get_scancode_and_bridge_key_from_key,
 )
 from mapper_module.platform import get_specific_qt_key
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
 )
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
 
 
 class KeyCaptureDialog(QDialog):
@@ -32,7 +32,7 @@ class KeyCaptureDialog(QDialog):
 
         self.prompt_label = QLabel(prompt)
         self.prompt_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.prompt_label.setFont(QFont("Courier", 8))
+        self.prompt_label.setFont(QFont("Courier", 11))
         layout.addWidget(self.prompt_label)
 
         if default_key:
@@ -42,7 +42,7 @@ class KeyCaptureDialog(QDialog):
         else:
             self.key_label = QLabel("Waiting for keypress (Default: '')...")
         self.key_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.key_label.setFont(QFont("Courier", 8))
+        self.key_label.setFont(QFont("Courier", 11))
         layout.addWidget(self.key_label)
 
         btn_layout = QHBoxLayout()
@@ -118,7 +118,7 @@ def capture_keys(
         skippable=True,
         default_key=default_toggle,
     )
-    if toggle_dialog.exec_() == QDialog.Rejected:
+    if toggle_dialog.exec_() == QDialog.DialogCode.Rejected:
         return None
     toggle_key = toggle_dialog.captured_key
 
@@ -127,7 +127,7 @@ def capture_keys(
         skippable=True,
         default_key=default_sprint,
     )
-    if sprint_dialog.exec_() == QDialog.Rejected:
+    if sprint_dialog.exec_() == QDialog.DialogCode.Rejected:
         return None
     sprint_key = sprint_dialog.captured_key
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QListWidget,
@@ -9,13 +9,13 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QLabel,
 )
-from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QFont
+from PySide6.QtCore import QTimer, Qt
+from PySide6.QtGui import QFont
 from mapper_module.platform import get_platform
 from mapper_module.utils import MIN_STR_LEN, WINDOWS_HEADERS, COL_WIDTHS
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
 
 class ListApp(QWidget):
@@ -28,11 +28,11 @@ class ListApp(QWidget):
         self.v_layout = QVBoxLayout()
 
         self.header_label = QLabel(self._format_row(WINDOWS_HEADERS))
-        self.header_label.setFont(QFont("Courier", 9))
+        self.header_label.setFont(QFont("Courier", 11))
         self.v_layout.addWidget(self.header_label)
 
         self.list_widget = QListWidget()
-        self.list_widget.setFont(QFont("Courier", 9))
+        self.list_widget.setFont(QFont("Courier", 11))
         self.v_layout.addWidget(self.list_widget)
 
         self.enter_btn = QPushButton("Confirm Selection")

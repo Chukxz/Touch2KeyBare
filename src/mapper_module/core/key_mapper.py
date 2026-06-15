@@ -29,7 +29,7 @@ class KeyMapper:
         self.mapper = mapper
         self.config = mapper.config
         self.mapper_event_dispatcher = self.mapper.mapper_event_dispatcher
-        self.interception_bridge = mapper.interception_bridge
+        self.interception_bridge = mapper.bridge
 
         # State Tracking: { slot_int: [[scancode(int), zone_data(dict), is_wasd_finger(bool), prevs(tuple[int, int])],...] }
         self.touch_events_dict: dict[int, list[tuple[int, dict, bool]]] = {}

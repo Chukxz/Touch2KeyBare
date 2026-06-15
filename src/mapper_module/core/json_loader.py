@@ -218,4 +218,5 @@ class JSONLoader:
             sprint_distance=self.sprint_distance,
             strict=True,
         )
+
         return normalized_zones

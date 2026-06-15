@@ -16,7 +16,7 @@ class MouseMapper:
     def __init__(self, mapper: Mapper):
         self.mapper = mapper
         self.mapper_event_dispatcher = self.mapper.mapper_event_dispatcher
-        self.interception_bridge = mapper.interception_bridge
+        self.bridge = mapper.bridge
         self.config = mapper.config
 
         self.prev_x = None
@@ -80,8 +80,8 @@ class MouseMapper:
 
         if is_visible:
             _x, _y = self.mapper.device_to_game_abs(self.prev_x, self.prev_y)
-            self.interception_bridge.mouse_move_abs(_x, _y)
-            self.interception_bridge.left_click_down()
+            self.bridge.mouse_move_abs(_x, _y)
+            self.bridge.left_click_down()
             self.left_down = True
 
         else:
@@ -117,7 +117,7 @@ class MouseMapper:
         self.acc_y = 0.0
 
         if self.left_down:
-            self.interception_bridge.left_click_up()
+            self.bridge.left_click_up()
             self.left_down = False
 
         if touchevent is not None and not is_visible:
@@ -154,17 +154,17 @@ class MouseMapper:
 
     def _tap_toggle_key(self):
         if self.mapper.toggle_key_scancode:
-            self.interception_bridge.key_down(self.mapper.toggle_key_scancode)
+            self.bridge.key_down(self.mapper.toggle_key_scancode)
             _sleep(_uniform(0.02, 0.09))
-            self.interception_bridge.key_up(self.mapper.toggle_key_scancode)
+            self.bridge.key_up(self.mapper.toggle_key_scancode)
 
     def _left_click_mouse(self, touchevent: TouchEvent):
         _x, _y = self.mapper.device_to_game_abs(touchevent.x, touchevent.y)
-        self.interception_bridge.mouse_move_abs(_x, _y)
+        self.bridge.mouse_move_abs(_x, _y)
         _sleep(_uniform(0.016, 0.04))
-        self.interception_bridge.left_click_down()
+        self.bridge.left_click_down()
         _sleep(_uniform(0.02, 0.07))
-        self.interception_bridge.left_click_up()
+        self.bridge.left_click_up()
 
     def _aggregate(self, raw_dx: float, raw_dy: float, acc_x: float, acc_y: float):
         self.mapper.acc_x, self.mapper.acc_y = self._process_deltas(
@@ -192,8 +192,10 @@ class MouseMapper:
         acc_x = calc_dx - final_dx
         acc_y = calc_dy - final_dy
 
+        print(final_dx, final_dy)
+
         # Physical movement execution
-        self.interception_bridge.mouse_move_rel(final_dx, final_dy)
+        self.bridge.mouse_move_rel(final_dx, final_dy)
         return acc_x, acc_y
 
     def process_touch(self, action, touch_event: TouchEvent, is_visible: bool):

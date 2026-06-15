@@ -82,7 +82,7 @@ def _setup_udev_rules():
         print("[!] Udev rule setup requires root. Please run with 'sudo'.")
         sys.exit(1)
 
-    print("[+] Applying Udev rules...")
+    print("[+] Applying udev rules...")
     # This rule grants read/write access to input devices for all users
     # Adjust the ID/Vendor if you need more security
     rule_content = 'SUBSYSTEM=="input", GROUP="input", MODE="0660"\n'

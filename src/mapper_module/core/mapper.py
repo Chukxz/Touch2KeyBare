@@ -25,7 +25,7 @@ class Mapper:
         self,
         json_loader: JSONLoader,
         touch_reader: TouchReader,
-        interception_bridge: AbstractBridge,
+        bridge: AbstractBridge,
         pps: float,
         emulator: dict[str, str | None],
         window_id: int,
@@ -36,7 +36,7 @@ class Mapper:
         self.config = self.json_loader.config
         self.mapper_event_dispatcher = self.json_loader.mapper_event_dispatcher
         self.touch_reader = touch_reader
-        self.interception_bridge = interception_bridge
+        self.bridge = bridge
         self.emulator = emulator
         self.pps = pps
         self.event_count = 0

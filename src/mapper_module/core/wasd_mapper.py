@@ -22,7 +22,7 @@ class _State(IntFlag):
 class WASDMapper:
     def __init__(self, mapper: Mapper):
         self.mapper = mapper
-        self.interception_bridge = mapper.interception_bridge
+        self.bridge = mapper.bridge
         self.json_loader = mapper.json_loader
         self.config = mapper.config
         self.mapper_event_dispatcher = self.mapper.mapper_event_dispatcher
@@ -93,7 +93,9 @@ class WASDMapper:
         # Radius Placeholders
         self.raw_inner_radius = 100.0
         self.raw_outer_radius = 150.0
-        self.effective_inner_sq = 10000.0
+        self.inner_radius_sq = 10000.0
+        self.outer_radius_sq = 22500.0
+        self.outer_radius = 150.0
         self.deadzone = 10
         self.deadzone_sq = 100.0
         self.sensitivity = 1.0
@@ -147,24 +149,28 @@ class WASDMapper:
         Higher Sensitivity = Smaller mechanical radius = Less physical movement required.
         """
         # Protect against Zero Division or negative sens
-        sens = self.sensitivity if self.sensitivity > 0.1 else 1.0
+        sens = max(0.1, self.sensitivity)
 
         # Scale down the required movement distance
         # e.g. Radius 200px / Sens 2.0 = Effective 100px activation
-        effective_inner = self.raw_inner_radius / sens
+        inner_radius = self.raw_inner_radius / sens
+        self.outer_radius = self.raw_outer_radius / sens
 
         # Calculate Sprint Threshold (Squared)
-        self.effective_inner_sq = effective_inner * effective_inner
+        self.inner_radius_sq = inner_radius * inner_radius
 
         # Calculate Deadzone Threshold (Squared)
         # Deadzone is % of the EFFECTIVE radius.
-        dz_px = effective_inner * self.deadzone
+        dz_px = inner_radius * self.deadzone
         self.deadzone_sq = dz_px * dz_px
+
+        # Calculate Outer radius squared for Leash Logic
+        self.outer_radius_sq = self.outer_radius * self.outer_radius
 
         print(
             f"\n[WASDMAPPER] - Shared Sensitivity: {sens}x\
-                \n             - Walk Distance: {dz_px:.1f}px (was {self.raw_inner_radius * self.deadzone:.1f}px)\
-                \n             - Sprint Distance: {effective_inner:.1f}px (was {self.raw_inner_radius:.1f}px)"
+                \n             - Walk Distance: {inner_radius:.1f}px (was {self.raw_inner_radius:.1f}px)\
+                \n             - Sprint Distance: {self.outer_radius:.1f}px (was {self.raw_outer_radius:.1f}px)"
         )
 
     def _on_wasd_block(self):
@@ -195,10 +201,9 @@ class WASDMapper:
         # Leash Logic (Floating Joystick center follow)
         # We use RAW outer radius for leashing so the joystick center visually
         # follows your thumb naturally, even if sensitivity is high.
-        outer_sq = self.raw_outer_radius * self.raw_outer_radius
-        if dist_sq > outer_sq and outer_sq > 0:
+        if dist_sq > self.outer_radius_sq and self.outer_radius_sq > 0:
             dist = math.sqrt(dist_sq)
-            scale = self.raw_outer_radius / dist
+            scale = self.outer_radius / dist
             self.center_x = touch_event.x - (vx * scale)
             self.center_y = touch_event.y - (vy * scale)
             vx = touch_event.x - self.center_x
@@ -225,7 +230,7 @@ class WASDMapper:
         # Uses the SENSITIVITY-SCALED threshold
         sprint = False
         if self.sprint_key_code is not None:
-            if dist_sq > self.effective_inner_sq:
+            if dist_sq > self.inner_radius_sq:
                 sprint = True
 
         self._apply_keys(new_sector, sprint)
@@ -233,10 +238,10 @@ class WASDMapper:
     def touch_up(self):
         for key_flag in self.ALL_DIRECTIONS:
             if key_flag in self.current_mask:
-                self.interception_bridge.key_up(self.state_value_to_key[key_flag.value])
+                self.bridge.key_up(self.state_value_to_key[key_flag.value])
 
         if self.sprint_key_code is not None and self.sprinting:
-            self.interception_bridge.key_up(self.sprint_key_code)
+            self.bridge.key_up(self.sprint_key_code)
 
         self.sprinting = False
         self.current_mask = _State.NONE
@@ -254,7 +259,7 @@ class WASDMapper:
         # 2. Release directional keys no longer needed
         for key_flag in self.ALL_DIRECTIONS:
             if key_flag in to_release:
-                self.interception_bridge.key_up(self.state_value_to_key[key_flag.value])
+                self.bridge.key_up(self.state_value_to_key[key_flag.value])
 
         # 3. Handle Sprint (Shift)
         # Ensure sprint only triggers if we are actually moving
@@ -262,16 +267,16 @@ class WASDMapper:
 
         if self.sprint_key_code is not None:
             if self.sprinting and not should_sprint:
-                self.interception_bridge.key_up(self.sprint_key_code)
+                self.bridge.key_up(self.sprint_key_code)
                 self.sprinting = False
             elif not self.sprinting and should_sprint:
-                self.interception_bridge.key_down(self.sprint_key_code)
+                self.bridge.key_down(self.sprint_key_code)
                 self.sprinting = True
 
         # 4. Press new directional keys
         for key_flag in self.ALL_DIRECTIONS:
             if key_flag in to_press:
-                self.interception_bridge.key_down(
+                self.bridge.key_down(
                     self.state_value_to_key[key_flag.value]
                 )
 

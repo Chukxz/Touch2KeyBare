@@ -120,7 +120,7 @@ def _download_interception():
         if not download_url:
             raise ValueError("Could not find a .zip asset in the latest release.")
 
-        print(f"[+] Downloading Interception...")
+        print(f"[+] Downloading Interception (this may take a moment)...")
         zip_response = requests.get(download_url, timeout=60)
         zip_response.raise_for_status()
 
@@ -145,14 +145,31 @@ def _setup_driver():
         _request_elevation()
         sys.exit(0)
 
-    print("[+] Registering Interception driver...")
-    result = subprocess.run([str(INTERCEPTION_EXE), "/install"], capture_output=True)
+    return register_driver()
 
-    if result.returncode == 0:
-        print("[+] Driver registered successfully!")
-        return True
-    else:
-        print(f"[!] Failed to register driver: {result.stderr.decode()}")
+
+def register_driver():
+    try:
+        print("[+] Registering Interception driver...")
+        result = subprocess.run(
+            [str(INTERCEPTION_EXE), "/install"], capture_output=True
+        )
+
+        if result.returncode == 0:
+            print("[+] Driver registered successfully!")
+            return True
+        else:
+            # Safely decode stderr even if it contains weird characters
+            print(
+                f"[!] Failed to register driver (driver may already be installed run 'touch2key-preflight' to confirm)."
+            )
+            return False
+
+    except FileNotFoundError:
+        print("[!] Error: The interception executable was not found.")
+        return False
+    except Exception as e:
+        print(f"[!] An unexpected error occurred: {e}")
         return False
 
 

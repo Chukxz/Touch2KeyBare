@@ -6,7 +6,7 @@ import os
 import threading
 import time
 import sys
-from PyQt5.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 from mapper_module.platform import check_single_instance, get_platform
 from mapper_module.utils import (
     DEFAULT_ADB_RATE_CAP,
@@ -237,10 +237,12 @@ def run():
         os._exit(0)
 
     _app = QApplication(sys.argv)
+    _app.setQuitOnLastWindowClosed(True)
     _engine = _Engine()
     try:
         _engine._start(_app)
     except KeyboardInterrupt:
+        _app.closeAllWindows()
         _engine._shutdown()
 
 

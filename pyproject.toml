@@ -18,7 +18,7 @@ dependencies = [
   "matplotlib>=3.10.8",
   "pillow>=12.1.0",
   "psutil>=7.2.1",
-  "PyQt5>=5.15.11",
+  "PySide6>=6.11.1",
   "requests>=2.34.2",
   "tomlkit>=0.14.0", # --- Windows Only Dependencies ---
   "pywin32>=311 ; sys_platform == 'win32'",
