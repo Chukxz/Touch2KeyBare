@@ -50,8 +50,8 @@ After selecting your target window, the engine will prompt you to configure your
 
 ## Connectivity & Resilience
 * **Auto-Adaptive Input:** The engine automatically detects your Android device's specific touchscreen hardware and multi-touch capabilities upon startup, requiring no manual configuration of input drivers.
-* **Self-Healing Stream:** The connection is managed by a background daemon. If your wireless ADB connection drops or the device is temporarily disconnected, the engine will automatically detect the loss, pause input mapping, and transparently reconnect/resume as soon as the device is available—no restart required.
-
+* **Wired & Wireless Support:** The connection is managed by a background daemon that supports both direct USB and wireless ADB. **Note:** Wireless mode typically requires an initial wired connection to toggle your device into TCP/IP mode (`adb tcpip 5555`) before it can be used wirelessly, unless your device is already configured in wireless mode. 
+* **Self-Healing Stream:** If your connection drops—due to cable removal or wireless instability—the engine automatically detects the loss, pauses input mapping, and transparently resumes as soon as the device is available again, with no restart required.
 
 ## Installation
 1. **Prerequisites:** Python 3.10+.
