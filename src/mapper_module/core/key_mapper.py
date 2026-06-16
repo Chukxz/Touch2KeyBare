@@ -230,5 +230,6 @@ class KeyMapper:
                     self._send_key_touch_event(scancode, down=False)
             self.touch_events_dict.clear()
             self.touch_events_prevs.clear()
+            self.scancode_ref_counts.clear()
             self._activate_mouse_seq.clear()
             self.mapper.wasd_block = 0
