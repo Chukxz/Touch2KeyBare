@@ -256,8 +256,8 @@ class WASDMapper:
         to_release = self.current_mask & ~target_mask
         to_press = target_mask & ~self.current_mask
 
-        print(to_release)
-        print(to_press)
+        # print(to_release)
+        # print(to_press)
 
         # Release directional keys no longer needed
         for key_flag in self.ALL_DIRECTIONS:

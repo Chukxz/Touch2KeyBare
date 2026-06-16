@@ -110,7 +110,12 @@ class MouseMapper:
             raw_dx, raw_dy, self.acc_x, self.acc_y
         )
 
-    def touch_up(self, touchevent: TouchEvent | None, is_visible: bool):
+    def touch_up(
+        self,
+        touchevent: TouchEvent | None,
+        is_visible: bool,
+        activate_mouse_sequence: bool,
+    ):
         self.prev_x = None
         self.prev_y = None
         self.acc_x = 0.0
@@ -120,7 +125,7 @@ class MouseMapper:
             self.bridge.left_click_up()
             self.left_down = False
 
-        if touchevent is not None and not is_visible:
+        if activate_mouse_sequence and touchevent is not None and not is_visible:
             if not self.tap_in_progress:
                 self.tap_in_progress = True
                 now = touchevent.timestamp
@@ -196,7 +201,13 @@ class MouseMapper:
         self.bridge.mouse_move_rel(final_dx, final_dy)
         return acc_x, acc_y
 
-    def process_touch(self, action, touch_event: TouchEvent, is_visible: bool):
+    def process_touch(
+        self,
+        action,
+        touch_event: TouchEvent,
+        is_visible: bool,
+        activate_mouse_sequence: bool,
+    ):
         if action == PRESSED:
             self._touch_pressed(touch_event, is_visible)
 
@@ -204,4 +215,4 @@ class MouseMapper:
             self._touch_down(touch_event, is_visible)
 
         elif action == UP:
-            self.touch_up(touch_event, is_visible)
+            self.touch_up(touch_event, is_visible, activate_mouse_sequence)

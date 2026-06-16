@@ -36,6 +36,7 @@ class KeyMapper:
         self.touch_events_prevs: dict[int, tuple[float, float]] = {}
         self.touch_events_lock = threading.Lock()
         self.scancode_ref_counts = {}  # Tracks how many fingers are pressing a scancode
+        self._activate_mouse_seq = {}
 
         # Blacklist for O(1) filtering
         self.ignored_names = {MOUSE_WHEEL_CODE, SPRINT_DISTANCE_CODE}
@@ -95,7 +96,7 @@ class KeyMapper:
                     self._dispatch_to_bridge(scancode, False)
 
     def _dispatch_to_bridge(self, scancode, down):
-        print(scancode, down)
+        # print(scancode, down)
         if down:
             if scancode == M_LEFT:
                 self.interception_bridge.left_click_down()
@@ -117,8 +118,11 @@ class KeyMapper:
 
     def _touch_down(self, touch_event: TouchEvent, is_visible: bool):
         """Triggered on finger contact. Scans active_zones for a hit."""
+        activate_mouse_sequence = True
+
         if self.mapper.device_width <= 0 or self.mapper.device_height <= 0:
-            return
+            self._activate_mouse_seq[touch_event.slot] = activate_mouse_sequence
+            return activate_mouse_sequence
 
         # Normalize coordinates
         nx = touch_event.x / self.mapper.device_width
@@ -171,6 +175,12 @@ class KeyMapper:
                             MapperEvent(action="ON_WASD_BLOCK")
                         )
 
+                    if touch_event.is_mouse:
+                        activate_mouse_sequence = False
+
+            self._activate_mouse_seq[touch_event.slot] = activate_mouse_sequence
+        return activate_mouse_sequence
+
     def _touch_pressed(self, touch_event: TouchEvent):
         """O(1) Dictionary lookup to process deltas if any of the key(s) tied to a finger are mouse move enabled."""
         if touch_event.slot in self.touch_events_prevs:
@@ -184,6 +194,7 @@ class KeyMapper:
     def _touch_up(self, touch_event: TouchEvent):
         """O(1) Dictionary lookup to release keys when finger lifts."""
         with self.touch_events_lock:
+            activate = self._activate_mouse_seq.pop(touch_event.slot, True)
             data_list = self.touch_events_dict.pop(touch_event.slot, [])
             for scancode, _, is_wasd in data_list:
                 self._send_key_touch_event(scancode, down=False)
@@ -194,15 +205,21 @@ class KeyMapper:
                         MapperEvent(action="ON_WASD_BLOCK")
                     )
 
+        return activate
+
     def process_touch(self, action, touch_event: TouchEvent, is_visible: bool):
+        activate_mouse_sequence = True
+
         if action == PRESSED:
             self._touch_pressed(touch_event)
 
         elif action == DOWN:
-            self._touch_down(touch_event, is_visible)
+            activate_mouse_sequence = self._touch_down(touch_event, is_visible)
 
         elif action == UP:
-            self._touch_up(touch_event)
+            activate_mouse_sequence = self._touch_up(touch_event)
+
+        return activate_mouse_sequence
 
     def release_all(self):
         """Flushes all current input states."""
@@ -213,4 +230,5 @@ class KeyMapper:
                     self._send_key_touch_event(scancode, down=False)
             self.touch_events_dict.clear()
             self.touch_events_prevs.clear()
+            self._activate_mouse_seq.clear()
             self.mapper.wasd_block = 0
