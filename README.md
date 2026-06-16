@@ -31,9 +31,23 @@ If you're on Linux ensure that your windowing system is using X11.
 
 * **Targeted Audience:** Optimized for FPS and RPG style games.
 
-* **Shareable Resources:** HUD Image files and mapping JSON files can be shared by simple copying and pasting and then using the plotter to validate and/or set the current HUD and/or JSON.
+* **Shareable Resources:** HUD Image files and mapping JSON files can be shared by simple copying and pasting and then using the plotter to validate and/or set the current HUD and/or JSON. 
 
-* **Automatic Program Detection:** Supported programs (eg. games or emulators), which are currently running are automatically detected and a selection is made as the automatic choice subject to user confirmation/override, else the user chooses the program of their choice.
+## Window Selection & Persistence
+On startup, the engine launches an interactive Window Selector dialog that lists all active processes with their titles and class names. 
+
+*   **Initial Binding:** Users must manually select their target emulator or game from the provided list. The engine then binds to this specific window ID.
+
+*   **Persistent Tracking:** Once the initial selection is made, the engine maintains a robust link to that application. If the target window is lost—due to a crash or an application restart—the system uses the captured window class name to automatically re-acquire the most relevant (largest) visible window of the same type. This ensures that sessions are maintained seamlessly without requiring manual re-selection of the target window.
+
+
+## Key Customization & Configuration
+After selecting your target window, the engine will prompt you to configure your control keys to ensure the mapping matches your preferred layout.
+
+*   **Custom Key Binding:** A dedicated capture dialog allows you to bind specific keys for core functions, such as the **Toggle** (for Camera/Menu mode) and **Sprint**.
+*   **Automatic Persistence:** Once captured, these preferences are saved to your `settings.toml` file. 
+*   **Default Handling:** The system will attempt to load existing configurations from your settings file automatically, but you are always given the option to re-bind keys or reset to defaults during the startup sequence.
+
 
 ## Installation
 1. **Prerequisites:** Python 3.10+.
