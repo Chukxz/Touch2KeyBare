@@ -6,7 +6,6 @@ import requests
 import zipfile
 from pathlib import Path
 
-# Assuming you have a central utils file that defines PROJECT_ROOT
 from mapper_module.utils import PROJECT_ROOT
 
 # --- Configuration ---
