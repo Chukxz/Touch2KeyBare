@@ -109,10 +109,10 @@ class ListApp(QWidget):
         removed = self.main_store - self.tmp_store
         self.main_store.clear()
         self.main_store.update(self.tmp_store)
-        return list(added), list(removed)
+        return list(added), list(removed), list(self.main_store)
 
     def _update_list(self):
-        added_ids, removed_ids = self._get_windows_data()
+        added_ids, removed_ids, current_ids = self._get_windows_data()
 
         # Handle Removals
         for window_id in removed_ids:
@@ -142,6 +142,24 @@ class ListApp(QWidget):
                 self.table.setItem(row, col_idx, item)
 
             self.windows_id_mapping[window_id] = row
+        
+        # Handle Editing
+        for window_id in current_ids:
+            row_index = self.windows_id_mapping.get(window_id)
+            if row_index is None:
+                continue
+            data = self.windows_data.get(window_id)
+            if data is None:
+                continue
+
+            for col_idx, value in enumerate(data):
+                item = self.table.item(row_index, col_idx)
+                if item is None:
+                    continue
+                new_text = str(value)
+                if item.text() != new_text:
+                    item.setText(new_text)
+
 
     def _handle_enter(self):
         row = self.table.currentRow()

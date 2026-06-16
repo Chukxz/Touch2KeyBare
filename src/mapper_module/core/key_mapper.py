@@ -77,7 +77,6 @@ class KeyMapper:
         print(f"\n[KEYMAPPER] - Hot-path ready: {len(self.active_zones)} zones active.")
 
     def _send_key_touch_event(self, scancode, down=True):
-        print(scancode, down)
         """Dispatches input to Interception Bridge"""
         if down:
             # Only send KeyDown if this is the first finger for this scancode
