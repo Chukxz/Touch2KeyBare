@@ -9,7 +9,7 @@
 
 It is recommended to enable `Developer Options` on Android and `Wireless Debugging` (especially if you want to use WIFI - 5GHz recommended) and if there's a popup window grant permissions.
 
-This input mapper can be used with `Sunshine/Moonlight` or `Artemis/Apollo` for full visual and auditory integration at which point we recommend disabling all inputs in `Sunshine` or `Apollo` to avoid conflicts with our mapper.
+This input mapper can be used with `Sunshine/Moonlight` or `Apollo/Artemis` for full visual and auditory integration at which point we recommend disabling all inputs in `Sunshine` or `Apollo` to avoid conflicts with our mapper.
 
 ## Key Features
 * **Platform Native Injection:** Windows (Interception driver) and Linux (evdev/uinput).
