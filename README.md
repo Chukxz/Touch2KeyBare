@@ -67,7 +67,7 @@ Because Touch2Key installs system-level drivers and kernel rules, **simply runni
 | `touch2key-select` | JSON selector.|
 | `touch2key-setup` | OS configuration wizard. |
 | `touch2key-show` | Displays full ADB executable path if found.|
-| `touch2key-uninstall` | Safely removes drivers and binaries. |
+| `touch2key-uninstall` | Safely removes drivers, rules and binaries. |
 | `touch2key-wireless` | Force ADB wireless connection. |
 
 ## Contributing
