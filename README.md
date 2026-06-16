@@ -48,6 +48,10 @@ After selecting your target window, the engine will prompt you to configure your
 *   **Automatic Persistence:** Once captured, these preferences are saved to your `settings.toml` file. 
 *   **Default Handling:** The system will attempt to load existing configurations from your settings file automatically, but you are always given the option to re-bind keys or reset to defaults during the startup sequence.
 
+## Connectivity & Resilience
+* **Auto-Adaptive Input:** The engine automatically detects your Android device's specific touchscreen hardware and multi-touch capabilities upon startup, requiring no manual configuration of input drivers.
+* **Self-Healing Stream:** The connection is managed by a background daemon. If your wireless ADB connection drops or the device is temporarily disconnected, the engine will automatically detect the loss, pause input mapping, and transparently reconnect/resume as soon as the device is available—no restart required.
+
 
 ## Installation
 1. **Prerequisites:** Python 3.10+.
