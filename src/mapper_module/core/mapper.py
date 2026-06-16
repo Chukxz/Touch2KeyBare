@@ -60,8 +60,11 @@ class Mapper:
         # Use the selected window ID directly instead of scanning by title
         self.window_id: int = window_id
         self.game_window_class_name: str | None = (
-            self.window_manager.get_window_class_name(self.window_id) or None
+            self.window_manager.get_window_class_name(self.window_id)
         )
+
+        if not self.game_window_class_name:
+            self.game_window_class_name = None
 
         # Seed with the selected window so the tracker doesn't start in lost state
         self.game_window_info: dict | None = {
@@ -98,6 +101,10 @@ class Mapper:
         )
         self.aggregate_mouse_moves_thread.start()
 
+        self.mapper_event_dispatcher.dispatch(
+            MapperEvent(action="ON_MENU_MODE_TOGGLE", is_visible=self.last_cursor_state)
+        )
+
     def _update_config(self):
         with self.lock:
             self.device_width = self.json_loader.width
@@ -120,10 +127,6 @@ class Mapper:
         is_visible, self.last_cursor_check_time = self.window_manager.is_cursor_visible(
             self.last_cursor_state, self.last_cursor_check_time
         )
-
-        ##########################################
-        is_visible = not is_visible
-        ##########################################
 
         if not is_visible == self.last_cursor_state:
             self.last_cursor_state = is_visible
@@ -269,15 +272,15 @@ class Mapper:
                 sum_dx = sum(v[0] for v in snapshot)
                 sum_dy = sum(v[1] for v in snapshot)
 
-                # self.mapper_event_dispatcher.dispatch(
-                #     MapperEvent(
-                #         action="ON_AGGREGATION",
-                #         sum_dx=sum_dx,
-                #         sum_dy=sum_dy,
-                #         acc_x=self.acc_x,
-                #         acc_y=self.acc_y,
-                #     )
-                # )
+                self.mapper_event_dispatcher.dispatch(
+                    MapperEvent(
+                        action="ON_AGGREGATION",
+                        sum_dx=sum_dx,
+                        sum_dy=sum_dy,
+                        acc_x=self.acc_x,
+                        acc_y=self.acc_y,
+                    )
+                )
             else:
                 self.acc_x = 0.0
                 self.acc_y = 0.0

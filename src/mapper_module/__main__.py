@@ -78,10 +78,6 @@ class _Engine:
             self.key_mapper.release_all()
             self.wasd_mapper.touch_up()
 
-    def _check_workers(self):
-        self.bridge_class.health_check()
-        time.sleep(SHORT_DELAY)
-
     def _process_touch_event(self, action, touch_event: TouchEvent):
         assert self.mouse_mapper is not None
         assert self.key_mapper is not None
@@ -154,13 +150,6 @@ class _Engine:
         mapper_event_dispatcher = MapperEventDispatcher()
         config = AppConfig(mapper_event_dispatcher)
 
-        if hasattr(self.bridge_class, "m_proc"):
-            self.system_config.set_high_priority(self.bridge_class.m_proc.pid, "Mouse")
-        if hasattr(self.bridge_class, "k_proc"):
-            self.system_config.set_high_priority(
-                self.bridge_class.k_proc.pid, "Keyboard"
-            )
-
         time.sleep(SHORT_DELAY)
 
         json_loader = JSONLoader(config, self.foreground_window)
@@ -183,7 +172,6 @@ class _Engine:
             "ON_MENU_MODE_TOGGLE", self._set_is_visible
         )
 
-        threading.Thread(target=self._check_workers, daemon=True).start()
         keyboard.wait()
 
     def _shutdown(self):

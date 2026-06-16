@@ -1,5 +1,4 @@
 from __future__ import annotations
-import queue
 from typing import TYPE_CHECKING
 
 from mapper_module.utils import (
@@ -16,7 +15,7 @@ from mapper_module.utils import (
 )
 
 if TYPE_CHECKING:
-    from multiprocessing import Queue
+    from multiprocessing.connection import Connection
 
 MAX_COALESCE = 20
 DOWN_TUPLE = (LEFT_BUTTON_DOWN, RIGHT_BUTTON_DOWN, MIDDLE_BUTTON_DOWN)
@@ -29,12 +28,46 @@ MIN_MOUSE_DWELL = 0.0008
 MAX_MOUSE_DWELL = 0.0012
 
 
-# Worker: Keyboard (Isolated)
-def keyboard_worker(k_queue: Queue):
-    """Dedicated process for Keyboard events only (Windows Interception driver)."""
+def _release_all_keys(k_ctx, k_handle, K_Stroke, keys_set, reason=""):
+    """Helper to cleanly release all currently pressed keys."""
+    if keys_set:
+        print(f"\n[UTILITY] - {reason}. Releasing {len(keys_set)} keys.")
+        for code in list(keys_set):
+            k_ctx.send(k_handle, K_Stroke(code, 1))  # 1 = UP
+        keys_set.clear()
+
+
+def _release_all_buttons(
+    m_ctx, m_handle, M_Stroke, left_down, right_down, middle_down, reason=""
+):
+    print(f"\n[UTILITY] - {reason}.")
+    buttons_set_sum = sum([left_down, right_down, middle_down])
+    if buttons_set_sum > 0:
+        print(f"\n[UTILITY] - Releasing {buttons_set_sum} buttons.")
+        if left_down:
+            m_ctx.send(
+                m_handle,
+                M_Stroke(MOUSE_MOVE_RELATIVE, LEFT_BUTTON_UP, 0, 0, 0),
+            )
+        if right_down:
+            m_ctx.send(
+                m_handle,
+                M_Stroke(MOUSE_MOVE_RELATIVE, RIGHT_BUTTON_UP, 0, 0, 0),
+            )
+        if middle_down:
+            m_ctx.send(
+                m_handle,
+                M_Stroke(MOUSE_MOVE_RELATIVE, MIDDLE_BUTTON_UP, 0, 0, 0),
+            )
+
+
+# Worker: Keyboard (Pipe + Binary Protocol)
+def keyboard_worker(k_pipe_read: Connection):
+    """Dedicated process for Windows Interception driver keyboard events (Lock-Free Pipe)."""
 
     from interception.interception import Interception
     from interception.strokes import KeyStroke
+    from mapper_module.utils import PACK_KEY
 
     k_ctx = Interception()
     k_handle = k_ctx.keyboard
@@ -44,50 +77,59 @@ def keyboard_worker(k_queue: Queue):
 
     while running:
         try:
-            code, state = k_queue.get(timeout=15.0)
+            # Wait up to 15 seconds for data
+            if k_pipe_read.poll(15.0):
+                payload = k_pipe_read.recv_bytes()
+                code, state = PACK_KEY.unpack(payload)
 
-            # Windows logic sends state=0 for down, state=1 for up.
-            if state == 0:
-                pressed_keys.add(code)
+                # Windows logic sends state=0 for down, state=1 for up.
+                if state == 0:
+                    pressed_keys.add(code)
+                elif state == 1:
+                    pressed_keys.discard(code)
+
+                k_ctx.send(k_handle, KeyStroke(code, state))
+
             else:
-                pressed_keys.discard(code)
-
-            k_ctx.send(k_handle, KeyStroke(code, state))
-
-        except queue.Empty:
-            # 15 seconds passed with no input. Flush keys just in case.
-            if pressed_keys:
-                print(
-                    f"\n[UTILITY] - Keyboard worker timed out. Releasing {len(pressed_keys)} keys."
+                # Timeout logic for stuck buttons
+                _release_all_keys(
+                    k_ctx, k_handle, KeyStroke, pressed_keys, "Keyboard Timeout"
                 )
-                for code in list(pressed_keys):
-                    k_ctx.send(k_handle, KeyStroke(code, 1))
                 pressed_keys.clear()
-            continue
+                continue
+
+        except EOFError:
+            print("\n[UTILITY] - Keyboard Pipe closed by parent.")
+            running = False
 
         except Exception as e:
-            # Fatal error/crash
-            print(f"\n[UTILITY] - Keyboard Worker crashed: {e}")
-            if pressed_keys:
-                print(f"[UTILITY] - Releasing {len(pressed_keys)} keys before exit.")
-                for code in list(pressed_keys):
-                    k_ctx.send(k_handle, KeyStroke(code, 1))
+            print(f"\n[UTILITY] - Keyboard Worker crashed: {e}.")
             running = False
 
 
-# Worker: Mouse (Isolated with Coalescing + Lock-Free Pipe)
-def mouse_worker(m_pipe_child):
-    """Dedicated process for Mouse events only (Windows Interception driver)."""
+# Worker: Mouse (Isolated with Coalescing, Pipe + Binary Protocol)
+def mouse_worker(m_pipe_read: Connection):
+    """Dedicated process for Windows Interception driver mouse events (Lock-Free Pipe)."""
 
     import ctypes
-    from time import sleep as _sleep
-    from random import uniform as _uniform
-    from interception.interception import Interception
-    from interception.strokes import MouseStroke
 
     ctypes.windll.ntdll.NtSetTimerResolution(
         NT_TIMER_RES, 1, ctypes.byref(ctypes.c_ulong())
     )
+
+    from time import sleep as _sleep
+    from random import uniform as _uniform
+    from interception.interception import Interception
+    from interception.strokes import MouseStroke
+    from mapper_module.utils import (
+        TASK_BUTTON,
+        TASK_REL,
+        TASK_ABS,
+        PACK_BUTTON,
+        PACK_REL,
+        PACK_ABS,
+    )
+
     m_ctx = Interception()
     m_handle = m_ctx.mouse
 
@@ -101,29 +143,37 @@ def mouse_worker(m_pipe_child):
 
     while running:
         try:
-            # Check for a pending task from the previous coalesce loop
             if pending_task:
-                task, data = pending_task
-                pending_task = None  # CRITICAL FIX: Clear the task
+                payload = pending_task
+                task_id = pending_task[0]  # The first byte is always our Task ID
+                pending_task = None
             else:
                 # Wait up to 15 seconds for new data
-                if m_pipe_child.poll(15.0):
-                    task, data = m_pipe_child.recv()
+                if m_pipe_read.poll(15.0):
+                    # Instantly grab the raw byte payload without unpickling
+                    payload = m_pipe_read.recv_bytes()
+                    task_id = payload[0]  # The first byte is always our Task ID
                 else:
-                    # 15 seconds passed with no input. Release stuck buttons
-                    pressed_buttons = sum([left_down, right_down, middle_down])
-                    if pressed_buttons > 0:
-                        print(f"\n[UTILITY] - Mouse worker timed out. Releasing {pressed_buttons} buttons.")
-                        if left_down:
-                            m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, LEFT_BUTTON_UP, 0, 0, 0))
-                        if right_down:
-                            m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, RIGHT_BUTTON_UP, 0, 0, 0))
-                        if middle_down:
-                            m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, MIDDLE_BUTTON_UP, 0, 0, 0))
-                        left_down = right_down = middle_down = False
+                    # Timeout logic for stuck buttons
+                    _release_all_buttons(
+                        m_ctx,
+                        m_handle,
+                        MouseStroke,
+                        left_down,
+                        right_down,
+                        middle_down,
+                        "Mouse Timeout",
+                    )
+                    left_down = right_down = middle_down = False
                     continue
 
-            if task == "button":
+            # -----------------------------------------
+            # HANDLE BUTTONS
+            # -----------------------------------------
+            if task_id == TASK_BUTTON:
+                # Unpack expects a tuple, we grab the first element
+                _, data = PACK_BUTTON.unpack(payload)
+
                 if data == LEFT_BUTTON_DOWN:
                     left_down = True
                 elif data == LEFT_BUTTON_UP:
@@ -144,36 +194,46 @@ def mouse_worker(m_pipe_child):
                 else:
                     _sleep(CONSTANT_DWELL)
 
-            elif task == "move_rel":
-                acc_dx += data
-                acc_dy += data
+            # -----------------------------------------
+            # HANDLE RELATIVE MOVEMENT (Coalescing)
+            # -----------------------------------------
+            elif task_id == TASK_REL:
+                # Unpack the initial dx, dy
+                _, dx, dy = PACK_REL.unpack(payload)
+                acc_dx += dx
+                acc_dy += dy
 
                 coalesce_count = 0
-                # Use poll() instead of empty() - practically zero overhead
-                while m_pipe_child.poll() and coalesce_count < MAX_COALESCE:
-                    next_task, next_data = m_pipe_child.recv()
-                    
-                    if next_task == "move_rel":
-                        acc_dx += next_data
-                        acc_dy += next_data
+                # Fast polling to drain the pipe
+                while m_pipe_read.poll() and coalesce_count < MAX_COALESCE:
+                    next_payload = m_pipe_read.recv_bytes()
+                    next_task_id = next_payload[
+                        0
+                    ]  # The first byte is always our Task ID
+
+                    if next_task_id == TASK_REL:
+                        _, next_dx, next_dy = PACK_REL.unpack(next_payload)
+                        acc_dx += next_dx
+                        acc_dy += next_dy
                         coalesce_count += 1
                     else:
-                        pending_task = (next_task, next_data)
+                        pending_task = next_payload
                         break
 
                 if acc_dx != 0 or acc_dy != 0:
                     m_ctx.send(
                         m_handle,
-                        MouseStroke(
-                            MOUSE_MOVE_RELATIVE, MOUSE_MOVE_RELATIVE, 0, acc_dx, acc_dy
-                        ),
+                        MouseStroke(MOUSE_MOVE_RELATIVE, 0, 0, acc_dx, acc_dy),
                     )
                     acc_dx, acc_dy = 0, 0
 
                 _sleep(_uniform(MIN_MOUSE_DWELL, MAX_MOUSE_DWELL))
 
-            elif task == "move_abs":
-                x, y = data
+            # -----------------------------------------
+            # HANDLE ABSOLUTE MOVEMENT
+            # -----------------------------------------
+            elif task_id == TASK_ABS:
+                _, x, y = PACK_ABS.unpack(payload)
                 m_ctx.send(
                     m_handle,
                     MouseStroke(
@@ -187,20 +247,9 @@ def mouse_worker(m_pipe_child):
                 _sleep(CONSTANT_DWELL)
 
         except EOFError:
-            # The parent closed the pipe (Scorched Earth reset)
-            print("\n[UTILITY] - Mouse Pipe closed by parent.")
+            print(f"\n[UTILITY] - Mouse Pipe closed by parent.")
             running = False
 
         except Exception as e:
-            # Fatal error/crash
-            pressed_buttons = sum([left_down, right_down, middle_down])
-            print(f"\n[UTILITY] - Mouse Worker crashed: {e}")
-            if pressed_buttons > 0:
-                print(f"[UTILITY] - Releasing {pressed_buttons} buttons before exit.")
-                if left_down:
-                    m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, LEFT_BUTTON_UP, 0, 0, 0))
-                if right_down:
-                    m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, RIGHT_BUTTON_UP, 0, 0, 0))
-                if middle_down:
-                    m_ctx.send(m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, MIDDLE_BUTTON_UP, 0, 0, 0))
+            print(f"\n[UTILITY] - Mouse Worker crashed: {e}.")
             running = False

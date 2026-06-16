@@ -12,6 +12,25 @@ import random
 from pathlib import Path
 import colorsys
 
+import struct
+
+# Task IDs
+TASK_BUTTON = 0
+TASK_REL = 1
+TASK_ABS = 2
+
+# Pre-compiled C-struct formats for maximum speed
+# <  = Little-endian
+# B  = Unsigned char (1 byte) for the Task ID
+# i  = Signed int (4 bytes)
+# h  = Signed short (2 bytes)
+PACK_BUTTON = struct.Struct("<Bi")   # 5 bytes total
+PACK_REL = struct.Struct("<Bhh")     # 5 bytes total
+PACK_ABS = struct.Struct("<Bii")     # 9 bytes total
+
+# Keyboard Struct: < H (Unsigned Short for KeyCode), B (Unsigned Char for State 0/1)
+PACK_KEY = struct.Struct("<HB")      # 3 bytes total
+
 if TYPE_CHECKING:
     from multiprocessing import Process
 

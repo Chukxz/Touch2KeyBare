@@ -252,16 +252,19 @@ class WASDMapper:
     def _apply_keys(self, sector, sprint):
         target_mask = self.sector_to_state[sector]
 
-        # 1. Identify which directional keys to change
+        # Identify which directional keys to change
         to_release = self.current_mask & ~target_mask
         to_press = target_mask & ~self.current_mask
 
-        # 2. Release directional keys no longer needed
+        print(to_release)
+        print(to_press)
+
+        # Release directional keys no longer needed
         for key_flag in self.ALL_DIRECTIONS:
             if key_flag in to_release:
                 self.bridge.key_up(self.state_value_to_key[key_flag.value])
 
-        # 3. Handle Sprint (Shift)
+        # Handle Sprint (Shift)
         # Ensure sprint only triggers if we are actually moving
         should_sprint = sprint and target_mask
 
@@ -273,12 +276,10 @@ class WASDMapper:
                 self.bridge.key_down(self.sprint_key_code)
                 self.sprinting = True
 
-        # 4. Press new directional keys
+        # Press new directional keys
         for key_flag in self.ALL_DIRECTIONS:
             if key_flag in to_press:
-                self.bridge.key_down(
-                    self.state_value_to_key[key_flag.value]
-                )
+                self.bridge.key_down(self.state_value_to_key[key_flag.value])
 
         self.current_mask = target_mask
 

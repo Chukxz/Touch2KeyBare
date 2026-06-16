@@ -1,8 +1,5 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-import queue
-from time import sleep as _sleep
-from random import uniform as _uniform
 
 from mapper_module.utils import (
     LEFT_BUTTON_DOWN,
@@ -14,7 +11,6 @@ from mapper_module.utils import (
 )
 
 if TYPE_CHECKING:
-    from multiprocessing import Queue
     from multiprocessing.connection import Connection
 
 MAX_COALESCE = 20
@@ -28,55 +24,92 @@ MIN_MOUSE_DWELL = 0.0008
 MAX_MOUSE_DWELL = 0.0012
 
 
-# Worker: Keyboard (Queue - Unchanged)
-def keyboard_worker(k_queue: Queue):
-    """Dedicated process for Linux evdev virtual keyboard."""
+def _release_all_keys(ui_device, ecodes, keys_set, reason=""):
+    """Helper to cleanly release all currently pressed keys."""
+    if keys_set:
+        print(f"\n[UTILITY] - {reason}. Releasing {len(keys_set)} keys.")
+        for code in list(keys_set):
+            ui_device.write(ecodes.EV_KEY, code, 0)  # 0 = UP
+        ui_device.syn()
+        keys_set.clear()
+
+
+def _release_all_buttons(
+    ui_device, ecodes, left_down, right_down, middle_down, reason=""
+):
+    print(f"\n[UTILITY] - {reason}.")
+    buttons_set_sum = sum([left_down, right_down, middle_down])
+    if buttons_set_sum > 0:
+        print(f"\n[UTILITY] - Releasing {buttons_set_sum} buttons.")
+        if left_down:
+            ui_device.write(ecodes.EV_KEY, ecodes.BTN_LEFT, 0)
+        if right_down:
+            ui_device.write(ecodes.EV_KEY, ecodes.BTN_RIGHT, 0)
+        if middle_down:
+            ui_device.write(ecodes.EV_KEY, ecodes.BTN_MIDDLE, 0)
+        ui_device.syn()
+
+
+# Worker: Keyboard (Pipe + Binary Protocol)
+def keyboard_worker(k_pipe_read: Connection):
+    """Dedicated process for Linux evdev virtual keyboard (Lock-Free Pipe)."""
+
     from evdev import UInput, ecodes
+    from mapper_module.utils import PACK_KEY
 
     cap = {ecodes.EV_KEY: list(range(1, 256))}
-    ui = UInput(cap, name="Touch2Key-Keyboard")
+    ui_device = UInput(cap, name="Touch2Key-Keyboard")
 
     pressed_keys = set()
     running = True
 
     while running:
         try:
-            code, state = k_queue.get(timeout=15.0)
-            linux_value = 1 if state == 0 else 0
+            # Wait up to 15 seconds for data
+            if k_pipe_read.poll(15.0):
+                payload = k_pipe_read.recv_bytes()
+                code, state = PACK_KEY.unpack(payload)
 
-            if linux_value == 1:
-                pressed_keys.add(code)
+                # Linux logic sends state=1 for down, state=0 for up.
+                if state == 1:
+                    pressed_keys.add(code)
+                elif state == 0:
+                    pressed_keys.discard(code)
+
+                ui_device.write(ecodes.EV_KEY, code, state)
+                ui_device.syn()
+
             else:
-                pressed_keys.discard(code)
-
-            ui.write(ecodes.EV_KEY, code, linux_value)
-            ui.syn()
-
-        except queue.Empty:
-            if pressed_keys:
-                print(
-                    f"\n[UTILITY] - Keyboard timeout. Releasing {len(pressed_keys)} keys."
-                )
-                for code in list(pressed_keys):
-                    ui.write(ecodes.EV_KEY, code, 0)  # 0 = UP
-                    ui.syn()
+                # Timeout logic for stuck buttons
+                _release_all_keys(ui_device, ecodes, pressed_keys, "Keyboard Timeout")
                 pressed_keys.clear()
-            continue
+                continue
+                
+        except EOFError:
+            print("\n[UTILITY] - Keyboard Pipe closed by parent.")
+            running = False
 
         except Exception as e:
-            print(f"\n[UTILITY] - Keyboard Worker crashed: {e}")
-            if pressed_keys:
-                for code in list(pressed_keys):
-                    ui.write(ecodes.EV_KEY, code, 0)
-                    ui.syn()
+            print(f"\n[UTILITY] - Keyboard Worker crashed: {e}.")
             running = False
-    ui.close()
+    ui_device.close()
 
 
-# Worker: Mouse (Pipe + Coalescing)
-def mouse_worker(m_pipe_child: Connection):
+# Worker: Mouse (Isolated with Coalescing, Pipe + Binary Protocol)
+def mouse_worker(m_pipe_read: Connection):
     """Dedicated process for Linux evdev virtual mouse (Lock-Free Pipe)."""
+
+    from time import sleep as _sleep
+    from random import uniform as _uniform
     from evdev import UInput, ecodes, AbsInfo
+    from mapper_module.utils import (
+        TASK_BUTTON,
+        TASK_REL,
+        TASK_ABS,
+        PACK_BUTTON,
+        PACK_REL,
+        PACK_ABS,
+    )
 
     # Define Mouse Capabilities
     cap = {
@@ -93,7 +126,7 @@ def mouse_worker(m_pipe_child: Connection):
             ),
         ],
     }
-    ui = UInput(cap, name="Touch2Key-Mouse")
+    ui_device = UInput(cap, name="Touch2Key-Mouse")
 
     # Mapping Windows button constants to Linux
     BTN_MAP = {
@@ -116,30 +149,28 @@ def mouse_worker(m_pipe_child: Connection):
     while running:
         try:
             if pending_task:
-                task, data = pending_task
+                payload = pending_task
+                task_id = pending_task[0]  # The first byte is always our Task ID
                 pending_task = None
             else:
                 # Wait up to 15 seconds for data
-                if m_pipe_child.poll(15.0):
-                    task, data = m_pipe_child.recv()
+                if m_pipe_read.poll(15.0):
+                    # Instantly grab the raw byte payload without unpickling
+                    payload = m_pipe_read.recv_bytes()
+                    task_id = payload[0]  # The first byte is always our Task ID
                 else:
                     # Timeout logic for stuck buttons
-                    pressed_buttons = sum([left_down, right_down, middle_down])
-                    if pressed_buttons > 0:
-                        print(
-                            f"\n[UTILITY] - Mouse worker timed out. Releasing {pressed_buttons} buttons."
-                        )
-                        if left_down:
-                            ui.write(ecodes.EV_KEY, ecodes.BTN_LEFT, 0)
-                        if right_down:
-                            ui.write(ecodes.EV_KEY, ecodes.BTN_RIGHT, 0)
-                        if middle_down:
-                            ui.write(ecodes.EV_KEY, ecodes.BTN_MIDDLE, 0)
-                        ui.syn()
-                        left_down = right_down = middle_down = False
+                    _release_all_buttons(ui_device, ecodes, left_down, right_down, middle_down, "Mouse Timeout")
+                    left_down = right_down = middle_down = False
                     continue
 
-            if task == "button":
+            # -----------------------------------------
+            # HANDLE BUTTONS
+            # -----------------------------------------
+            if task_id == TASK_BUTTON:
+                # Unpack expects a tuple, we grab the first element
+                _, data = PACK_BUTTON.unpack(payload)
+
                 if data == LEFT_BUTTON_DOWN:
                     left_down = True
                 elif data == LEFT_BUTTON_UP:
@@ -154,61 +185,62 @@ def mouse_worker(m_pipe_child: Connection):
                     middle_down = False
 
                 btn_code, btn_val = BTN_MAP[data]
-                ui.write(ecodes.EV_KEY, btn_code, btn_val)
-                ui.syn()
+                ui_device.write(ecodes.EV_KEY, btn_code, btn_val)
+                ui_device.syn()
 
                 if data in DOWN_TUPLE:
                     _sleep(_uniform(MIN_BUTTON_DWELL, MAX_BUTTON_DWELL))
                 else:
                     _sleep(CONSTANT_DWELL)
 
-            elif task == "move_rel":
-                acc_dx += data
-                acc_dy += data
+            # -----------------------------------------
+            # HANDLE RELATIVE MOVEMENT (Coalescing)
+            # -----------------------------------------
+            elif task_id == TASK_REL:
+                # Unpack the initial dx, dy
+                _, dx, dy = PACK_REL.unpack(payload)
+                acc_dx += dx
+                acc_dy += dy
 
                 coalesce_count = 0
                 # Fast polling to drain the pipe
-                while m_pipe_child.poll() and coalesce_count < MAX_COALESCE:
-                    next_task, next_data = m_pipe_child.recv()
-                    if next_task == "move_rel":
-                        acc_dx += next_data
-                        acc_dy += next_data
+                while m_pipe_read.poll() and coalesce_count < MAX_COALESCE:
+                    next_payload = m_pipe_read.recv_bytes()
+                    next_task_id = next_payload[0]  # The first byte is always our Task ID
+
+                    if next_task_id == TASK_REL:
+                        _, next_dx, next_dy = PACK_REL.unpack(next_payload)
+                        acc_dx += next_dx
+                        acc_dy += next_dy
                         coalesce_count += 1
                     else:
-                        pending_task = (next_task, next_data)
+                        pending_task = next_payload
                         break
 
                 if acc_dx != 0 or acc_dy != 0:
-                    ui.write(ecodes.EV_REL, ecodes.REL_X, acc_dx)
-                    ui.write(ecodes.EV_REL, ecodes.REL_Y, acc_dy)
-                    ui.syn()
+                    ui_device.write(ecodes.EV_REL, ecodes.REL_X, acc_dx)
+                    ui_device.write(ecodes.EV_REL, ecodes.REL_Y, acc_dy)
+                    ui_device.syn()
                     acc_dx, acc_dy = 0, 0
 
                 _sleep(_uniform(MIN_MOUSE_DWELL, MAX_MOUSE_DWELL))
 
-            elif task == "move_abs":
-                x, y = data
-                ui.write(ecodes.EV_ABS, ecodes.ABS_X, x)
-                ui.write(ecodes.EV_ABS, ecodes.ABS_Y, y)
-                ui.syn()
+            # -----------------------------------------
+            # HANDLE ABSOLUTE MOVEMENT
+            # -----------------------------------------
+            elif task_id == TASK_ABS:
+                _, x, y = PACK_ABS.unpack(payload)
+                ui_device.write(ecodes.EV_ABS, ecodes.ABS_X, x)
+                ui_device.write(ecodes.EV_ABS, ecodes.ABS_Y, y)
+                ui_device.syn()
                 _sleep(CONSTANT_DWELL)
 
         except EOFError:
-            print("\n[UTILITY] - Mouse Pipe closed by parent.")
+            print(f"\n[UTILITY] - Mouse Pipe closed by parent.")
             running = False
 
         except Exception as e:
-            pressed_buttons = sum([left_down, right_down, middle_down])
-            print(
-                f"\n[UTILITY] - Mouse Worker crashed: {e}. Releasing {pressed_buttons} buttons."
-            )
-            if left_down:
-                ui.write(ecodes.EV_KEY, ecodes.BTN_LEFT, 0)
-            if right_down:
-                ui.write(ecodes.EV_KEY, ecodes.BTN_RIGHT, 0)
-            if middle_down:
-                ui.write(ecodes.EV_KEY, ecodes.BTN_MIDDLE, 0)
-            ui.syn()
+            print(f"\n[UTILITY] - Mouse Worker crashed: {e}.")
             running = False
 
-    ui.close()
+    ui_device.close()
