@@ -44,6 +44,7 @@ If you're on Linux ensure that your windowing system is using X11.
    pip install .
 3. **Setup:** Run setup (Usually requires an internet connection).
 
+*(Note: Windows requires a system reboot after installation to fully load the driver).*
 
 ## Uninstallation
 Because Touch2Key installs system-level drivers and kernel rules, **simply running `pip uninstall Touch2Key` is not sufficient.** You must use the included uninstaller.
@@ -68,8 +69,6 @@ Because Touch2Key installs system-level drivers and kernel rules, **simply runni
 | `touch2key-show` | Displays full ADB executable path if found.|
 | `touch2key-uninstall` | Safely removes drivers and binaries. |
 | `touch2key-wireless` | Force ADB wireless connection. |
-
-*(Note: Windows requires a system reboot after installation to fully load the driver).*
 
 ## Contributing
 Please use `black` for formatting and `pytest` for unit testing (optional).
