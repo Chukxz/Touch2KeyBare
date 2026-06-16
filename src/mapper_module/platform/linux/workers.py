@@ -26,8 +26,9 @@ MAX_MOUSE_DWELL = 0.0012
 
 def _release_all_keys(ui_device, ecodes, keys_set, reason=""):
     """Helper to cleanly release all currently pressed keys."""
+    print(f"\n[UTILITY] - {reason}.")
     if keys_set:
-        print(f"\n[UTILITY] - {reason}. Releasing {len(keys_set)} keys.")
+        print("\n[UTILITY] - Releasing {len(keys_set)} keys.")
         for code in list(keys_set):
             ui_device.write(ecodes.EV_KEY, code, 0)  # 0 = UP
         ui_device.syn()

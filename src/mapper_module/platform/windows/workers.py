@@ -30,8 +30,9 @@ MAX_MOUSE_DWELL = 0.0012
 
 def _release_all_keys(k_ctx, k_handle, K_Stroke, keys_set, reason=""):
     """Helper to cleanly release all currently pressed keys."""
+    print(f"\n[UTILITY] - {reason}.")
     if keys_set:
-        print(f"\n[UTILITY] - {reason}. Releasing {len(keys_set)} keys.")
+        print("\n[UTILITY] - Releasing {len(keys_set)} keys.")
         for code in list(keys_set):
             k_ctx.send(k_handle, K_Stroke(code, 1))  # 1 = UP
         keys_set.clear()
