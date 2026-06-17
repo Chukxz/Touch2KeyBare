@@ -48,7 +48,6 @@ class InterceptionBridge(AbstractBridge):
         self.k_proc.start()
         self.system_config.set_high_priority(self.k_proc.pid, "Keyboard")
 
-
         # Mouse uses lock-free Pipe (High-Frequency Streaming)
         self.m_pipe_read, self.m_pipe_write = multiprocessing.Pipe(duplex=False)
         self.m_proc = multiprocessing.Process(
@@ -143,9 +142,7 @@ class InterceptionBridge(AbstractBridge):
     def right_click_up(self):
         # Pack into 5 raw bytes: [Task: 1 byte] [data: 4 bytes]
         try:
-            self.m_pipe_write.send_bytes(
-                PACK_BUTTON.pack(TASK_BUTTON, RIGHT_BUTTON_UP)
-            )
+            self.m_pipe_write.send_bytes(PACK_BUTTON.pack(TASK_BUTTON, RIGHT_BUTTON_UP))
         except OSError:
             self.selective_release()
         else:
@@ -187,9 +184,7 @@ class InterceptionBridge(AbstractBridge):
                 # Scorched Earth: Destroy old pipes
                 self.k_pipe_read.close()
                 self.k_pipe_write.close()
-                self.k_pipe_read, self.k_pipe_write = multiprocessing.Pipe(
-                    duplex=False
-                )
+                self.k_pipe_read, self.k_pipe_write = multiprocessing.Pipe(duplex=False)
 
                 self.k_proc = multiprocessing.Process(
                     target=keyboard_worker,
@@ -210,9 +205,7 @@ class InterceptionBridge(AbstractBridge):
                 # SCORCHED EARTH: Close old pipes, make new ones.
                 self.m_pipe_read.close()
                 self.m_pipe_write.close()
-                self.m_pipe_read, self.m_pipe_write = multiprocessing.Pipe(
-                    duplex=False
-                )
+                self.m_pipe_read, self.m_pipe_write = multiprocessing.Pipe(duplex=False)
 
                 # Start new worker with the FRESH pipe child
                 self.m_proc = multiprocessing.Process(
@@ -260,9 +253,9 @@ class InterceptionBridge(AbstractBridge):
                 except OSError:
                     pass
 
-            self._mouse_left_down = self._mouse_right_down = (
-                self._mouse_middle_down
-            ) = False
+            self._mouse_left_down = self._mouse_right_down = self._mouse_middle_down = (
+                False
+            )
 
     def release_all(self):
         print("\n[BRIDGE] - Emergency Release (Interception)...")

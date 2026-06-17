@@ -96,7 +96,6 @@ class KeyMapper:
                     self._dispatch_to_bridge(scancode, False)
 
     def _dispatch_to_bridge(self, scancode, down):
-        # print(scancode, down)
         if down:
             if scancode == M_LEFT:
                 self.interception_bridge.left_click_down()
