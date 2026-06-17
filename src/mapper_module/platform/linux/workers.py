@@ -1,27 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from mapper_module.utils import (
-    LEFT_BUTTON_DOWN,
-    LEFT_BUTTON_UP,
-    RIGHT_BUTTON_DOWN,
-    RIGHT_BUTTON_UP,
-    MIDDLE_BUTTON_DOWN,
-    MIDDLE_BUTTON_UP,
-)
-
 if TYPE_CHECKING:
     from multiprocessing.connection import Connection
-
-MAX_COALESCE = 20
-DOWN_TUPLE = (LEFT_BUTTON_DOWN, RIGHT_BUTTON_DOWN, MIDDLE_BUTTON_DOWN)
-
-# In seconds
-CONSTANT_DWELL = 0.001
-MIN_BUTTON_DWELL = 0.025
-MAX_BUTTON_DWELL = 0.04
-MIN_MOUSE_DWELL = 0.0008
-MAX_MOUSE_DWELL = 0.0012
 
 
 def _release_all_keys(ui_device, ecodes, keys_set, reason=""):
@@ -85,7 +66,7 @@ def keyboard_worker(k_pipe_read: Connection):
                 _release_all_keys(ui_device, ecodes, pressed_keys, "Keyboard Timeout")
                 pressed_keys.clear()
                 continue
-                
+
         except EOFError:
             print("\n[UTILITY] - Keyboard Pipe closed by parent.")
             running = False
@@ -110,6 +91,19 @@ def mouse_worker(m_pipe_read: Connection):
         PACK_BUTTON,
         PACK_REL,
         PACK_ABS,
+        LEFT_BUTTON_DOWN,
+        LEFT_BUTTON_UP,
+        RIGHT_BUTTON_DOWN,
+        RIGHT_BUTTON_UP,
+        MIDDLE_BUTTON_DOWN,
+        MIDDLE_BUTTON_UP,
+        MAX_COALESCE,
+        DOWN_TUPLE,
+        CONSTANT_DWELL,
+        MIN_BUTTON_DWELL,
+        MAX_BUTTON_DWELL,
+        MIN_MOUSE_DWELL,
+        MAX_MOUSE_DWELL,
     )
 
     # Define Mouse Capabilities
@@ -161,7 +155,14 @@ def mouse_worker(m_pipe_read: Connection):
                     task_id = payload[0]  # The first byte is always our Task ID
                 else:
                     # Timeout logic for stuck buttons
-                    _release_all_buttons(ui_device, ecodes, left_down, right_down, middle_down, "Mouse Timeout")
+                    _release_all_buttons(
+                        ui_device,
+                        ecodes,
+                        left_down,
+                        right_down,
+                        middle_down,
+                        "Mouse Timeout",
+                    )
                     left_down = right_down = middle_down = False
                     continue
 
@@ -207,7 +208,9 @@ def mouse_worker(m_pipe_read: Connection):
                 # Fast polling to drain the pipe
                 while m_pipe_read.poll() and coalesce_count < MAX_COALESCE:
                     next_payload = m_pipe_read.recv_bytes()
-                    next_task_id = next_payload[0]  # The first byte is always our Task ID
+                    next_task_id = next_payload[
+                        0
+                    ]  # The first byte is always our Task ID
 
                     if next_task_id == TASK_REL:
                         _, next_dx, next_dy = PACK_REL.unpack(next_payload)

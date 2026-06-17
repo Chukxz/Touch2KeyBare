@@ -48,14 +48,14 @@ def _kill_adb():
 
 def _download_adb():
     """Downloads and extracts Android platform-tools for Windows."""
-    print("[+] Ensuring ADB is available...")
+    print("[+] Checking if ADB is available...")
     BIN_DIR.mkdir(parents=True, exist_ok=True)
 
     platform_tools_dir = BIN_DIR / "platform-tools"
     zip_path = BIN_DIR / "adb.zip"
 
     if (platform_tools_dir / "adb.exe").exists():
-        print("[+] ADB already present.")
+        print("[+] ADB is already present.")
         return
 
     print("[+] Downloading ADB (this may take a moment)...")
@@ -91,7 +91,7 @@ def _download_adb():
 
 def _download_interception():
     """Fetches and extracts the latest Interception release for Windows."""
-    print("[+] Ensuring Interception driver files are available...")
+    print("[+] Checking if Interception driver files are available...")
     interception_dir = BIN_DIR / "Interception"
     installer_exe = (
         interception_dir / "command line installer" / "install-interception.exe"
@@ -99,7 +99,7 @@ def _download_interception():
     zip_path = BIN_DIR / "interception.zip"
 
     if installer_exe.exists():
-        print("[+] Interception files already present.")
+        print("[+] Interception files are already present.")
         return
 
     print("[+] Querying GitHub for Interception release...")

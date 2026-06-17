@@ -24,12 +24,12 @@ TASK_ABS = 2
 # B  = Unsigned char (1 byte) for the Task ID
 # i  = Signed int (4 bytes)
 # h  = Signed short (2 bytes)
-PACK_BUTTON = struct.Struct("<Bi")   # 5 bytes total
-PACK_REL = struct.Struct("<Bhh")     # 5 bytes total
-PACK_ABS = struct.Struct("<Bii")     # 9 bytes total
+PACK_BUTTON = struct.Struct("<Bi")  # 5 bytes total
+PACK_REL = struct.Struct("<Bhh")  # 5 bytes total
+PACK_ABS = struct.Struct("<Bii")  # 9 bytes total
 
 # Keyboard Struct: < H (Unsigned Short for KeyCode), B (Unsigned Char for State 0/1)
-PACK_KEY = struct.Struct("<HB")      # 3 bytes total
+PACK_KEY = struct.Struct("<HB")  # 3 bytes total
 
 if TYPE_CHECKING:
     from multiprocessing import Process
@@ -304,6 +304,17 @@ SPECIAL_MAP = {
 }
 
 SPECIAL_MAP_INV = {v: k for k, v in SPECIAL_MAP.items()}
+
+# Low-level worker constants
+MAX_COALESCE = 20
+DOWN_TUPLE = (LEFT_BUTTON_DOWN, RIGHT_BUTTON_DOWN, MIDDLE_BUTTON_DOWN)
+
+# In seconds
+CONSTANT_DWELL = 0.001
+MIN_BUTTON_DWELL = 0.025
+MAX_BUTTON_DWELL = 0.04
+MIN_MOUSE_DWELL = 0.0008
+MAX_MOUSE_DWELL = 0.0012
 
 
 class TouchEvent:

@@ -17,16 +17,6 @@ from mapper_module.utils import (
 if TYPE_CHECKING:
     from multiprocessing.connection import Connection
 
-MAX_COALESCE = 20
-DOWN_TUPLE = (LEFT_BUTTON_DOWN, RIGHT_BUTTON_DOWN, MIDDLE_BUTTON_DOWN)
-
-# In seconds
-CONSTANT_DWELL = 0.001
-MIN_BUTTON_DWELL = 0.025
-MAX_BUTTON_DWELL = 0.04
-MIN_MOUSE_DWELL = 0.0008
-MAX_MOUSE_DWELL = 0.0012
-
 
 def _release_all_keys(k_ctx, k_handle, K_Stroke, keys_set, reason=""):
     """Helper to cleanly release all currently pressed keys."""
@@ -129,6 +119,13 @@ def mouse_worker(m_pipe_read: Connection):
         PACK_BUTTON,
         PACK_REL,
         PACK_ABS,
+        MAX_COALESCE,
+        DOWN_TUPLE,
+        CONSTANT_DWELL,
+        MIN_BUTTON_DWELL,
+        MAX_BUTTON_DWELL,
+        MIN_MOUSE_DWELL,
+        MAX_MOUSE_DWELL,
     )
 
     m_ctx = Interception()

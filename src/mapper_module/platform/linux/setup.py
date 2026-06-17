@@ -31,14 +31,14 @@ def _kill_adb():
 
 def _download_adb():
     """Downloads and extracts Android platform-tools for Linux."""
-    print("[+] Ensuring ADB is available...")
+    print("[+] Checking if ADB is available...")
     BIN_DIR.mkdir(parents=True, exist_ok=True)
 
     platform_tools_dir = BIN_DIR / "platform-tools"
     zip_path = BIN_DIR / "adb.zip"
 
     if (platform_tools_dir / "adb").exists():
-        print("[+] ADB already present.")
+        print("[+] ADB is already present.")
         return
 
     print("[+] Downloading ADB (this may take a moment)...")

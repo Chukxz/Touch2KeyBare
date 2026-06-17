@@ -90,7 +90,7 @@ class _Engine:
         activate_mouse_sequence = self.key_mapper.process_touch(
             action, touch_event, local_visible
         )
-        
+
         if touch_event.is_mouse:
             self.mouse_mapper.process_touch(
                 action, touch_event, local_visible, activate_mouse_sequence
