@@ -1,9 +1,9 @@
 from __future__ import annotations
-
 from mapper_module.platform import get_platform, get_specific_mt_key
 
 get_platform().SystemConfig().set_dpi_awareness()
 
+import sys
 from mapper_module.utils import (
     CIRCLE,
     RECT,
@@ -40,7 +40,7 @@ from PySide6.QtCore import Qt
 from PIL import Image
 import tomlkit
 import math
-from PySide6.QtWidgets import QFileDialog, QMessageBox
+from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox
 import json
 import datetime
 from pathlib import Path
@@ -74,6 +74,7 @@ DEFAULT_LARGE_LINE_WIDTH = 3
 class _CursorManager:
     def __init__(self, canvas):
         self.canvas = canvas
+
         # Map application states to PySide6 cursor shapes
         self.state_map = {
             "IDLE": Qt.CursorShape.ArrowCursor,
@@ -959,6 +960,8 @@ class _DraggableShape(_Draggable):
 
 class Plotter:
     def __init__(self, image_path=None):
+        self.app = QApplication(sys.argv)
+
         # SMART PATH DETECTION
         json_file_str = None
 
@@ -2406,6 +2409,9 @@ class Plotter:
 
         # Return the coordinate of the winner
         return candidates[0]["pt"]
+    
+    def _del_(self):
+        sys.exit(self.app.exec_())
 
 
 def run():
