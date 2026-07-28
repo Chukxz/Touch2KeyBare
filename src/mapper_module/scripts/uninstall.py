@@ -73,12 +73,12 @@ def run():
         _request_elevation()
         return
 
-    parser = argparse.ArgumentParser(description="Touch2Key Uninstaller")
+    parser = argparse.ArgumentParser(description="Touch2Key Driver/Rules Uninstaller")
     parser.add_argument("--purge", action="store_true", help="Delete JSON/Images.")
     args = parser.parse_args()
 
     # Confirm
-    msg = "Are you sure you want to uninstall Touch2Key?"
+    msg = "Are you sure you want to uninstall Touch2Key Driver/Rules?"
     if not _confirm_uninstall(msg):
         print("[!] Aborted.")
 
