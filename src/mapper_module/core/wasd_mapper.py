@@ -249,7 +249,7 @@ class WASDMapper:
         self.center_y = 0.0
         self.last_sector = None
 
-    def _apply_keys(self, sector, sprint):
+    def _apply_keys(self, sector, sprint=False):
         target_mask = self.sector_to_state[sector]
 
         # Identify which directional keys to change

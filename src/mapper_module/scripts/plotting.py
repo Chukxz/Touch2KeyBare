@@ -2409,7 +2409,7 @@ class Plotter:
 
         # Return the coordinate of the winner
         return candidates[0]["pt"]
-    
+
     def _del_(self):
         sys.exit(self.app.exec_())
 

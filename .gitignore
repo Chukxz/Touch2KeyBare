@@ -19,6 +19,8 @@ venv/
 ENV/
 .pytest_cache/
 .tox/
+.coverage
+htmlcov/
 
 # === Distribution / Build ===
 dist/

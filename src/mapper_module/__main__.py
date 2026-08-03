@@ -32,7 +32,7 @@ from mapper_module.scripts.pre_flight import run as pre_flight_run
 from mapper_module.core.list_windows import select_window
 from mapper_module.core.key_capture import capture_keys
 
-NAME = "Touch2Key__Engine"
+NAME = "Touch2Key_Engine"
 
 
 def get_display_protocol():
@@ -49,7 +49,13 @@ def get_display_protocol():
 class _Engine:
     def __init__(self):
         _Platform = get_platform()
+        self.system_config = _Platform.SystemConfig()
 
+        print("\n[MAIN] - Initializing Touch2Key... Press 'ESC' to Stop.")
+        print(f"\n[MAIN] - ADB Executable File Path: {ADB}.")
+        keyboard.add_hotkey("esc", self._shutdown)
+
+        self.system_config.set_high_priority(os.getpid(), "Main Loop")
         self.window_manager = _Platform.WindowManager()
         self.system_config = _Platform.SystemConfig()
         self.bridge_class = _Platform.Bridge(self.window_manager, self.system_config)
@@ -95,16 +101,11 @@ class _Engine:
             self.mouse_mapper.process_touch(
                 action, touch_event, local_visible, activate_mouse_sequence
             )
+            
         if touch_event.is_wasd:
             self.wasd_mapper.process_touch(action, touch_event, self.is_visible)
 
     def _start(self, app: QApplication):
-        keyboard.add_hotkey("esc", self._shutdown)
-        self.system_config.set_high_priority(os.getpid(), "Main Loop")
-
-        print("\n[MAIN] - Initializing Touch2Key... Press 'ESC' to Stop.")
-        print(f"\n[MAIN] - ADB Executable File Path: {ADB}.")
-
         w_result = select_window(app)
         if w_result is None:
             print("\n[MAIN] - No window selected. Exiting...")

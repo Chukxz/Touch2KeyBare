@@ -564,7 +564,7 @@ class TouchReader:
                 m_s = self.last_mouse_slot
                 w_s = self.last_wasd_slot
 
-            if self.touch_event_processor:
+            if rx is not None and ry is not None and self.touch_event_processor:
                 with self.config.config_lock:
                     try:
                         action = data["state"]

@@ -142,7 +142,7 @@ class ListApp(QWidget):
                 self.table.setItem(row, col_idx, item)
 
             self.windows_id_mapping[window_id] = row
-        
+
         # Handle Editing
         for window_id in current_ids:
             row_index = self.windows_id_mapping.get(window_id)
@@ -159,7 +159,6 @@ class ListApp(QWidget):
                 new_text = str(value)
                 if item.text() != new_text:
                     item.setText(new_text)
-
 
     def _handle_enter(self):
         row = self.table.currentRow()

@@ -22,6 +22,7 @@ from mapper_module.utils import (
     TASK_ABS,
     TASK_BUTTON,
     TASK_REL,
+    get_key_from_scancode,
 )
 
 
@@ -60,7 +61,7 @@ class InterceptionBridge(AbstractBridge):
         self.system_config.set_high_priority(self.m_proc.pid, "Mouse")
 
         print(
-            f"\n[BRIDGE] - Interception Dual Engine Started."
+            f"\n[BRIDGE] - Interception Dual Engine Started. "
             f"K-PID: {self.k_proc.pid} | "
             f"M-PID: {self.m_proc.pid}."
         )
@@ -74,6 +75,7 @@ class InterceptionBridge(AbstractBridge):
         self._pressed_keys.add(code)
         try:
             self.k_pipe_write.send_bytes(PACK_KEY.pack(int(code), 0))
+            print(f"\n[BRIDGE] - Key Down: {get_key_from_scancode(code)} ({code}).")
         except OSError:
             self.selective_release()
 
@@ -81,6 +83,7 @@ class InterceptionBridge(AbstractBridge):
         # Pack into 3 raw bytes: [Code: 2 bytes] [State: 1 byte]
         try:
             self.k_pipe_write.send_bytes(PACK_KEY.pack(int(code), 1))
+            print(f"\n[BRIDGE] - Key Up: {get_key_from_scancode(code)} ({code}).")
         except OSError:
             self.selective_release()
         else:

@@ -58,3 +58,6 @@ touch2key-wireless = "mapper_module.scripts.force_wireless:run"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.black]
+target-version = ['py313']

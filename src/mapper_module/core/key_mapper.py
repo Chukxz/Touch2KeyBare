@@ -16,7 +16,6 @@ from mapper_module.utils import (
     DOWN,
     UP,
     PRESSED,
-    SCANCODES,
 )
 
 if TYPE_CHECKING:

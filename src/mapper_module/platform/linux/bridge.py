@@ -57,13 +57,13 @@ class UInputBridge(AbstractBridge):
             args=(self.m_pipe_read,),
             daemon=True,
         )
-
         self.m_proc.start()
         self.system_config.set_high_priority(self.m_proc.pid, "Mouse")
 
         print(
-            f"\n[BRIDGE] - UInput Dual Engine Started.\n"
-            f"K-PID: {self.k_proc.pid} | M-PID: {self.m_proc.pid}."
+            f"\n[BRIDGE] - UInput Dual Engine Started. "
+            f"K-PID: {self.k_proc.pid} | "
+            f"M-PID: {self.m_proc.pid}."
         )
 
     # -----------------------------------------
@@ -143,9 +143,7 @@ class UInputBridge(AbstractBridge):
     def right_click_up(self):
         # Pack into 5 raw bytes: [Task: 1 byte] [data: 4 bytes]
         try:
-            self.m_pipe_write.send_bytes(
-                PACK_BUTTON.pack(TASK_BUTTON, RIGHT_BUTTON_UP)
-            )
+            self.m_pipe_write.send_bytes(PACK_BUTTON.pack(TASK_BUTTON, RIGHT_BUTTON_UP))
         except OSError:
             self.selective_release()
         else:
@@ -176,7 +174,7 @@ class UInputBridge(AbstractBridge):
     # -----------------------------------------
     # SYSTEM API
     # -----------------------------------------
-    def health_check(self):        
+    def health_check(self):
         with self.bridge_lock:
             # Check Keyboard Worker (Pipe)
             if not self.k_proc.is_alive():
@@ -187,9 +185,7 @@ class UInputBridge(AbstractBridge):
                 # Scorched Earth: Destroy old pipes
                 self.k_pipe_read.close()
                 self.k_pipe_write.close()
-                self.k_pipe_read, self.k_pipe_write = multiprocessing.Pipe(
-                    duplex=False
-                )
+                self.k_pipe_read, self.k_pipe_write = multiprocessing.Pipe(duplex=False)
 
                 self.k_proc = multiprocessing.Process(
                     target=keyboard_worker,
@@ -199,7 +195,7 @@ class UInputBridge(AbstractBridge):
                 self.k_proc.start()
                 self.system_config.set_high_priority(
                     self.k_proc.pid, "Revived Keyboard"
-                )                
+                )
 
             # Check Mouse Worker (Pipe)
             if not self.m_proc.is_alive():
@@ -210,9 +206,7 @@ class UInputBridge(AbstractBridge):
                 # Scorched Earth: Destroy old pipes
                 self.m_pipe_read.close()
                 self.m_pipe_write.close()
-                self.m_pipe_read, self.m_pipe_write = multiprocessing.Pipe(
-                    duplex=False
-                )
+                self.m_pipe_read, self.m_pipe_write = multiprocessing.Pipe(duplex=False)
 
                 self.m_proc = multiprocessing.Process(
                     target=mouse_worker,
@@ -222,7 +216,7 @@ class UInputBridge(AbstractBridge):
                 )
                 self.m_proc.start()
                 self.system_config.set_high_priority(self.m_proc.pid, "Revived Mouse")
-    
+
     def selective_release(self):
         with self.bridge_lock:
             self.health_check()
