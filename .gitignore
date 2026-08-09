@@ -21,6 +21,7 @@ ENV/
 .tox/
 .coverage
 htmlcov/
+*.prof
 
 # === Distribution / Build ===
 dist/
