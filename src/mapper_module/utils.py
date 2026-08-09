@@ -605,7 +605,7 @@ def create_default_toml():
     doc.add("keys", keys)
 
     try:
-        with open(TOML_PATH, "w", encoding="utf-8") as f:
+        with open(TOML_PATH, "w", encoding="utf-8", newline="") as f:
             tomlkit.dump(doc, f)
         print(f"\n[UTILITY] - Successfully created settings.toml at '{TOML_PATH}'.")
     except Exception as e:
@@ -616,7 +616,7 @@ def get_keys_from_toml() -> tuple[str | None, str | None]:
     try:
         if not TOML_PATH.exists():
             return None, None
-        with open(TOML_PATH, "r", encoding="utf-8") as f:
+        with open(TOML_PATH, "r", encoding="utf-8", newline="") as f:
             doc = tomlkit.load(f)
         keys = doc.get("keys", {})
         toggle = keys.get("toggle_key") or None
@@ -630,13 +630,13 @@ def update_toml_keys(toggle_key: str | None, sprint_key: str | None):
     try:
         if not TOML_PATH.exists():
             create_default_toml()
-        with open(TOML_PATH, "r", encoding="utf-8") as f:
+        with open(TOML_PATH, "r", encoding="utf-8", newline="") as f:
             doc = tomlkit.load(f)
         if "keys" not in doc:
             doc.append("keys", tomlkit.table())
         doc["keys"]["toggle_key"] = toggle_key or ""
         doc["keys"]["sprint_key"] = sprint_key or ""
-        with open(TOML_PATH, "w", encoding="utf-8") as f:
+        with open(TOML_PATH, "w", encoding="utf-8", newline="") as f:
             tomlkit.dump(doc, f)
     except Exception as e:
         print(f"\n[UTILITY] - Could not save key config: {e}.")
@@ -656,7 +656,7 @@ def update_toml(
         if not os.path.exists(TOML_PATH):
             create_default_toml()
 
-        with open(TOML_PATH, "r", encoding="utf-8") as f:
+        with open(TOML_PATH, "r", encoding="utf-8", newline="") as f:
             doc = tomlkit.load(f)
 
         table_keys = doc.keys()
@@ -687,7 +687,7 @@ def update_toml(
         if json_path is not None:
             system.update({"json_path": j_path})
 
-        with open(TOML_PATH, "w", encoding="utf-8") as f:
+        with open(TOML_PATH, "w", encoding="utf-8", newline="") as f:
             tomlkit.dump(doc, f)
 
     except Exception as e:
@@ -784,7 +784,11 @@ def get_scancode_and_bridge_key_from_key(key):
 
 
 def get_key_from_scancode(scancode):
-    key = SCANCODES_INV.get(int(scancode, 16))
+    try:
+        code_int = int(scancode, 16) if isinstance(scancode, str) else int(scancode)
+    except (TypeError, ValueError):
+        return ""
+    key = SCANCODES_INV.get(code_int)
     if key is None:
         return ""
     return SPECIAL_MAP_INV.get(key, key)

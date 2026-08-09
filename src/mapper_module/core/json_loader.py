@@ -151,7 +151,7 @@ class JSONLoader:
                 _str = f"\n[JSONLOADER] - Error: File '{json_file_path}' not found."
                 raise FileNotFoundError(_str)
 
-            with open(json_file_path, mode="r", encoding="utf-8") as f:
+            with open(json_file_path, mode="r", encoding="utf-8", newline="") as f:
                 try:
                     data = json.load(f)
                 except json.JSONDecodeError as e:

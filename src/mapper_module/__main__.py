@@ -270,8 +270,14 @@ def run():
         multiprocessing.set_start_method("spawn", force=True)
     except RuntimeError:
         pass
+    
+    try:
+        success, _instance_handle = check_single_instance(NAME)
+    except RuntimeError as e:
+        print(f"[MAIN] - {e}")
+        profiler_cleanup(profiler)
+        os._exit(0)
 
-    success, _ = check_single_instance(NAME)
     if not success:
         print(
             "[MAIN] - Another instance of Touch2Key is already running. Exiting this instance."

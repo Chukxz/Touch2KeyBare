@@ -5,21 +5,21 @@ from mapper_module.utils import SYSTEM
 
 if TYPE_CHECKING:
     from .windows.bridge import InterceptionBridge
-    from .windows.window import WindowManager
-    from .windows.system import SystemConfig
-    from .windows.mapping import Mapping
+    from .windows.window import WindowManager as WindowsWindowManager
+    from .windows.system import SystemConfig as WindowsSystemConfig
+    from .windows.mapping import Mapping as WindowsMapping
 
     from .linux.bridge import UInputBridge
-    from .linux.window import WindowManager
-    from .linux.system import SystemConfig
-    from .linux.mapping import Mapping
+    from .linux.window import WindowManager as LinuxWindowManager
+    from .linux.system import SystemConfig as LinuxSystemConfig
+    from .linux.mapping import Mapping as LinuxMapping
 
 
 class PlatformModules(NamedTuple):
     Bridge: type[InterceptionBridge] | type[UInputBridge]
-    WindowManager: type[WindowManager]
-    SystemConfig: type[SystemConfig]
-    Mapping: type[Mapping]
+    WindowManager: type[WindowsWindowManager] | type[LinuxWindowManager]
+    SystemConfig: type[WindowsSystemConfig] | type[LinuxSystemConfig]
+    Mapping: type[WindowsMapping] | type[LinuxMapping]
 
 
 def _check_single_instance_windows(instance_name: str) -> tuple[bool, int | None]:
@@ -28,7 +28,11 @@ def _check_single_instance_windows(instance_name: str) -> tuple[bool, int | None
 
     mutex_name = f"Global\\{instance_name}"
     handle = ctypes.windll.kernel32.CreateMutexW(None, False, mutex_name)
-    if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+    last_error = ctypes.windll.kernel32.GetLastError()
+    if last_error == 183:  # ERROR_ALREADY_EXISTS
+        return False, None
+    if not handle:  # creation genuinely failed for another reason
+        print(f"[UTILITY] - Mutex creation failed (error {last_error}).")
         return False, None
     return True, handle
 
@@ -53,7 +57,7 @@ def check_single_instance(instance_name: str) -> tuple[bool, object | None]:
         return _check_single_instance_windows(instance_name)
     elif SYSTEM == "Linux":
         return _check_single_instance_linux(instance_name)
-    return False, None
+    raise RuntimeError(f"Unsupported platform: {SYSTEM}")
 
 
 def get_platform():
