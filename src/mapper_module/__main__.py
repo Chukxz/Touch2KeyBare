@@ -18,7 +18,6 @@ from mapper_module.utils import (
     ADB,
     SYSTEM,
     TouchEvent,
-    stop_process,
 )
 from mapper_module import (
     MapperEventDispatcher,
