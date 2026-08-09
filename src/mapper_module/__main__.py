@@ -203,12 +203,29 @@ class _Engine:
             if self.mapper is not None:
                 self.mapper.running = False
             if self.bridge_class is not None:
-                self.bridge_class.shutdown()
+                self.bridge_class.shutdown()      # stop the heartbeat thread first
                 self.bridge_class.release_all()
-                if hasattr(self.bridge_class, "k_proc"):
-                    stop_process(self.bridge_class.k_proc)
-                if hasattr(self.bridge_class, "m_proc"):
-                    stop_process(self.bridge_class.m_proc)
+
+                procs = [
+                    p for p in (
+                        getattr(self.bridge_class, "k_proc", None),
+                        getattr(self.bridge_class, "m_proc", None),
+                    )
+                    if p is not None
+                ]
+
+                # Signal both to terminate before waiting on either —
+                # worst case is now one ~1s wait, not one per process.
+                for p in procs:
+                    if p.is_alive():
+                        p.terminate()
+
+                for p in procs:
+                    p.join(timeout=1.0)
+                    if p.is_alive():
+                        p.kill()
+                p.join(timeout=1.0)
+
         except Exception:
             pass
 
