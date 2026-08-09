@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import TYPE_CHECKING
 
 import multiprocessing
 import keyboard
@@ -6,6 +7,7 @@ import os
 import threading
 import time
 import sys
+import argparse
 from PySide6.QtWidgets import QApplication
 from mapper_module.platform import check_single_instance, get_platform
 from mapper_module.utils import (
@@ -34,6 +36,10 @@ from mapper_module.core.key_capture import capture_keys
 
 NAME = "Touch2Key_Engine"
 
+if TYPE_CHECKING:
+    from cProfile import Profile
+
+profiler: Profile | None = None
 
 def get_display_protocol():
     session = os.environ.get("XDG_SESSION_TYPE", "").lower()
@@ -101,7 +107,7 @@ class _Engine:
             self.mouse_mapper.process_touch(
                 action, touch_event, local_visible, activate_mouse_sequence
             )
-            
+
         if touch_event.is_wasd:
             self.wasd_mapper.process_touch(action, touch_event, self.is_visible)
 
@@ -200,12 +206,33 @@ class _Engine:
         except Exception:
             pass
 
-        print("[MAIN] - Shutdown complete. Goodbye.")
+        profiler_cleanup(profiler)
+        print("\n[MAIN] - Shutdown complete. Goodbye.")
         os._exit(0)
 
 
+def profiler_cleanup(profiler: Profile | None):
+    if profiler:
+        profiler.disable()
+        profiler.dump_stats("touch2key.prof")
+        print("\n[MAIN] - Profiling data saved to 'touch2key.prof'.")
+
+
 def run():
+    global profiler
+    parser = argparse.ArgumentParser(description="Touch2Key Main")
+    parser.add_argument(
+        "--profile", action="store_true", help="Generate profiling data."
+    )
+    args = parser.parse_args()
+    
+    if args.profile:
+        import cProfile
+        profiler = cProfile.Profile()
+        profiler.enable()
+
     if not pre_flight_run():
+        profiler_cleanup(profiler)
         sys.exit(1)
 
     if SYSTEM == "Linux":
@@ -213,7 +240,8 @@ def run():
         if protocol and protocol == "x11":
             pass
         else:
-            print("[MAIN] - Ensure you are on X11.")
+            print("\n[MAIN] - Ensure you are on X11.")
+            profiler_cleanup(profiler)
             sys.exit(1)
 
     try:
@@ -226,6 +254,7 @@ def run():
         print(
             "[MAIN] - Another instance of Touch2Key is already running. Exiting this instance."
         )
+        profiler_cleanup(profiler)
         os._exit(0)
 
     _app = QApplication(sys.argv)
