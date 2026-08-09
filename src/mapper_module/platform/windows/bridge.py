@@ -25,7 +25,6 @@ from mapper_module.utils import (
     KEY_PING,
     BUTTON_PING,
     KEEPALIVE_INTERVAL,
-    get_key_from_scancode,
 )
 
 
