@@ -78,18 +78,20 @@ Because Touch2Key installs system-level drivers and kernel rules, **simply runni
 | Command | Description |
 | :--- | :--- |
 | `touch2key` | Launches the main engine. |
+| `touch2key --profile` | Launches and also runs profiling. | 
 | `touch2key-capture` | ADB screen capture. |
 | `touch2key-plot` | Mapping visualizer. |
 | `touch2key-preflight` | Diagnostic checks. |
-| `touch2key-reset` | Resets configuration setttings.|
+| `touch2key-reset` | Resets configuration settings.|
 | `touch2key-select` | JSON selector.|
 | `touch2key-setup` | OS configuration wizard. |
 | `touch2key-show` | Displays full ADB executable path if found.|
 | `touch2key-uninstall` | Safely removes drivers, rules and binaries. |
-| `touch2key-wireless` | Force ADB wireless connection. |
+| `touch2key-uninstall --purge` | Uninstalls and removes mappings/images. | 
+| `touch2key-wireless` | Forces ADB wireless connection. |
 
 ## Contributing
-Please use `black` for formatting and `pytest` for unit testing (optional).
+Please use `black` for formatting (recommended), `pytest` for unit testing (optional), and `snakeviz` for visual view of the profile (optional).
 
 ## License
 MIT License.
