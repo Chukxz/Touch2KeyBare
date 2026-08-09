@@ -223,7 +223,7 @@ class _Engine:
                     p.join(timeout=1.0)
                     if p.is_alive():
                         p.kill()
-                p.join(timeout=1.0)
+                        p.join(timeout=1.0)
 
         except Exception:
             pass
