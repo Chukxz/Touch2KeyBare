@@ -132,6 +132,11 @@ class _Engine:
             print("\n[MAIN] - Key configuration cancelled. Exiting...")
             return
         toggle_key, sprint_key = c_result
+        
+        if not toggle_key:
+            print(
+                "\n[MAIN] - No toggle key set. Touch zones if disabled by the cursor state can only be re-enabled via the keyboard/mouse."
+            )
 
         emulator = {
             "toggle_key": toggle_key,
@@ -198,6 +203,7 @@ class _Engine:
             if self.mapper is not None:
                 self.mapper.running = False
             if self.bridge_class is not None:
+                self.bridge_class.shutdown()
                 self.bridge_class.release_all()
                 if hasattr(self.bridge_class, "k_proc"):
                     stop_process(self.bridge_class.k_proc)

@@ -31,6 +31,11 @@ PACK_ABS = struct.Struct("<Bii")  # 9 bytes total
 # Keyboard Struct: < H (Unsigned Short for KeyCode), B (Unsigned Char for State 0/1)
 PACK_KEY = struct.Struct("<HB")  # 3 bytes total
 
+# Sentinel values meaning "keepalive only, do not press/release anything"
+KEY_PING = 2
+BUTTON_PING = 0x0000  # doesn't collide with any *_DOWN/*_UP flag
+KEEPALIVE_INTERVAL = 5.0  # seconds; must stay well under the 15s worker poll timeout
+
 if TYPE_CHECKING:
     from multiprocessing import Process
 
@@ -107,7 +112,7 @@ WINDOWS_HEADERS = ["Window ID", "Title", "Class Name", "Left", "Top", "Width", "
 PRESETS = {
     "GameLoop": {
         "window_title": "Gameloop(64beta)",
-        "toggle_key": "lctrl",
+        "toggle_key": "LCTRL",
         "sprint_key": None,
     },
     "Tenstore Android Connect": {

@@ -101,6 +101,10 @@ class AbstractBridge(ABC):
         pass
 
     @abstractmethod
+    def shutdown(self):
+        """Stops the heartbeat thread. Call before process teardown."""
+
+    @abstractmethod
     def release_all(self) -> None:
         pass
 

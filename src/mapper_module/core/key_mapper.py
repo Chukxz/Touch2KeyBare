@@ -149,18 +149,18 @@ class KeyMapper:
                         hit = False
 
                 if hit:
-                    # Successfully mapped finger to key
                     self._send_key_touch_event(scancode, down=True)
 
-                    # Create a list if it doesn't exist, then append tuples
                     if touch_event.slot not in self.touch_events_dict:
                         self.touch_events_dict[touch_event.slot] = []
                     self.touch_events_dict[touch_event.slot].append(
                         (scancode, value, touch_event.is_wasd)
                     )
 
-                    # Create a list of a tuple if it doesn't exist
-                    if value["move_camera"]:
+                    # Skip aggregation for the identified mouse finger — it's
+                    # already driven directly by MouseMapper. Registering it
+                    # here too would double-dispatch REL for the same drag.
+                    if value["move_camera"] and not touch_event.is_mouse:
                         if touch_event.slot not in self.touch_events_prevs:
                             self.touch_events_prevs[touch_event.slot] = (
                                 touch_event.x,

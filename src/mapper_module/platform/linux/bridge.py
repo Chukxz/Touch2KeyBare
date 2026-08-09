@@ -2,7 +2,6 @@ from ..base import AbstractBridge
 import multiprocessing
 import threading
 from datetime import datetime as _datetime
-
 from .workers import keyboard_worker, mouse_worker
 
 from mapper_module.utils import (
@@ -23,6 +22,9 @@ from mapper_module.utils import (
     TASK_ABS,
     TASK_BUTTON,
     TASK_REL,
+    KEY_PING,
+    BUTTON_PING,
+    KEEPALIVE_INTERVAL,
 )
 
 
@@ -38,7 +40,11 @@ class UInputBridge(AbstractBridge):
         self._mouse_middle_down = False
         self._pressed_keys = set()
 
-        # Keyboard uses lock-free Pipe
+        self._k_respawn_lock = threading.Lock()
+        self._m_respawn_lock = threading.Lock()
+        self._k_respawning = False
+        self._m_respawning = False
+
         self.k_pipe_read, self.k_pipe_write = multiprocessing.Pipe(duplex=False)
         self.k_proc = multiprocessing.Process(
             target=keyboard_worker,
@@ -49,29 +55,30 @@ class UInputBridge(AbstractBridge):
         self.k_proc.start()
         self.system_config.set_high_priority(self.k_proc.pid, "Keyboard")
 
-        # Mouse uses lock-free Pipe (High-Frequency Streaming)
+        # Mouse: movement pipe + separate button pipe, one process, two threads (see workers.py)
         self.m_pipe_read, self.m_pipe_write = multiprocessing.Pipe(duplex=False)
+        self.mb_pipe_read, self.mb_pipe_write = multiprocessing.Pipe(duplex=False)
         self.m_proc = multiprocessing.Process(
             target=mouse_worker,
             name="Mouse Worker",
-            args=(self.m_pipe_read,),
+            args=(self.m_pipe_read, self.mb_pipe_read),
             daemon=True,
         )
         self.m_proc.start()
         self.system_config.set_high_priority(self.m_proc.pid, "Mouse")
 
         print(
-            f"\n[BRIDGE] - UInput Dual Engine Started. "
-            f"K-PID: {self.k_proc.pid} | "
-            f"M-PID: {self.m_proc.pid}."
+            f"\n[BRIDGE] - UInput Dual Engine Started. K-PID: {self.k_proc.pid} | M-PID: {self.m_proc.pid}."
         )
 
-    # -----------------------------------------
-    # KEYBOARD API (Pipe)
-    # -----------------------------------------
-    # Linux logic sends state=1 for down, state=0 for up.
+        self._stop_heartbeat = threading.Event()
+        self.heartbeat_thread = threading.Thread(
+            target=self._heartbeat_loop, name="Keepalive", daemon=True
+        )
+        self.heartbeat_thread.start()
+
+    # KEYBOARD API — Linux: state=1 down, state=0 up
     def key_down(self, code):
-        # Pack into 3 raw bytes: [Code: 2 bytes] [State: 1 byte]
         self._pressed_keys.add(code)
         try:
             self.k_pipe_write.send_bytes(PACK_KEY.pack(int(code), 1))
@@ -79,7 +86,6 @@ class UInputBridge(AbstractBridge):
             self.selective_release()
 
     def key_up(self, code):
-        # Pack into 3 raw bytes: [Code: 2 bytes] [State: 1 byte]
         try:
             self.k_pipe_write.send_bytes(PACK_KEY.pack(int(code), 0))
         except OSError:
@@ -87,21 +93,16 @@ class UInputBridge(AbstractBridge):
         else:
             self._pressed_keys.discard(code)
 
-    # -----------------------------------------
-    # MOUSE API (Pipe)
-    # -----------------------------------------
+    # MOUSE API
     def mouse_move_rel(self, dx, dy):
-        # Pack into 5 raw bytes: [Task: 1 byte] [dx: 2 bytes] [dy: 2 bytes]
         try:
             self.m_pipe_write.send_bytes(PACK_REL.pack(TASK_REL, int(dx), int(dy)))
         except OSError:
             self.selective_release()
 
     def mouse_move_abs(self, x, y):
-        # UInput uses literal screen pixels but we normalize to match ABS_X/ABS_Y declared range in the worker
         abs_x = int((x * 65535) / self.screen_w)
         abs_y = int((y * 65535) / self.screen_h)
-        # Pack into 9 raw bytes: [Task: 1 byte] [x: 4 bytes] [y: 4 bytes]
         try:
             self.m_pipe_write.send_bytes(
                 PACK_ABS.pack(TASK_ABS, int(abs_x), int(abs_y))
@@ -110,9 +111,8 @@ class UInputBridge(AbstractBridge):
             self.selective_release()
 
     def left_click_down(self):
-        # Pack into 5 raw bytes: [Task: 1 byte] [data: 4 bytes]
         try:
-            self.m_pipe_write.send_bytes(
+            self.mb_pipe_write.send_bytes(
                 PACK_BUTTON.pack(TASK_BUTTON, LEFT_BUTTON_DOWN)
             )
         except OSError:
@@ -121,18 +121,16 @@ class UInputBridge(AbstractBridge):
             self._mouse_left_down = True
 
     def left_click_up(self):
-        # Pack into 5 raw bytes: [Task: 1 byte] [data: 4 bytes]
         try:
-            self.m_pipe_write.send_bytes(PACK_BUTTON.pack(TASK_BUTTON, LEFT_BUTTON_UP))
+            self.mb_pipe_write.send_bytes(PACK_BUTTON.pack(TASK_BUTTON, LEFT_BUTTON_UP))
         except OSError:
             self.selective_release()
         else:
             self._mouse_left_down = False
 
     def right_click_down(self):
-        # Pack into 5 raw bytes: [Task: 1 byte] [data: 4 bytes]
         try:
-            self.m_pipe_write.send_bytes(
+            self.mb_pipe_write.send_bytes(
                 PACK_BUTTON.pack(TASK_BUTTON, RIGHT_BUTTON_DOWN)
             )
         except OSError:
@@ -141,18 +139,18 @@ class UInputBridge(AbstractBridge):
             self._mouse_right_down = True
 
     def right_click_up(self):
-        # Pack into 5 raw bytes: [Task: 1 byte] [data: 4 bytes]
         try:
-            self.m_pipe_write.send_bytes(PACK_BUTTON.pack(TASK_BUTTON, RIGHT_BUTTON_UP))
+            self.mb_pipe_write.send_bytes(
+                PACK_BUTTON.pack(TASK_BUTTON, RIGHT_BUTTON_UP)
+            )
         except OSError:
             self.selective_release()
         else:
             self._mouse_right_down = False
 
     def middle_click_down(self):
-        # Pack into 5 raw bytes: [Task: 1 byte] [data: 4 bytes]
         try:
-            self.m_pipe_write.send_bytes(
+            self.mb_pipe_write.send_bytes(
                 PACK_BUTTON.pack(TASK_BUTTON, MIDDLE_BUTTON_DOWN)
             )
         except OSError:
@@ -161,9 +159,8 @@ class UInputBridge(AbstractBridge):
             self._mouse_middle_down = True
 
     def middle_click_up(self):
-        # Pack into 5 raw bytes: [Task: 1 byte] [data: 4 bytes]
         try:
-            self.m_pipe_write.send_bytes(
+            self.mb_pipe_write.send_bytes(
                 PACK_BUTTON.pack(TASK_BUTTON, MIDDLE_BUTTON_UP)
             )
         except OSError:
@@ -171,22 +168,52 @@ class UInputBridge(AbstractBridge):
         else:
             self._mouse_middle_down = False
 
-    # -----------------------------------------
-    # SYSTEM API
-    # -----------------------------------------
-    def health_check(self):
-        with self.bridge_lock:
-            # Check Keyboard Worker (Pipe)
-            if not self.k_proc.is_alive():
-                print(
-                    f"\n[UTILITY] - Keyboard Worker Died: {_datetime.now().strftime('%H:%M:%S')}!"
-                )
+    # KEEPALIVE
+    def _heartbeat_loop(self):
+        while not self._stop_heartbeat.wait(KEEPALIVE_INTERVAL):
+            with self.bridge_lock:
+                for code in list(self._pressed_keys):
+                    try:
+                        self.k_pipe_write.send_bytes(PACK_KEY.pack(int(code), KEY_PING))
+                    except OSError:
+                        pass
+                if (
+                    self._mouse_left_down
+                    or self._mouse_right_down
+                    or self._mouse_middle_down
+                ):
+                    try:
+                        self.mb_pipe_write.send_bytes(
+                            PACK_BUTTON.pack(TASK_BUTTON, BUTTON_PING)
+                        )
+                    except OSError:
+                        pass
 
-                # Scorched Earth: Destroy old pipes
+    # SYSTEM API — async respawn
+    def health_check(self):
+        if not self.k_proc.is_alive():
+            self._trigger_respawn_keyboard()
+        if not self.m_proc.is_alive():
+            self._trigger_respawn_mouse()
+
+    def _trigger_respawn_keyboard(self):
+        with self._k_respawn_lock:
+            if self._k_respawning:
+                return
+            self._k_respawning = True
+        threading.Thread(
+            target=self._respawn_keyboard, name="Keyboard-Respawn", daemon=True
+        ).start()
+
+    def _respawn_keyboard(self):
+        try:
+            print(
+                f"\n[UTILITY] - Keyboard Worker Died: {_datetime.now().strftime('%H:%M:%S')}!"
+            )
+            with self.bridge_lock:
                 self.k_pipe_read.close()
                 self.k_pipe_write.close()
                 self.k_pipe_read, self.k_pipe_write = multiprocessing.Pipe(duplex=False)
-
                 self.k_proc = multiprocessing.Process(
                     target=keyboard_worker,
                     args=(self.k_pipe_read,),
@@ -196,58 +223,73 @@ class UInputBridge(AbstractBridge):
                 self.system_config.set_high_priority(
                     self.k_proc.pid, "Revived Keyboard"
                 )
+        finally:
+            with self._k_respawn_lock:
+                self._k_respawning = False
 
-            # Check Mouse Worker (Pipe)
-            if not self.m_proc.is_alive():
-                print(
-                    f"\n[UTILITY] - Mouse Worker Died: {_datetime.now().strftime('%H:%M:%S')}!"
-                )
+    def _trigger_respawn_mouse(self):
+        with self._m_respawn_lock:
+            if self._m_respawning:
+                return
+            self._m_respawning = True
+        threading.Thread(
+            target=self._respawn_mouse, name="Mouse-Respawn", daemon=True
+        ).start()
 
-                # Scorched Earth: Destroy old pipes
+    def _respawn_mouse(self):
+        try:
+            print(
+                f"\n[UTILITY] - Mouse Worker Died: {_datetime.now().strftime('%H:%M:%S')}!"
+            )
+            with self.bridge_lock:
                 self.m_pipe_read.close()
                 self.m_pipe_write.close()
+                self.mb_pipe_read.close()
+                self.mb_pipe_write.close()
                 self.m_pipe_read, self.m_pipe_write = multiprocessing.Pipe(duplex=False)
-
+                self.mb_pipe_read, self.mb_pipe_write = multiprocessing.Pipe(
+                    duplex=False
+                )
                 self.m_proc = multiprocessing.Process(
                     target=mouse_worker,
                     name="Mouse Worker",
-                    args=(self.m_pipe_read,),
+                    args=(self.m_pipe_read, self.mb_pipe_read),
                     daemon=True,
                 )
                 self.m_proc.start()
                 self.system_config.set_high_priority(self.m_proc.pid, "Revived Mouse")
+        finally:
+            with self._m_respawn_lock:
+                self._m_respawning = False
 
     def selective_release(self):
         with self.bridge_lock:
             self.health_check()
-
             if self._pressed_keys:
                 for code in list(self._pressed_keys):
                     try:
-                        self.k_pipe_write.send_bytes(
-                            PACK_KEY.pack(int(code), 0)
-                        )  # Linux: 0=up
+                        self.k_pipe_write.send_bytes(PACK_KEY.pack(int(code), 0))
                     except OSError:
                         pass
                 self._pressed_keys.clear()
 
             if self._mouse_left_down:
                 try:
-                    self.m_pipe_write.send_bytes(
+                    self.mb_pipe_write.send_bytes(
                         PACK_BUTTON.pack(TASK_BUTTON, LEFT_BUTTON_UP)
                     )
                 except OSError:
                     pass
             if self._mouse_right_down:
                 try:
-                    self.m_pipe_write.send_bytes(
+                    self.mb_pipe_write.send_bytes(
                         PACK_BUTTON.pack(TASK_BUTTON, RIGHT_BUTTON_UP)
                     )
                 except OSError:
                     pass
             if self._mouse_middle_down:
                 try:
-                    self.m_pipe_write.send_bytes(
+                    self.mb_pipe_write.send_bytes(
                         PACK_BUTTON.pack(TASK_BUTTON, MIDDLE_BUTTON_UP)
                     )
                 except OSError:
@@ -261,23 +303,18 @@ class UInputBridge(AbstractBridge):
         print("\n[BRIDGE] - Emergency Release (UInput)...")
         with self.bridge_lock:
             self.health_check()
-
-            # Release Keyboard via Pipe
             internal_mouse_codes = {M_LEFT, M_RIGHT, M_MIDDLE}
             unique_codes = set(SCANCODES.values()) - internal_mouse_codes
             for code in unique_codes:
                 try:
-                    self.k_pipe_write.send_bytes(
-                        PACK_KEY.pack(int(code), 0)
-                    )  # Linux: 0=up
+                    self.k_pipe_write.send_bytes(PACK_KEY.pack(int(code), 0))
                 except OSError:
                     pass
             self._pressed_keys.clear()
 
-            # Release Mouse via Pipe
             for btn_up in [LEFT_BUTTON_UP, RIGHT_BUTTON_UP, MIDDLE_BUTTON_UP]:
                 try:
-                    self.m_pipe_write.send_bytes(PACK_BUTTON.pack(TASK_BUTTON, btn_up))
+                    self.mb_pipe_write.send_bytes(PACK_BUTTON.pack(TASK_BUTTON, btn_up))
                 except OSError:
                     pass
             self._mouse_left_down = self._mouse_right_down = self._mouse_middle_down = (
@@ -285,3 +322,6 @@ class UInputBridge(AbstractBridge):
             )
 
         print("[BRIDGE] - Release signals dispatched.")
+
+    def shutdown(self):
+        self._stop_heartbeat.set()
