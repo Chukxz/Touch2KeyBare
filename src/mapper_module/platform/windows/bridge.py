@@ -68,11 +68,11 @@ class InterceptionBridge(AbstractBridge):
         self.heartbeat_thread = threading.Thread(
             target=self._heartbeat_loop, name="Keepalive", daemon=True
         )
-        
+
     def start_worker_processes(self):
         self.k_proc.start()
         self.system_config.set_high_priority(self.k_proc.pid, "Keyboard")
-        
+
         self.m_proc.start()
         self.system_config.set_high_priority(self.m_proc.pid, "Mouse")
 
@@ -83,19 +83,21 @@ class InterceptionBridge(AbstractBridge):
 
     # KEYBOARD API — Windows: state=0 down, state=1 up
     def key_down(self, code):
-        self._pressed_keys.add(code)
-        try:
-            self.k_pipe_write.send_bytes(PACK_KEY.pack(int(code), 0))
-        except OSError:
-            self.selective_release()
+        with self.bridge_lock:
+            self._pressed_keys.add(code)
+            try:
+                self.k_pipe_write.send_bytes(PACK_KEY.pack(int(code), 0))
+            except OSError:
+                self.selective_release()
 
     def key_up(self, code):
-        try:
-            self.k_pipe_write.send_bytes(PACK_KEY.pack(int(code), 1))
-        except OSError:
-            self.selective_release()
-        else:
-            self._pressed_keys.discard(code)
+        with self.bridge_lock:
+            try:
+                self.k_pipe_write.send_bytes(PACK_KEY.pack(int(code), 1))
+            except OSError:
+                self.selective_release()
+            else:
+                self._pressed_keys.discard(code)
 
     # MOUSE API
     def mouse_move_rel(self, dx, dy):
@@ -115,66 +117,73 @@ class InterceptionBridge(AbstractBridge):
             self.selective_release()
 
     def left_click_down(self):
-        try:
-            self.mb_pipe_write.send_bytes(
-                PACK_BUTTON.pack(TASK_BUTTON, LEFT_BUTTON_DOWN)
-            )
-        except OSError:
-            self.selective_release()
-        else:
-            self._mouse_left_down = True
+        with self.bridge_lock:
+            try:
+                self.mb_pipe_write.send_bytes(
+                    PACK_BUTTON.pack(TASK_BUTTON, LEFT_BUTTON_DOWN)
+                )
+            except OSError:
+                self.selective_release()
+            else:
+                self._mouse_left_down = True
 
     def left_click_up(self):
-        try:
-            self.mb_pipe_write.send_bytes(PACK_BUTTON.pack(TASK_BUTTON, LEFT_BUTTON_UP))
-        except OSError:
-            self.selective_release()
-        else:
-            self._mouse_left_down = False
+        with self.bridge_lock:
+            try:
+                self.mb_pipe_write.send_bytes(PACK_BUTTON.pack(TASK_BUTTON, LEFT_BUTTON_UP))
+            except OSError:
+                self.selective_release()
+            else:
+                self._mouse_left_down = False
 
     def right_click_down(self):
-        try:
-            self.mb_pipe_write.send_bytes(
-                PACK_BUTTON.pack(TASK_BUTTON, RIGHT_BUTTON_DOWN)
-            )
-        except OSError:
-            self.selective_release()
-        else:
-            self._mouse_right_down = True
+        with self.bridge_lock:
+            try:
+                self.mb_pipe_write.send_bytes(
+                    PACK_BUTTON.pack(TASK_BUTTON, RIGHT_BUTTON_DOWN)
+                )
+            except OSError:
+                self.selective_release()
+            else:
+                self._mouse_right_down = True
 
     def right_click_up(self):
-        try:
-            self.mb_pipe_write.send_bytes(
-                PACK_BUTTON.pack(TASK_BUTTON, RIGHT_BUTTON_UP)
-            )
-        except OSError:
-            self.selective_release()
-        else:
-            self._mouse_right_down = False
+        with self.bridge_lock:
+            try:
+                self.mb_pipe_write.send_bytes(
+                    PACK_BUTTON.pack(TASK_BUTTON, RIGHT_BUTTON_UP)
+                )
+            except OSError:
+                self.selective_release()
+            else:
+                self._mouse_right_down = False
 
     def middle_click_down(self):
-        try:
-            self.mb_pipe_write.send_bytes(
-                PACK_BUTTON.pack(TASK_BUTTON, MIDDLE_BUTTON_DOWN)
-            )
-        except OSError:
-            self.selective_release()
-        else:
-            self._mouse_middle_down = True
+        with self.bridge_lock:
+            try:
+                self.mb_pipe_write.send_bytes(
+                    PACK_BUTTON.pack(TASK_BUTTON, MIDDLE_BUTTON_DOWN)
+                )
+            except OSError:
+                self.selective_release()
+            else:
+                self._mouse_middle_down = True
 
     def middle_click_up(self):
-        try:
-            self.mb_pipe_write.send_bytes(
-                PACK_BUTTON.pack(TASK_BUTTON, MIDDLE_BUTTON_UP)
-            )
-        except OSError:
-            self.selective_release()
-        else:
-            self._mouse_middle_down = False
+        with self.bridge_lock:
+            try:
+                self.mb_pipe_write.send_bytes(
+                    PACK_BUTTON.pack(TASK_BUTTON, MIDDLE_BUTTON_UP)
+                )
+            except OSError:
+                self.selective_release()
+            else:
+                self._mouse_middle_down = False
 
     # KEEPALIVE
     def _heartbeat_loop(self):
         while not self._stop_heartbeat.wait(KEEPALIVE_INTERVAL):
+            self.health_check()
             with self.bridge_lock:
                 for code in list(self._pressed_keys):
                     try:
@@ -215,6 +224,7 @@ class InterceptionBridge(AbstractBridge):
                 f"\n[UTILITY] - Keyboard Worker Died: {_datetime.now().strftime('%H:%M:%S')}!"
             )
             with self.bridge_lock:
+                old_proc = self.k_proc
                 self.k_pipe_read.close()
                 self.k_pipe_write.close()
                 self.k_pipe_read, self.k_pipe_write = multiprocessing.Pipe(duplex=False)
@@ -227,6 +237,7 @@ class InterceptionBridge(AbstractBridge):
                 self.system_config.set_high_priority(
                     self.k_proc.pid, "Revived Keyboard"
                 )
+            old_proc.join(timeout=1.0)
         finally:
             with self._k_respawn_lock:
                 self._k_respawning = False
@@ -246,6 +257,7 @@ class InterceptionBridge(AbstractBridge):
                 f"\n[UTILITY] - Mouse Worker Died: {_datetime.now().strftime('%H:%M:%S')}!"
             )
             with self.bridge_lock:
+                old_proc = self.m_proc
                 self.m_pipe_read.close()
                 self.m_pipe_write.close()
                 self.mb_pipe_read.close()
@@ -262,6 +274,7 @@ class InterceptionBridge(AbstractBridge):
                 )
                 self.m_proc.start()
                 self.system_config.set_high_priority(self.m_proc.pid, "Revived Mouse")
+            old_proc.join(timeout=1.0)
         finally:
             with self._m_respawn_lock:
                 self._m_respawning = False
