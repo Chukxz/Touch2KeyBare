@@ -56,6 +56,11 @@ class AbstractWindowManager(ABC):
 
 class AbstractBridge(ABC):
     @abstractmethod
+    def start_worker_processes(self):
+        """Starts the worker processes for keyboard and mouse."""
+        pass
+    
+    @abstractmethod
     def key_down(self, code: int) -> None:
         pass
 

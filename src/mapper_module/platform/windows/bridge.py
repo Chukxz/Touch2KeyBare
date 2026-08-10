@@ -45,6 +45,7 @@ class InterceptionBridge(AbstractBridge):
         self._k_respawning = False
         self._m_respawning = False
 
+        # Keyboard: single pipe, one process
         self.k_pipe_read, self.k_pipe_write = multiprocessing.Pipe(duplex=False)
         self.k_proc = multiprocessing.Process(
             target=keyboard_worker,
@@ -52,8 +53,6 @@ class InterceptionBridge(AbstractBridge):
             args=(self.k_pipe_read,),
             daemon=True,
         )
-        self.k_proc.start()
-        self.system_config.set_high_priority(self.k_proc.pid, "Keyboard")
 
         # Mouse: movement pipe + separate button pipe, one process, two threads (see workers.py)
         self.m_pipe_read, self.m_pipe_write = multiprocessing.Pipe(duplex=False)
@@ -64,18 +63,23 @@ class InterceptionBridge(AbstractBridge):
             args=(self.m_pipe_read, self.mb_pipe_read),
             daemon=True,
         )
-        self.m_proc.start()
-        self.system_config.set_high_priority(self.m_proc.pid, "Mouse")
-
-        print(
-            f"\n[BRIDGE] - Interception Dual Engine Started. K-PID: {self.k_proc.pid} | M-PID: {self.m_proc.pid}."
-        )
 
         self._stop_heartbeat = threading.Event()
         self.heartbeat_thread = threading.Thread(
             target=self._heartbeat_loop, name="Keepalive", daemon=True
         )
+        
+    def start_worker_processes(self):
+        self.k_proc.start()
+        self.system_config.set_high_priority(self.k_proc.pid, "Keyboard")
+        
+        self.m_proc.start()
+        self.system_config.set_high_priority(self.m_proc.pid, "Mouse")
+
         self.heartbeat_thread.start()
+        print(
+            f"\n[BRIDGE] - Interception Dual Engine Started. K-PID: {self.k_proc.pid} | M-PID: {self.m_proc.pid}."
+        )
 
     # KEYBOARD API — Windows: state=0 down, state=1 up
     def key_down(self, code):

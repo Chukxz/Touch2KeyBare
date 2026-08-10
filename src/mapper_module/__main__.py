@@ -40,6 +40,7 @@ if TYPE_CHECKING:
 
 profiler: Profile | None = None
 
+
 def get_display_protocol():
     session = os.environ.get("XDG_SESSION_TYPE", "").lower()
     if session == "wayland":
@@ -54,20 +55,20 @@ def get_display_protocol():
 class _Engine:
     def __init__(self):
         _Platform = get_platform()
-        self.system_config = _Platform.SystemConfig()
 
         print("\n[MAIN] - Initializing Touch2Key... Press 'ESC' to Stop.")
         print(f"\n[MAIN] - ADB Executable File Path: {ADB}.")
         keyboard.add_hotkey("esc", self._shutdown)
 
-        self.system_config.set_high_priority(os.getpid(), "Main Loop")
-        self.window_manager = _Platform.WindowManager()
         self.system_config = _Platform.SystemConfig()
-        self.bridge_class = _Platform.Bridge(self.window_manager, self.system_config)
-
+        self.system_config.set_high_priority(os.getpid(), "Main Loop")
         self.system_config.set_dpi_awareness()
         self.system_config.set_timer_resolution()
+
+        self.window_manager = _Platform.WindowManager()
         self.foreground_window = self.window_manager.get_foreground_window()
+
+        self.bridge_class = _Platform.Bridge(self.window_manager, self.system_config)
 
         self.touch_reader: TouchReader | None = None
         self.mapper: Mapper | None = None
@@ -131,7 +132,7 @@ class _Engine:
             print("\n[MAIN] - Key configuration cancelled. Exiting...")
             return
         toggle_key, sprint_key = c_result
-        
+
         if not toggle_key:
             print(
                 "\n[MAIN] - No toggle key set. Touch zones if disabled by the cursor state can only be re-enabled via the keyboard/mouse."
@@ -160,6 +161,8 @@ class _Engine:
             rate_cap, pps = DEFAULT_ADB_RATE_CAP, PPS
 
         print(f"\n[MAIN] - ADB Cap: {rate_cap}Hz | Alert Threshold: {pps}PPS.")
+
+        self.bridge_class.start_worker_processes()
 
         mapper_event_dispatcher = MapperEventDispatcher()
         config = AppConfig(mapper_event_dispatcher)
@@ -202,11 +205,12 @@ class _Engine:
             if self.mapper is not None:
                 self.mapper.running = False
             if self.bridge_class is not None:
-                self.bridge_class.shutdown()      # stop the heartbeat thread first
+                self.bridge_class.shutdown()  # stop the heartbeat thread first
                 self.bridge_class.release_all()
 
                 procs = [
-                    p for p in (
+                    p
+                    for p in (
                         getattr(self.bridge_class, "k_proc", None),
                         getattr(self.bridge_class, "m_proc", None),
                     )
@@ -247,9 +251,10 @@ def run():
         "--profile", action="store_true", help="Generate profiling data."
     )
     args = parser.parse_args()
-    
+
     if args.profile:
         import cProfile
+
         profiler = cProfile.Profile()
         profiler.enable()
 
@@ -270,7 +275,7 @@ def run():
         multiprocessing.set_start_method("spawn", force=True)
     except RuntimeError:
         pass
-    
+
     try:
         success, _instance_handle = check_single_instance(NAME)
     except RuntimeError as e:
