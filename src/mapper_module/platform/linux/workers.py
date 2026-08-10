@@ -229,4 +229,6 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
             print(f"\n[UTILITY] - Mouse Movement Worker crashed: {e}.")
             state["running"] = False
 
+    state["running"] = False    # no-op if already False; covers normal loop exit too
+    button_thread.join(timeout=16.0)
     ui_device.close()
