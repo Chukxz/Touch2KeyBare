@@ -130,6 +130,7 @@ EVENT_TYPE = Literal[
     "ON_WASD_BLOCK",
     "ON_MENU_MODE_TOGGLE",
     "ON_AGGREGATION",
+    "ON_WORKER_RESPAWN",
 ]
 
 SCANCODES = {
@@ -356,8 +357,9 @@ class MapperEvent:
         is_visible=True,
         sum_dx: float | None = None,
         sum_dy: float | None = None,
-        acc_x=0.0,
-        acc_y=0.0,
+        acc_x: float | None = None,
+        acc_y: float | None = None,
+        worker_type: str | None = None,
     ):
         self.action: EVENT_TYPE = action
         self.is_visible = is_visible
@@ -365,14 +367,26 @@ class MapperEvent:
         self.sum_dy = sum_dy
         self.acc_x = acc_x
         self.acc_y = acc_y
+        self.worker_type = worker_type
 
     def show(self):
         _str = ""
         if self.sum_dx:
             _str += f", Sum DX: {self.sum_dx}"
+            
+        if self.acc_x:
+            _str += f", Acc X: {self.acc_x}"
+            
         if self.sum_dy:
             _str += f", Sum DY: {self.sum_dy}"
-        return f"Action: {self.action}, Cursor Visible: {self.is_visible})" + _str
+            
+        if self.acc_y:
+            _str += f", Acc Y: {self.acc_y}"
+            
+        if self.worker_type:
+            _str += f", Worker Type: {self.worker_type}"
+            
+        return f"Action: {self.action}, Cursor Visible: {self.is_visible}" + _str
 
 
 class MapperEventDispatcher:
@@ -384,6 +398,7 @@ class MapperEventDispatcher:
             "ON_WASD_BLOCK": [],
             "ON_MENU_MODE_TOGGLE": [],
             "ON_AGGREGATION": [],
+            "ON_WORKER_RESPAWN": [],
         }
 
     def register_callback(self, event_type: EVENT_TYPE, func):
@@ -410,7 +425,7 @@ class MapperEventDispatcher:
     def dispatch(self, event_object: MapperEvent):
         registry_key = event_object.action
 
-        if registry_key:
+        if registry_key in self.callback_registry:
             for func in self.callback_registry.get(registry_key, []):
                 if event_object.action in [
                     "ON_CONFIG_RELOAD",
@@ -427,6 +442,11 @@ class MapperEventDispatcher:
                         event_object.acc_x,
                         event_object.acc_y,
                     )
+                elif event_object.action in ["ON_WORKER_RESPAWN"]:
+                    func(event_object.worker_type)
+        
+        else:
+            print(f"\n[UTILITY] - Attempted to dispatch unknown event {registry_key}.")
 
 
 def get_adb_device():

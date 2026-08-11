@@ -26,18 +26,22 @@ class MouseMapper:
         self.left_down = False
         self.scaling_factor = 1.0
         self.timestamp = 0.0
+        self.click_lock = threading.Lock()
 
         self.tap_in_progress = False
         self._update_config()
 
-        # Register Callbacks
+        # Register callbacks
         self.mapper_event_dispatcher.register_callback(
             "ON_CONFIG_RELOAD", self._update_config
         )
         self.mapper_event_dispatcher.register_callback(
             "ON_AGGREGATION", self._aggregate
         )
-
+        self.mapper_event_dispatcher.register_callback(
+            "ON_WORKER_RESPAWN", self._on_worker_respawn
+        )
+        
     def _update_config(self):
         """Pre-calculates sensitivity to keep the _touch_pressed loop lean."""
         print(f"\n[MOUSEMAPPER] - Syncing sensitivity...")
@@ -81,8 +85,9 @@ class MouseMapper:
         if is_visible:
             _x, _y = self.mapper.device_to_game_abs(self.prev_x, self.prev_y)
             self.bridge.mouse_move_abs(_x, _y)
-            self.bridge.left_click_down()
-            self.left_down = True
+            with self.click_lock:
+                self.bridge.left_click_down()
+                self.left_down = True
 
         else:
             self.timestamp = touch_event.timestamp
@@ -121,9 +126,10 @@ class MouseMapper:
         self.acc_x = 0.0
         self.acc_y = 0.0
 
-        if self.left_down:
-            self.bridge.left_click_up()
-            self.left_down = False
+        with self.click_lock:
+            if self.left_down:
+                self.bridge.left_click_up()
+                self.left_down = False
 
         if activate_mouse_sequence and touchevent is not None and not is_visible:
             if not self.tap_in_progress:
@@ -216,3 +222,10 @@ class MouseMapper:
 
         elif action == UP:
             self.touch_up(touch_event, is_visible, activate_mouse_sequence)
+
+    def _on_worker_respawn(self, worker_type: str):
+        if worker_type != "mouse":
+            return
+        with self.click_lock:
+            if self.left_down:
+                self.bridge.left_click_down()

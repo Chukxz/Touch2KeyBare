@@ -69,6 +69,11 @@ class UInputBridge(AbstractBridge):
             target=self._heartbeat_loop, name="Keepalive", daemon=True
         )
 
+        self._respawn_callback = None
+
+    def set_respawn_callback(self, callback):
+        self._respawn_callback = callback
+
     def start_worker_processes(self):
         self.k_proc.start()
         self.system_config.set_high_priority(self.k_proc.pid, "Keyboard")
@@ -130,7 +135,9 @@ class UInputBridge(AbstractBridge):
     def left_click_up(self):
         with self.bridge_lock:
             try:
-                self.mb_pipe_write.send_bytes(PACK_BUTTON.pack(TASK_BUTTON, LEFT_BUTTON_UP))
+                self.mb_pipe_write.send_bytes(
+                    PACK_BUTTON.pack(TASK_BUTTON, LEFT_BUTTON_UP)
+                )
             except OSError:
                 self.selective_release()
             else:
@@ -223,6 +230,7 @@ class UInputBridge(AbstractBridge):
             print(
                 f"\n[UTILITY] - Keyboard Worker Died: {_datetime.now().strftime('%H:%M:%S')}!"
             )
+
             with self.bridge_lock:
                 old_proc = self.k_proc
                 self.k_pipe_read.close()
@@ -238,6 +246,13 @@ class UInputBridge(AbstractBridge):
                     self.k_proc.pid, "Revived Keyboard"
                 )
             old_proc.join(timeout=1.0)
+
+            if self._respawn_callback:
+                try:
+                    self._respawn_callback("keyboard")
+                except Exception as e:
+                    print(f"\n[UTILITY] - Respawn callback (keyboard) failed: {e}.")
+
         finally:
             with self._k_respawn_lock:
                 self._k_respawning = False
@@ -256,6 +271,7 @@ class UInputBridge(AbstractBridge):
             print(
                 f"\n[UTILITY] - Mouse Worker Died: {_datetime.now().strftime('%H:%M:%S')}!"
             )
+
             with self.bridge_lock:
                 old_proc = self.m_proc
                 self.m_pipe_read.close()
@@ -275,6 +291,13 @@ class UInputBridge(AbstractBridge):
                 self.m_proc.start()
                 self.system_config.set_high_priority(self.m_proc.pid, "Revived Mouse")
             old_proc.join(timeout=1.0)
+
+            if self._respawn_callback:
+                try:
+                    self._respawn_callback("mouse")
+                except Exception as e:
+                    print(f"\n[UTILITY] - Respawn callback (mouse) failed: {e}.")
+
         finally:
             with self._m_respawn_lock:
                 self._m_respawning = False

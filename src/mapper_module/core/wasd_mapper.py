@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 import math
 from enum import IntFlag
+import threading
 
 from mapper_module.utils import SCANCODES, UP, DOWN, PRESSED
 
@@ -28,6 +29,7 @@ class WASDMapper:
         self.mapper_event_dispatcher = self.mapper.mapper_event_dispatcher
         sprint_key = mapper.emulator["sprint_key"]
         self.sprint_key_code = None
+        self.wasd_lock = threading.Lock()
 
         if sprint_key is not None:
             try:
@@ -100,10 +102,11 @@ class WASDMapper:
         self.deadzone_sq = 100.0
         self.sensitivity = 1.0
 
-        # Init (Order matters: MouseWheel -> Config -> Recalc)
+        # Init (Order matters: MouseWheel -> Recalc -> Config -> Recalc (again))
         self._update_mouse_wheel()
         self._update_config()
 
+        # Register callbacks
         self.mapper_event_dispatcher.register_callback(
             "ON_CONFIG_RELOAD", self._update_config
         )
@@ -113,7 +116,10 @@ class WASDMapper:
         self.mapper_event_dispatcher.register_callback(
             "ON_WASD_BLOCK", self._on_wasd_block
         )
-
+        self.mapper_event_dispatcher.register_callback(
+            "ON_WORKER_RESPAWN", self._on_worker_respawn
+        )
+        
     def _update_config(self):
         print(f"\n[WASDMAPPER] - Reloading config...")
         try:
@@ -236,49 +242,51 @@ class WASDMapper:
         self._apply_keys(new_sector, sprint)
 
     def touch_up(self):
-        for key_flag in self.ALL_DIRECTIONS:
-            if key_flag in self.current_mask:
-                self.bridge.key_up(self.state_value_to_key[key_flag.value])
+        with self.wasd_lock:
+            for key_flag in self.ALL_DIRECTIONS:
+                if key_flag in self.current_mask:
+                    self.bridge.key_up(self.state_value_to_key[key_flag.value])
 
-        if self.sprint_key_code is not None and self.sprinting:
-            self.bridge.key_up(self.sprint_key_code)
+            if self.sprint_key_code is not None and self.sprinting:
+                self.bridge.key_up(self.sprint_key_code)
 
-        self.sprinting = False
-        self.current_mask = _State.NONE
-        self.center_x = 0.0
-        self.center_y = 0.0
-        self.last_sector = None
+            self.sprinting = False
+            self.current_mask = _State.NONE
+            self.center_x = 0.0
+            self.center_y = 0.0
+            self.last_sector = None
 
     def _apply_keys(self, sector, sprint=False):
-        target_mask = self.sector_to_state[sector]
+        with self.wasd_lock:
+            target_mask = self.sector_to_state[sector]
 
-        # Identify which directional keys to change
-        to_release = self.current_mask & ~target_mask
-        to_press = target_mask & ~self.current_mask
+            # Identify which directional keys to change
+            to_release = self.current_mask & ~target_mask
+            to_press = target_mask & ~self.current_mask
 
-        # Release directional keys no longer needed
-        for key_flag in self.ALL_DIRECTIONS:
-            if key_flag in to_release:
-                self.bridge.key_up(self.state_value_to_key[key_flag.value])
+            # Release directional keys no longer needed
+            for key_flag in self.ALL_DIRECTIONS:
+                if key_flag in to_release:
+                    self.bridge.key_up(self.state_value_to_key[key_flag.value])
 
-        # Handle Sprint (Shift)
-        # Ensure sprint only triggers if we are actually moving
-        should_sprint = sprint and target_mask
+            # Handle Sprint (Shift)
+            # Ensure sprint only triggers if we are actually moving
+            should_sprint = sprint and target_mask
 
-        if self.sprint_key_code is not None:
-            if self.sprinting and not should_sprint:
-                self.bridge.key_up(self.sprint_key_code)
-                self.sprinting = False
-            elif not self.sprinting and should_sprint:
-                self.bridge.key_down(self.sprint_key_code)
-                self.sprinting = True
+            if self.sprint_key_code is not None:
+                if self.sprinting and not should_sprint:
+                    self.bridge.key_up(self.sprint_key_code)
+                    self.sprinting = False
+                elif not self.sprinting and should_sprint:
+                    self.bridge.key_down(self.sprint_key_code)
+                    self.sprinting = True
 
-        # Press new directional keys
-        for key_flag in self.ALL_DIRECTIONS:
-            if key_flag in to_press:
-                self.bridge.key_down(self.state_value_to_key[key_flag.value])
+            # Press new directional keys
+            for key_flag in self.ALL_DIRECTIONS:
+                if key_flag in to_press:
+                    self.bridge.key_down(self.state_value_to_key[key_flag.value])
 
-        self.current_mask = target_mask
+            self.current_mask = target_mask
 
     def process_touch(self, action, touch_event: TouchEvent, is_visible: bool):
         if action == PRESSED:
@@ -289,3 +297,14 @@ class WASDMapper:
 
         elif action == UP:
             self.touch_up()
+
+    def _on_worker_respawn(self, worker_type: str):
+        """Keyboard-only — WASD/sprint both go through key_down/key_up.
+        Reset mask/sprint, not the joystick anchor (center_x/center_y/
+        last_sector), so the finger's still-live position stays valid and
+        the next _touch_pressed tick re-diffs against a clean mask."""
+        if worker_type != "keyboard":
+            return
+        with self.wasd_lock:
+            self.current_mask = _State.NONE
+            self.sprinting = False

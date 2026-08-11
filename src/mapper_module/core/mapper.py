@@ -101,9 +101,11 @@ class Mapper:
         )
         self.aggregate_mouse_moves_thread.start()
 
+        # Register and dispatch callbacks
         self.mapper_event_dispatcher.dispatch(
             MapperEvent(action="ON_MENU_MODE_TOGGLE", is_visible=self.last_cursor_state)
         )
+        self.bridge.set_respawn_callback(self._on_worker_respawn)
 
     def _update_config(self):
         with self.lock:
@@ -288,3 +290,11 @@ class Mapper:
             elapsed = time.perf_counter() - start_time
             sleep_duration = max(0, self.touch_reader.move_interval - elapsed)
             time.sleep(sleep_duration)
+
+    def _on_worker_respawn(self, worker_type: str):
+        """Fired from the bridge's respawn thread. Re-broadcasts as a
+        MapperEvent so KeyMapper/MouseMapper/WASDMapper can resync their
+        held-input bookkeeping against the fresh, empty worker state."""
+        self.mapper_event_dispatcher.dispatch(
+            MapperEvent(action="ON_WORKER_RESPAWN", worker_type=worker_type)
+        )

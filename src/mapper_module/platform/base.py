@@ -112,7 +112,12 @@ class AbstractBridge(ABC):
     @abstractmethod
     def release_all(self) -> None:
         pass
-
+    
+    @abstractmethod
+    def set_respawn_callback(self, callback) -> None:
+        """Registers callback (worker_type: str) to be invoked after a worker
+        process respawns. worker_type is 'keyboard' or 'mouse'."""
+        pass
 
 class AbstractSystemConfig(ABC):
     @abstractmethod

@@ -10,6 +10,7 @@ import sys
 import argparse
 from PySide6.QtWidgets import QApplication
 from mapper_module.platform import check_single_instance, get_platform
+
 from mapper_module.utils import (
     DEFAULT_ADB_RATE_CAP,
     SHORT_DELAY,
@@ -19,6 +20,7 @@ from mapper_module.utils import (
     SYSTEM,
     TouchEvent,
 )
+
 from mapper_module import (
     MapperEventDispatcher,
     AppConfig,
@@ -29,6 +31,7 @@ from mapper_module import (
     KeyMapper,
     WASDMapper,
 )
+
 from mapper_module.scripts.pre_flight import run as pre_flight_run
 from mapper_module.core.list_windows import select_window
 from mapper_module.core.key_capture import capture_keys
@@ -162,8 +165,6 @@ class _Engine:
 
         print(f"\n[MAIN] - ADB Cap: {rate_cap}Hz | Alert Threshold: {pps}PPS.")
 
-        self.bridge_class.start_worker_processes()
-
         mapper_event_dispatcher = MapperEventDispatcher()
         config = AppConfig(mapper_event_dispatcher)
 
@@ -188,6 +189,7 @@ class _Engine:
         mapper_event_dispatcher.register_callback(
             "ON_MENU_MODE_TOGGLE", self._set_is_visible
         )
+        self.bridge_class.start_worker_processes()
 
         keyboard.wait()
 

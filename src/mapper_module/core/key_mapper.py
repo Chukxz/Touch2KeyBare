@@ -27,8 +27,8 @@ class KeyMapper:
     def __init__(self, mapper: Mapper):
         self.mapper = mapper
         self.config = mapper.config
-        self.mapper_event_dispatcher = self.mapper.mapper_event_dispatcher
-        self.interception_bridge = mapper.bridge
+        self.event_dispatcher = self.mapper.mapper_event_dispatcher
+        self.bridge = mapper.bridge
 
         # State Tracking: { slot_int: [[scancode(int), zone_data(dict), is_wasd_finger(bool), prevs(tuple[int, int])],...] }
         self.touch_events_dict: dict[int, list[tuple[int, dict, bool]]] = {}
@@ -45,8 +45,13 @@ class KeyMapper:
 
         # Initialize data structures
         self._process_json_data()
-        self.mapper_event_dispatcher.register_callback(
+
+        # Register callbacks
+        self.event_dispatcher.register_callback(
             "ON_JSON_RELOAD", self._process_json_data
+        )
+        self.event_dispatcher.register_callback(
+            "ON_WORKER_RESPAWN", self._on_worker_respawn
         )
 
     def _process_json_data(self):
@@ -97,22 +102,22 @@ class KeyMapper:
     def _dispatch_to_bridge(self, scancode, down):
         if down:
             if scancode == M_LEFT:
-                self.interception_bridge.left_click_down()
+                self.bridge.left_click_down()
             elif scancode == M_RIGHT:
-                self.interception_bridge.right_click_down()
+                self.bridge.right_click_down()
             elif scancode == M_MIDDLE:
-                self.interception_bridge.middle_click_down()
+                self.bridge.middle_click_down()
             else:
-                self.interception_bridge.key_down(scancode)
+                self.bridge.key_down(scancode)
         else:
             if scancode == M_LEFT:
-                self.interception_bridge.left_click_up()
+                self.bridge.left_click_up()
             elif scancode == M_RIGHT:
-                self.interception_bridge.right_click_up()
+                self.bridge.right_click_up()
             elif scancode == M_MIDDLE:
-                self.interception_bridge.middle_click_up()
+                self.bridge.middle_click_up()
             else:
-                self.interception_bridge.key_up(scancode)
+                self.bridge.key_up(scancode)
 
     def _touch_down(self, touch_event: TouchEvent, is_visible: bool):
         """Triggered on finger contact. Scans active_zones for a hit."""
@@ -169,7 +174,7 @@ class KeyMapper:
 
                     if touch_event.is_wasd:
                         self.mapper.wasd_block += 1
-                        self.mapper_event_dispatcher.dispatch(
+                        self.event_dispatcher.dispatch(
                             MapperEvent(action="ON_WASD_BLOCK")
                         )
 
@@ -199,7 +204,7 @@ class KeyMapper:
                 self.touch_events_prevs.pop(touch_event.slot, ())
                 if is_wasd:
                     self.mapper.wasd_block = max(0, self.mapper.wasd_block - 1)
-                    self.mapper_event_dispatcher.dispatch(
+                    self.event_dispatcher.dispatch(
                         MapperEvent(action="ON_WASD_BLOCK")
                     )
 
@@ -218,6 +223,23 @@ class KeyMapper:
             activate_mouse_sequence = self._touch_up(touch_event)
 
         return activate_mouse_sequence
+
+    def _on_worker_respawn(self, worker_type: str):
+        """touch_events_dict reflects ground truth — fingers never moved,
+        only the downstream driver forgot. Re-arm the fresh worker for
+        whatever's still tracked, without touching touch tracking itself."""
+        with self.touch_events_lock:
+            affected_counts: dict[int, int] = {}
+            for entries in self.touch_events_dict.values():
+                for scancode, _, __ in entries:
+                    is_mouse_button = scancode in (M_LEFT, M_RIGHT, M_MIDDLE)
+                    if (worker_type == "mouse") != is_mouse_button:
+                        continue
+                    affected_counts[scancode] = affected_counts.get(scancode, 0) + 1
+
+            for scancode, count in affected_counts.items():
+                self.scancode_ref_counts[scancode] = count
+                self._dispatch_to_bridge(scancode, True)
 
     def release_all(self):
         """Flushes all current input states."""
