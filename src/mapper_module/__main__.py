@@ -12,12 +12,10 @@ from PySide6.QtWidgets import QApplication
 from mapper_module.platform import check_single_instance, get_platform
 
 from mapper_module.utils import (
-    DEFAULT_ADB_RATE_CAP,
-    SHORT_DELAY,
-    DEFAULT_PPS,
     PRESETS,
     ADB,
     SYSTEM,
+    SHORT_DELAY,
     TouchEvent,
 )
 
@@ -34,7 +32,7 @@ from mapper_module import (
 
 from mapper_module.scripts.pre_flight import run as pre_flight_run
 from mapper_module.core.list_windows import select_window
-from mapper_module.core.key_capture import capture_keys
+from mapper_module.core.key_capture import capture_keys, capture_performance_settings
 
 NAME = "Touch2Key_Engine"
 
@@ -146,22 +144,11 @@ class _Engine:
             "sprint_key": sprint_key,
         }
 
-        try:
-            rate_input = input(
-                f"\nEnter ADB rate cap [Default {DEFAULT_ADB_RATE_CAP}, Min 60, Blank for Default]: "
-            ).strip()
-            rate_cap = (
-                max(60.0, float(rate_input)) if rate_input else DEFAULT_ADB_RATE_CAP
-            )
-
-            pps_input = input(
-                f"Enter Alert Threshold [Default {DEFAULT_PPS}, Range 30-120, Blank for Default]: "
-            ).strip()
-            pps = max(30.0, min(120.0, float(pps_input))) if pps_input else DEFAULT_PPS
-
-        except ValueError:
-            print("Invalid input. Using defaults...")
-            rate_cap, pps = DEFAULT_ADB_RATE_CAP, DEFAULT_PPS
+        perf_result = capture_performance_settings()
+        if perf_result is None:
+            print("\n[MAIN] - Performance configuration cancelled. Exiting...")
+            return
+        rate_cap, pps = perf_result
 
         print(f"\n[MAIN] - ADB Cap: {rate_cap}Hz | Alert Threshold: {pps}PPS.")
 
