@@ -119,7 +119,7 @@ class WASDMapper:
         self.mapper_event_dispatcher.register_callback(
             "ON_WORKER_RESPAWN", self._on_worker_respawn
         )
-        
+
     def _update_config(self):
         print(f"\n[WASDMAPPER] - Reloading config...")
         try:

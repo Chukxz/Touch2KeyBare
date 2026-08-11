@@ -14,7 +14,7 @@ from mapper_module.platform import check_single_instance, get_platform
 from mapper_module.utils import (
     DEFAULT_ADB_RATE_CAP,
     SHORT_DELAY,
-    PPS,
+    DEFAULT_PPS,
     PRESETS,
     ADB,
     SYSTEM,
@@ -155,13 +155,13 @@ class _Engine:
             )
 
             pps_input = input(
-                f"Enter Alert Threshold [Default {PPS}, Range 30-120]: "
+                f"Enter Alert Threshold [Default {DEFAULT_PPS}, Range 30-120, Blank for Default]: "
             ).strip()
-            pps = max(30.0, min(120.0, float(pps_input))) if pps_input else PPS
+            pps = max(30.0, min(120.0, float(pps_input))) if pps_input else DEFAULT_PPS
 
         except ValueError:
             print("Invalid input. Using defaults...")
-            rate_cap, pps = DEFAULT_ADB_RATE_CAP, PPS
+            rate_cap, pps = DEFAULT_ADB_RATE_CAP, DEFAULT_PPS
 
         print(f"\n[MAIN] - ADB Cap: {rate_cap}Hz | Alert Threshold: {pps}PPS.")
 

@@ -41,7 +41,7 @@ class MouseMapper:
         self.mapper_event_dispatcher.register_callback(
             "ON_WORKER_RESPAWN", self._on_worker_respawn
         )
-        
+
     def _update_config(self):
         """Pre-calculates sensitivity to keep the _touch_pressed loop lean."""
         print(f"\n[MOUSEMAPPER] - Syncing sensitivity...")

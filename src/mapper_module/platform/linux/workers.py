@@ -18,7 +18,9 @@ def _release_all_keys(ui_device, ecodes, keys_set, reason=""):
         keys_set.clear()
 
 
-def _release_all_buttons(ui_device, ecodes, left_down, right_down, middle_down, reason=""):
+def _release_all_buttons(
+    ui_device, ecodes, left_down, right_down, middle_down, reason=""
+):
     print(f"\n[UTILITY] - {reason}.")
     buttons_set_sum = sum([left_down, right_down, middle_down])
     if buttons_set_sum > 0:
@@ -87,19 +89,38 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
     from random import uniform as _uniform
     from evdev import UInput, ecodes, AbsInfo
     from mapper_module.utils import (
-        TASK_REL, TASK_ABS, PACK_BUTTON, PACK_REL, PACK_ABS,
-        LEFT_BUTTON_DOWN, LEFT_BUTTON_UP, RIGHT_BUTTON_DOWN, RIGHT_BUTTON_UP,
-        MIDDLE_BUTTON_DOWN, MIDDLE_BUTTON_UP,
-        MAX_COALESCE, DOWN_TUPLE, CONSTANT_DWELL,
-        MIN_BUTTON_DWELL, MAX_BUTTON_DWELL, MIN_MOUSE_DWELL, MAX_MOUSE_DWELL,
+        TASK_REL,
+        TASK_ABS,
+        PACK_BUTTON,
+        PACK_REL,
+        PACK_ABS,
+        LEFT_BUTTON_DOWN,
+        LEFT_BUTTON_UP,
+        RIGHT_BUTTON_DOWN,
+        RIGHT_BUTTON_UP,
+        MIDDLE_BUTTON_DOWN,
+        MIDDLE_BUTTON_UP,
+        MAX_COALESCE,
+        DOWN_TUPLE,
+        CONSTANT_DWELL,
+        MIN_BUTTON_DWELL,
+        MAX_BUTTON_DWELL,
+        MIN_MOUSE_DWELL,
+        MAX_MOUSE_DWELL,
     )
 
     cap = {
         ecodes.EV_KEY: [ecodes.BTN_LEFT, ecodes.BTN_RIGHT, ecodes.BTN_MIDDLE],
         ecodes.EV_REL: [ecodes.REL_X, ecodes.REL_Y, ecodes.REL_WHEEL],
         ecodes.EV_ABS: [
-            (ecodes.ABS_X, AbsInfo(value=0, min=0, max=65535, fuzz=0, flat=0, resolution=0)),
-            (ecodes.ABS_Y, AbsInfo(value=0, min=0, max=65535, fuzz=0, flat=0, resolution=0)),
+            (
+                ecodes.ABS_X,
+                AbsInfo(value=0, min=0, max=65535, fuzz=0, flat=0, resolution=0),
+            ),
+            (
+                ecodes.ABS_Y,
+                AbsInfo(value=0, min=0, max=65535, fuzz=0, flat=0, resolution=0),
+            ),
         ],
     }
     ui_device = UInput(cap, name="Touch2Key-Mouse")
@@ -153,8 +174,11 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
                 else:
                     with send_lock:
                         _release_all_buttons(
-                            ui_device, ecodes,
-                            left_down, right_down, middle_down,
+                            ui_device,
+                            ecodes,
+                            left_down,
+                            right_down,
+                            middle_down,
                             "Mouse Button Timeout",
                         )
                     left_down = right_down = middle_down = False
@@ -167,7 +191,10 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
                 print(f"\n[UTILITY] - Mouse Button Worker crashed: {e}.")
                 state["running"] = False
 
-    threading.Thread(target=button_loop, name="Mouse-Button-Loop", daemon=True).start()
+    button_thread = threading.Thread(
+        target=button_loop, name="Mouse-Button-Loop", daemon=True
+    )
+    button_thread.start()
 
     acc_dx, acc_dy = 0, 0
     pending_task = None
@@ -229,6 +256,6 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
             print(f"\n[UTILITY] - Mouse Movement Worker crashed: {e}.")
             state["running"] = False
 
-    state["running"] = False    # no-op if already False; covers normal loop exit too
+    state["running"] = False  # no-op if already False; covers normal loop exit too
     button_thread.join(timeout=16.0)
     ui_device.close()

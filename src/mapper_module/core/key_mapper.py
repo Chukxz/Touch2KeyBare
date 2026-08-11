@@ -27,7 +27,7 @@ class KeyMapper:
     def __init__(self, mapper: Mapper):
         self.mapper = mapper
         self.config = mapper.config
-        self.event_dispatcher = self.mapper.mapper_event_dispatcher
+        self.mapper_event_dispatcher = self.mapper.mapper_event_dispatcher
         self.bridge = mapper.bridge
 
         # State Tracking: { slot_int: [[scancode(int), zone_data(dict), is_wasd_finger(bool), prevs(tuple[int, int])],...] }
@@ -47,10 +47,10 @@ class KeyMapper:
         self._process_json_data()
 
         # Register callbacks
-        self.event_dispatcher.register_callback(
+        self.mapper_event_dispatcher.register_callback(
             "ON_JSON_RELOAD", self._process_json_data
         )
-        self.event_dispatcher.register_callback(
+        self.mapper_event_dispatcher.register_callback(
             "ON_WORKER_RESPAWN", self._on_worker_respawn
         )
 
@@ -174,7 +174,7 @@ class KeyMapper:
 
                     if touch_event.is_wasd:
                         self.mapper.wasd_block += 1
-                        self.event_dispatcher.dispatch(
+                        self.mapper_event_dispatcher.dispatch(
                             MapperEvent(action="ON_WASD_BLOCK")
                         )
 
@@ -204,7 +204,7 @@ class KeyMapper:
                 self.touch_events_prevs.pop(touch_event.slot, ())
                 if is_wasd:
                     self.mapper.wasd_block = max(0, self.mapper.wasd_block - 1)
-                    self.event_dispatcher.dispatch(
+                    self.mapper_event_dispatcher.dispatch(
                         MapperEvent(action="ON_WASD_BLOCK")
                     )
 

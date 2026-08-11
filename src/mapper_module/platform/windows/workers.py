@@ -185,7 +185,10 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
                 print(f"\n[UTILITY] - Mouse Button Worker crashed: {e}.")
                 state["running"] = False
 
-    threading.Thread(target=button_loop, name="Mouse-Button-Loop", daemon=True).start()
+    button_thread = threading.Thread(
+        target=button_loop, name="Mouse-Button-Loop", daemon=True
+    )
+    button_thread.start()
 
     acc_dx, acc_dy = 0, 0
     pending_task = None

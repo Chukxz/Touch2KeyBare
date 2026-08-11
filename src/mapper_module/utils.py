@@ -95,7 +95,7 @@ MAX_CLASS_NAME = 256
 
 # Fallback Performance Constants
 DEFAULT_ADB_RATE_CAP = 250
-PPS = 60
+DEFAULT_PPS = 60
 
 # Bridge Constants
 MOUSE_MOVE_RELATIVE = 0x00
