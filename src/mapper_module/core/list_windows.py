@@ -69,7 +69,7 @@ class ListApp(QWidget):
         self.enter_btn.clicked.connect(self._handle_enter)
         self.v_layout.addWidget(self.enter_btn)
 
-self.table.cellActivated.connect(lambda row, col: self._handle_enter())
+        self.table.cellActivated.connect(lambda row, col: self._handle_enter())
 
         self.setLayout(self.v_layout)
         self.resize(900, 500)
