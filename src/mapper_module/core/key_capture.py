@@ -73,6 +73,10 @@ class KeyCaptureDialog(QDialog):
         self.setLayout(layout)
 
     def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape:
+            self.reject()
+            return
+
         if not self._listening:
             return
 
@@ -227,6 +231,10 @@ def capture_keys(
 
 
 def capture_performance_settings() -> tuple[float, float] | None:
+    """GUI counterpart to the old console input() prompts for ADB rate
+    cap and PPS alert threshold. Returns None if either dialog is closed
+    without confirming/skipping (mirrors capture_keys' cancel behavior)."""
+
     rate_dialog = NumericCaptureDialog(
         "Enter the ADB rate cap (Hz)\nfor touch event polling\n(or click Skip to use the default)",
         default_value=DEFAULT_ADB_RATE_CAP,
