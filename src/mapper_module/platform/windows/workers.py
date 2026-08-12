@@ -76,6 +76,11 @@ def keyboard_worker(k_pipe_read: Connection):
                 elif state == 1:
                     pressed_keys.discard(code)
 
+                # E0_DOWN = 2, E0_UP = 3
+                if code > 0xFF:
+                    state |= 2  # set extended bit for non-ASCII keys
+                    code &= 0xFF  # strip extended bit for Interception driver
+                    
                 k_ctx.send(k_handle, KeyStroke(code, state))
 
             else:
