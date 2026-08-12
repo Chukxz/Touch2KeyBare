@@ -112,8 +112,8 @@ class _Engine:
         if touch_event.is_wasd:
             self.wasd_mapper.process_touch(action, touch_event, self.is_visible)
 
-    def _start(self, app: QApplication):
-        w_result = select_window(app)
+    def _start(self):
+        w_result = select_window()
         if w_result is None:
             print("\n[MAIN] - No window selected. Exiting...")
             return
@@ -149,6 +149,10 @@ class _Engine:
             print("\n[MAIN] - Performance configuration cancelled. Exiting...")
             return
         rate_cap, pps = perf_result
+        
+        if rate_cap is None or pps is None:
+            print("\n[MAIN] - Invalid performance settings. Exiting...")
+            return
 
         print(f"\n[MAIN] - ADB Cap: {rate_cap}Hz | Alert Threshold: {pps}PPS.")
 
@@ -283,7 +287,7 @@ def run():
     _app.setQuitOnLastWindowClosed(True)
     _engine = _Engine()
     try:
-        _engine._start(_app)
+        _engine._start()
     except KeyboardInterrupt:
         _app.closeAllWindows()
         _engine._shutdown()
