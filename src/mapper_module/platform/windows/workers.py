@@ -52,36 +52,78 @@ def _release_all_buttons(
 def keyboard_worker(k_pipe_read: Connection):
     """Dedicated process for Windows Interception driver keyboard events."""
 
+    import queue
+    import threading
+    from time import sleep as _sleep
+    from random import uniform as _uniform
     from interception.interception import Interception
     from interception.strokes import KeyStroke
-    from mapper_module.utils import PACK_KEY
+    from mapper_module.utils import (
+        PACK_KEY,
+        MIN_KEY_DWELL,
+        MAX_KEY_DWELL,
+        CONSTANT_KEY_DWELL,
+    )
 
     k_ctx = Interception()
     k_handle = k_ctx.keyboard
     pressed_keys = set()
-    running = True
+    state = {"running": True}
 
-    while running:
+    # Thread-safe queue to pass keys from the pipe reader to the injector
+    key_queue = queue.Queue()
+
+    def key_injection_loop():
+        """Dedicated thread for executing keystrokes with hardware-like dwell times."""
+        while state["running"]:
+            try:
+                # timeout=1.0 allows the loop to regularly check the running state and exit if needed
+                code, k_state = key_queue.get(timeout=1.0)
+
+                k_ctx.send(k_handle, KeyStroke(code, k_state))
+
+                # Emulate human keystroke duration
+                if k_state == 0:  # key down
+                    _sleep(_uniform(MIN_KEY_DWELL, MAX_KEY_DWELL))
+                else:  # key up
+                    _sleep(CONSTANT_KEY_DWELL)
+
+                key_queue.task_done()
+
+            except queue.Empty:
+                continue
+            except Exception as e:
+                print(f"\n[WORKER] - Key Injection Thread crashed: {e}.")
+
+    # Start the injection thread
+    injector_thread = threading.Thread(
+        target=key_injection_loop, name="Keyboard-Injection-Loop", daemon=True
+    )
+    injector_thread.start()
+
+    while state["running"]:
         try:
             if k_pipe_read.poll(15.0):
                 payload = k_pipe_read.recv_bytes()
-                code, state = PACK_KEY.unpack(payload)
+                win_code, k_state = PACK_KEY.unpack(payload)
 
-                if state == KEY_PING:
+                if k_state == KEY_PING:
                     continue  # keepalive only: resets poll() timer, no driver write
 
-                # Windows logic sends state=0 for down, state=1 for up.
-                if state == 0:
-                    pressed_keys.add(code)
-                elif state == 1:
-                    pressed_keys.discard(code)
-
+                # Handle extended keys: Interception driver uses a single byte for the key code, so we need to set the extended bit for non-ASCII keys.
                 # E0_DOWN = 2, E0_UP = 3
-                if code > 0xFF:
-                    state |= 2  # set extended bit for non-ASCII keys
-                    code &= 0xFF  # strip extended bit for Interception driver
-                    
-                k_ctx.send(k_handle, KeyStroke(code, state))
+                if win_code > 0xFF:
+                    k_state |= 2  # set extended bit for non-ASCII keys
+                    win_code &= 0xFF  # strip extended bit for Interception driver
+
+                # Windows logic sends state=0 for down, state=1 for up.
+                if k_state == 0:
+                    pressed_keys.add(win_code)
+                elif k_state == 1:
+                    pressed_keys.discard(win_code)
+
+                # Instantly offload the event to the injection thread
+                key_queue.put((win_code, k_state))
 
             else:
                 _release_all_keys(
@@ -92,11 +134,15 @@ def keyboard_worker(k_pipe_read: Connection):
 
         except EOFError:
             print("\n[WORKER] - Keyboard Pipe closed by parent.")
-            running = False
+            state["running"] = False
 
         except Exception as e:
             print(f"\n[WORKER] - Keyboard Worker crashed: {e}.")
-            running = False
+            state["running"] = False
+
+    # Cleanup
+    state["running"] = False
+    injector_thread.join(timeout=2.0)
 
 
 def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
