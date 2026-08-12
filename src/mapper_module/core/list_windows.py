@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import (
-    QWidget,
+    QDialog,
     QVBoxLayout,
     QTableWidget,
     QTableWidgetItem,
@@ -17,11 +17,8 @@ from mapper_module.platform import get_platform
 
 from mapper_module.utils import WINDOWS_HEADERS
 
-if TYPE_CHECKING:
-    from PySide6.QtWidgets import QApplication
 
-
-class ListApp(QWidget):
+class ListApp(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Select Target Window")
@@ -63,13 +60,14 @@ class ListApp(QWidget):
         )  # Prevent user editing cells
         self.table.verticalHeader().setVisible(False)  # Hide row numbers
 
+        # Enter/Return on a selected row confirms it, same as clicking the button
+        self.table.cellActivated.connect(lambda row, col: self._handle_enter())
+
         self.v_layout.addWidget(self.table)
 
         self.enter_btn = QPushButton("Confirm Selection")
         self.enter_btn.clicked.connect(self._handle_enter)
         self.v_layout.addWidget(self.enter_btn)
-
-        self.table.cellActivated.connect(lambda row, col: self._handle_enter())
 
         self.setLayout(self.v_layout)
         self.resize(900, 500)
@@ -162,6 +160,12 @@ class ListApp(QWidget):
                 if item.text() != new_text:
                     item.setText(new_text)
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape:
+            self.reject()
+            return
+        super().keyPressEvent(event)
+
     def _handle_enter(self):
         row = self.table.currentRow()
         if row < 0:  # No row selected
@@ -181,16 +185,12 @@ class ListApp(QWidget):
         else:
             self.selected_window_title = ""
 
-        self.close()
-
-    def closeEvent(self, event):
-        super().closeEvent(event)
+        self.done(QDialog.DialogCode.Accepted)
 
 
-def select_window(app: QApplication) -> tuple[int, str] | None:
+def select_window() -> tuple[int, str] | None:
     dialog = ListApp()
-    dialog.show()
-    app.exec_()
+    dialog.exec_()
     dialog.timer.stop()
     if dialog.selected_window_id is None:
         return None
