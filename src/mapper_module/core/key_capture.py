@@ -230,7 +230,7 @@ def capture_keys(
     return toggle_key, sprint_key
 
 
-def capture_performance_settings() -> tuple[float, float] | None:
+def capture_performance_settings() -> tuple[float | None, float | None] | None:
     """GUI counterpart to the old console input() prompts for ADB rate
     cap and PPS alert threshold. Returns None if either dialog is closed
     without confirming/skipping (mirrors capture_keys' cancel behavior)."""
