@@ -5,8 +5,8 @@ import sys
 import shutil
 import requests
 import zipfile
+import shlex
 from pathlib import Path
-
 from mapper_module.utils import PROJECT_ROOT
 
 # --- Configuration ---
@@ -31,7 +31,7 @@ def _is_admin() -> bool:
 def _request_elevation():
     """Restarts the script with Windows UAC elevation."""
     script = Path(__file__).resolve()
-    params = " ".join(sys.argv[1:])
+    params = shlex.join(sys.argv[1:]) if sys.argv[1:] else ""
 
     ctypes.windll.shell32.ShellExecuteW(
         None, "runas", sys.executable, f'"{script}" {params}', str(script.parent), 1

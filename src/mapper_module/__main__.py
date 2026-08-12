@@ -149,7 +149,7 @@ class _Engine:
             print("\n[MAIN] - Performance configuration cancelled. Exiting...")
             return
         rate_cap, pps = perf_result
-        
+
         if rate_cap is None or pps is None:
             print("\n[MAIN] - Invalid performance settings. Exiting...")
             return
@@ -251,10 +251,6 @@ def run():
         profiler = cProfile.Profile()
         profiler.enable()
 
-    if not pre_flight_run():
-        profiler_cleanup(profiler)
-        sys.exit(1)
-
     if SYSTEM == "Linux":
         protocol = get_display_protocol()
         if protocol and protocol == "x11":
@@ -263,6 +259,10 @@ def run():
             print("\n[MAIN] - Ensure you are on X11.")
             profiler_cleanup(profiler)
             sys.exit(1)
+
+    if not pre_flight_run():
+        profiler_cleanup(profiler)
+        sys.exit(1)
 
     try:
         multiprocessing.set_start_method("spawn", force=True)

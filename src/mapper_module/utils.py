@@ -321,9 +321,8 @@ MIN_BUTTON_DWELL = 0.025
 MAX_BUTTON_DWELL = 0.04
 MIN_MOUSE_DWELL = 0.0008
 MAX_MOUSE_DWELL = 0.0012
-MIN_KEY_DWELL = 0.025
-MAX_KEY_DWELL = 0.040
-CONSTANT_KEY_DWELL = 0.001
+MIN_KEY_DWELL = 0.040
+MAX_KEY_DWELL = 0.070
 
 
 class TouchEvent:
@@ -376,19 +375,19 @@ class MapperEvent:
         _str = ""
         if self.sum_dx:
             _str += f", Sum DX: {self.sum_dx}"
-            
+
         if self.acc_x:
             _str += f", Acc X: {self.acc_x}"
-            
+
         if self.sum_dy:
             _str += f", Sum DY: {self.sum_dy}"
-            
+
         if self.acc_y:
             _str += f", Acc Y: {self.acc_y}"
-            
+
         if self.worker_type:
             _str += f", Worker Type: {self.worker_type}"
-            
+
         return f"Action: {self.action}, Cursor Visible: {self.is_visible}" + _str
 
 
@@ -447,7 +446,7 @@ class MapperEventDispatcher:
                     )
                 elif event_object.action in ["ON_WORKER_RESPAWN"]:
                     func(event_object.worker_type)
-        
+
         else:
             print(f"\n[UTILITY] - Attempted to dispatch unknown event {registry_key}.")
 

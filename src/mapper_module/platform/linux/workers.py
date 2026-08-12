@@ -1,10 +1,12 @@
 from __future__ import annotations
-import queue
-import queue
 from typing import TYPE_CHECKING
-import threading
 
-from mapper_module.utils import KEY_PING, BUTTON_PING
+import queue
+import threading
+from time import sleep as _sleep
+from random import uniform as _uniform
+
+from mapper_module.utils import KEY_PING, BUTTON_PING, CONSTANT_DWELL
 
 if TYPE_CHECKING:
     from multiprocessing.connection import Connection
@@ -39,16 +41,11 @@ def _release_all_buttons(
 def keyboard_worker(k_pipe_read: Connection):
     """Dedicated process for Linux evdev virtual keyboard."""
 
-    import queue
-    import threading
-    from time import sleep as _sleep
-    from random import uniform as _uniform
     from evdev import UInput, ecodes
     from mapper_module.utils import (
         PACK_KEY,
         MIN_KEY_DWELL,
         MAX_KEY_DWELL,
-        CONSTANT_KEY_DWELL,
     )
 
     cap = {ecodes.EV_KEY: list(range(1, 256))}
@@ -178,7 +175,7 @@ def keyboard_worker(k_pipe_read: Connection):
                 if k_state == 1:  # key down
                     _sleep(_uniform(MIN_KEY_DWELL, MAX_KEY_DWELL))
                 else:  # key up
-                    _sleep(CONSTANT_KEY_DWELL)
+                    _sleep(CONSTANT_DWELL)
 
                 key_queue.task_done()
 
@@ -243,8 +240,6 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
     never block camera-movement delivery. Both share one UInput device
     behind `send_lock`, which wraps only write()/syn(), not sleeps."""
 
-    from time import sleep as _sleep
-    from random import uniform as _uniform
     from evdev import UInput, ecodes, AbsInfo
     from mapper_module.utils import (
         TASK_REL,
@@ -260,7 +255,6 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
         MIDDLE_BUTTON_UP,
         MAX_COALESCE,
         DOWN_TUPLE,
-        CONSTANT_DWELL,
         MIN_BUTTON_DWELL,
         MAX_BUTTON_DWELL,
         MIN_MOUSE_DWELL,
