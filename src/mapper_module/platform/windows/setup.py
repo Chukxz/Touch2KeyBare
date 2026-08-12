@@ -145,10 +145,10 @@ def _setup_driver():
         _request_elevation()
         sys.exit(0)
 
-    return register_driver()
+    return _register_driver()
 
 
-def register_driver():
+def _register_driver():
     try:
         print("[+] Registering Interception driver...")
         result = subprocess.run(
