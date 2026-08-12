@@ -228,7 +228,7 @@ class UInputBridge(AbstractBridge):
     def _respawn_keyboard(self):
         try:
             print(
-                f"\n[UTILITY] - Keyboard Worker Died: {_datetime.now().strftime('%H:%M:%S')}!"
+                f"\n[BRIDGE] - Keyboard Worker Died: {_datetime.now().strftime('%H:%M:%S')}!"
             )
 
             with self.bridge_lock:
@@ -251,7 +251,7 @@ class UInputBridge(AbstractBridge):
                 try:
                     self._respawn_callback("keyboard")
                 except Exception as e:
-                    print(f"\n[UTILITY] - Respawn callback (keyboard) failed: {e}.")
+                    print(f"\n[BRIDGE] - Respawn callback (keyboard) failed: {e}.")
 
         finally:
             with self._k_respawn_lock:
@@ -269,7 +269,7 @@ class UInputBridge(AbstractBridge):
     def _respawn_mouse(self):
         try:
             print(
-                f"\n[UTILITY] - Mouse Worker Died: {_datetime.now().strftime('%H:%M:%S')}!"
+                f"\n[BRIDGE] - Mouse Worker Died: {_datetime.now().strftime('%H:%M:%S')}!"
             )
 
             with self.bridge_lock:
@@ -296,7 +296,7 @@ class UInputBridge(AbstractBridge):
                 try:
                     self._respawn_callback("mouse")
                 except Exception as e:
-                    print(f"\n[UTILITY] - Respawn callback (mouse) failed: {e}.")
+                    print(f"\n[BRIDGE] - Respawn callback (mouse) failed: {e}.")
 
         finally:
             with self._m_respawn_lock:

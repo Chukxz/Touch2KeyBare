@@ -22,9 +22,9 @@ if TYPE_CHECKING:
 
 
 def _release_all_keys(k_ctx, k_handle, K_Stroke, keys_set, reason=""):
-    print(f"\n[UTILITY] - {reason}.")
+    print(f"\n[WORKER] - {reason}.")
     if keys_set:
-        print(f"\n[UTILITY] - Releasing {len(keys_set)} keys.")
+        print(f"\n[WORKER] - Releasing {len(keys_set)} keys.")
         for code in list(keys_set):
             k_ctx.send(k_handle, K_Stroke(code, 1))  # 1 = UP
         keys_set.clear()
@@ -33,10 +33,10 @@ def _release_all_keys(k_ctx, k_handle, K_Stroke, keys_set, reason=""):
 def _release_all_buttons(
     m_ctx, m_handle, M_Stroke, left_down, right_down, middle_down, reason=""
 ):
-    print(f"\n[UTILITY] - {reason}.")
+    print(f"\n[WORKER] - {reason}.")
     buttons_set_sum = sum([left_down, right_down, middle_down])
     if buttons_set_sum > 0:
-        print(f"\n[UTILITY] - Releasing {buttons_set_sum} buttons.")
+        print(f"\n[WORKER] - Releasing {buttons_set_sum} buttons.")
         if left_down:
             m_ctx.send(m_handle, M_Stroke(MOUSE_MOVE_RELATIVE, LEFT_BUTTON_UP, 0, 0, 0))
         if right_down:
@@ -86,11 +86,11 @@ def keyboard_worker(k_pipe_read: Connection):
                 continue
 
         except EOFError:
-            print("\n[UTILITY] - Keyboard Pipe closed by parent.")
+            print("\n[WORKER] - Keyboard Pipe closed by parent.")
             running = False
 
         except Exception as e:
-            print(f"\n[UTILITY] - Keyboard Worker crashed: {e}.")
+            print(f"\n[WORKER] - Keyboard Worker crashed: {e}.")
             running = False
 
 
@@ -178,11 +178,11 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
                     left_down = right_down = middle_down = False
 
             except EOFError:
-                print("\n[UTILITY] - Mouse Button Pipe closed by parent.")
+                print("\n[WORKER] - Mouse Button Pipe closed by parent.")
                 state["running"] = False
 
             except Exception as e:
-                print(f"\n[UTILITY] - Mouse Button Worker crashed: {e}.")
+                print(f"\n[WORKER] - Mouse Button Worker crashed: {e}.")
                 state["running"] = False
 
     button_thread = threading.Thread(
@@ -251,9 +251,9 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
                 _sleep(CONSTANT_DWELL)
 
         except EOFError:
-            print("\n[UTILITY] - Mouse Movement Pipe closed by parent.")
+            print("\n[WORKER] - Mouse Movement Pipe closed by parent.")
             state["running"] = False
 
         except Exception as e:
-            print(f"\n[UTILITY] - Mouse Movement Worker crashed: {e}.")
+            print(f"\n[WORKER] - Mouse Movement Worker crashed: {e}.")
             state["running"] = False
