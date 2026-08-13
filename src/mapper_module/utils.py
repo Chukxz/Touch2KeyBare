@@ -264,18 +264,6 @@ SPECIAL_MAP = {
     "enter": "ENTER",
     "backspace": "BACKSPACE",
     "tab": "TAB",
-    "f1": "F1",
-    "f2": "F2",
-    "f3": "F3",
-    "f4": "F4",
-    "f5": "F5",
-    "f6": "F6",
-    "f7": "F7",
-    "f8": "F8",
-    "f9": "F9",
-    "f10": "F10",
-    "f11": "F11",
-    "f12": "F12",
     "=": "EQUAL",
     "-": "MINUS",
     "[": "LEFT_BRACKET",
@@ -291,11 +279,12 @@ SPECIAL_MAP = {
     "rshift": "RSHIFT",
     "lalt": "LALT",
     "ralt": "RALT",
-    "shift": "LSHIFT",
-    "alt": "LALT",
-    "control": "LCTRL",
     "lctrl": "LCTRL",
     "rctrl": "RCTRL",
+    "shift": "RSHIFT",
+    "alt": "RALT",
+    "ctrl": "RCTRL",
+    "control": "RCTRL",
     " ": "SPACE",
     "*": "NUM_MULTIPLY",
     "caps_lock": "CAPSLOCK",
@@ -311,11 +300,9 @@ SPECIAL_MAP = {
 
 SPECIAL_MAP_INV = {v: k for k, v in SPECIAL_MAP.items()}
 
-# Low-level worker constants
+# Low-level worker constants (dwell times in seconds)
 MAX_COALESCE = 20
 DOWN_TUPLE = (LEFT_BUTTON_DOWN, RIGHT_BUTTON_DOWN, MIDDLE_BUTTON_DOWN)
-
-# In seconds
 CONSTANT_DWELL = 0.001
 MIN_BUTTON_DWELL = 0.025
 MAX_BUTTON_DWELL = 0.04

@@ -1,11 +1,10 @@
 import os
-import subprocess
 import sys
+import subprocess
 import shutil
 import requests
 import zipfile
 from pathlib import Path
-
 from mapper_module.utils import PROJECT_ROOT
 
 # --- Configuration ---

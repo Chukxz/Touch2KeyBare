@@ -14,7 +14,6 @@ from mapper_module.platform import check_single_instance, get_platform
 from mapper_module.utils import (
     PRESETS,
     ADB,
-    SYSTEM,
     SHORT_DELAY,
     TouchEvent,
 )
@@ -40,17 +39,6 @@ if TYPE_CHECKING:
     from cProfile import Profile
 
 profiler: Profile | None = None
-
-
-def get_display_protocol():
-    session = os.environ.get("XDG_SESSION_TYPE", "").lower()
-    if session == "wayland":
-        if "DISPLAY" in os.environ:
-            return "xwayland"
-        return "wayland"
-    if session == "x11" or "DISPLAY" in os.environ:
-        return "x11"
-    return None
 
 
 class _Engine:
@@ -251,15 +239,6 @@ def run():
         profiler = cProfile.Profile()
         profiler.enable()
 
-    if SYSTEM == "Linux":
-        protocol = get_display_protocol()
-        if protocol and protocol == "x11":
-            pass
-        else:
-            print("\n[MAIN] - Ensure you are on X11.")
-            profiler_cleanup(profiler)
-            sys.exit(1)
-
     if not pre_flight_run():
         profiler_cleanup(profiler)
         sys.exit(1)
@@ -291,7 +270,3 @@ def run():
     except KeyboardInterrupt:
         _app.closeAllWindows()
         _engine._shutdown()
-
-
-if __name__ == "__main__":
-    run()

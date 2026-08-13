@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from mapper_module.utils import SYSTEM, PROJECT_ROOT, ADB
+from mapper_module.utils import SYSTEM, ADB
 
 
 def _check_adb():
@@ -9,9 +9,8 @@ def _check_adb():
     if shutil.which("adb") == ADB.as_posix():
         return True
 
-    # Check custom bin/ directory
-    bin_adb = PROJECT_ROOT / "bin" / "platform-tools" / "adb.exe"
-    if bin_adb.exists():
+    # Check custom bin directory
+    if ADB.exists():
         return True
 
     return False

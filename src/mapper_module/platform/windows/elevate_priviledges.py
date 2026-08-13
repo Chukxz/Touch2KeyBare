@@ -33,7 +33,12 @@ def request_elevation():
     script = Path(__file__).resolve()
     params = shlex.join(sys.argv[1:]) if sys.argv[1:] else ""
     ctypes.windll.shell32.ShellExecuteW(
-        None, "runas", sys.executable, f'"{script}" {params}', str(script.parent), 1
+        None,
+        "run_as",
+        sys.executable,
+        f'"{script}" {params}',
+        str(script.parent),
+        1,
     )
 
 
@@ -160,7 +165,7 @@ def _register_driver():
         else:
             # Safely decode stderr even if it contains weird characters
             print(
-                f"[!] Failed to register driver (driver may already be installed run 'touch2key-preflight' to confirm)."
+                f"[!] Failed to register driver (driver may already be installed elevate 'touch2key-preflight' to confirm)."
             )
             return False
 
@@ -172,7 +177,7 @@ def _register_driver():
         return False
 
 
-def setup_windows():
+def elevate():
     print("--- Touch2Key Windows Setup Wizard ---")
 
     # Prepare Environment
@@ -204,4 +209,4 @@ def setup_windows():
 
 
 if __name__ == "__main__":
-    setup_windows()
+    elevate()

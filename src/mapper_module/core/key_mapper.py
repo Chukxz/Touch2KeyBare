@@ -82,16 +82,16 @@ class KeyMapper:
         print(f"\n[KEYMAPPER] - Hot-path ready: {len(self.active_zones)} zones active.")
 
     def _send_key_touch_event(self, scancode, down=True):
-        """Dispatches input to Interception Bridge"""
+        """Prepares input to be dispatched to the Bridge."""
         if down:
-            # Only send KeyDown if this is the first finger for this scancode
+            # Only dispatch key down if this is the first finger for this scancode
             count = self.scancode_ref_counts.get(scancode, 0)
             if count == 0:
                 self._dispatch_to_bridge(scancode, True)
             self.scancode_ref_counts[scancode] = count + 1
 
         else:
-            # Only send KeyUp if this is the last finger for this scancode
+            # Only dispatch key up if this is the last finger for this scancode
             count = self.scancode_ref_counts.get(scancode, 0)
             if count > 0:
                 new_count = count - 1
@@ -100,6 +100,7 @@ class KeyMapper:
                     self._dispatch_to_bridge(scancode, False)
 
     def _dispatch_to_bridge(self, scancode, down):
+        """Dispatches input to the Bridge."""
         if down:
             if scancode == M_LEFT:
                 self.bridge.left_click_down()

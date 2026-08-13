@@ -5,6 +5,7 @@ from .mapping import Mapping
 from .workers import keyboard_worker
 from .workers import mouse_worker
 from .setup import setup_windows
+from .elevate_priviledges import elevate
 
 __all__ = [
     "InterceptionBridge",
@@ -14,4 +15,5 @@ __all__ = [
     "keyboard_worker",
     "mouse_worker",
     "setup_windows",
+    "elevate",
 ]
