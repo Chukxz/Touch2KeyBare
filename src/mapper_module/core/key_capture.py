@@ -6,7 +6,7 @@ from mapper_module.utils import (
     DEFAULT_ADB_RATE_CAP,
     DEFAULT_PPS,
 )
-from mapper_module.platform import get_specific_qt_key
+from mapper_module.platforms import get_specific_qt_key
 from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,

@@ -1,5 +1,5 @@
 import pytest
-from mapper_module.platform.base import AbstractBridge
+from mapper_module.platforms.base import AbstractBridge
 
 
 class MockBridge(AbstractBridge):

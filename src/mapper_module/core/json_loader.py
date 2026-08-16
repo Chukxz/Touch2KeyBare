@@ -6,7 +6,7 @@ import os
 import time
 import keyboard
 
-from mapper_module.platform import get_platform
+from mapper_module.platforms import get_platform
 
 from mapper_module.utils import (
     MapperEvent,

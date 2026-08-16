@@ -9,7 +9,7 @@ import time
 import sys
 import argparse
 from PySide6.QtWidgets import QApplication
-from mapper_module.platform import check_single_instance, get_platform
+from mapper_module.platforms import check_single_instance, get_platform
 
 from mapper_module.utils import (
     PRESETS,
@@ -33,6 +33,8 @@ from mapper_module.scripts.pre_flight import run as pre_flight_run
 from mapper_module.core.list_windows import select_window
 from mapper_module.core.key_capture import capture_keys, capture_performance_settings
 
+from mapper_module.utils import PROJECT_ROOT
+
 NAME = "Touch2Key_Engine"
 
 if TYPE_CHECKING:
@@ -41,7 +43,7 @@ if TYPE_CHECKING:
 profiler: Profile | None = None
 
 
-class _Engine:
+class Engine:
     def __init__(self):
         _Platform = get_platform()
 
@@ -103,7 +105,8 @@ class _Engine:
     def _start(self):
         w_result = select_window()
         if w_result is None:
-            print("\n[MAIN] - No window selected. Exiting...")
+            print("\n[MAIN] - No window selected.")
+            input("Press Enter to exit...")
             return
         selected_window_id, window_title = w_result
 
@@ -118,7 +121,8 @@ class _Engine:
 
         c_result = capture_keys(preset_name)
         if c_result is None:
-            print("\n[MAIN] - Key configuration cancelled. Exiting...")
+            print("\n[MAIN] - Key configuration cancelled.")
+            input("Press Enter to exit...")
             return
         toggle_key, sprint_key = c_result
 
@@ -134,12 +138,14 @@ class _Engine:
 
         perf_result = capture_performance_settings()
         if perf_result is None:
-            print("\n[MAIN] - Performance configuration cancelled. Exiting...")
+            print("\n[MAIN] - Performance configuration cancelled.")
+            input("Press Enter to exit...")
             return
         rate_cap, pps = perf_result
 
         if rate_cap is None or pps is None:
-            print("\n[MAIN] - Invalid performance settings. Exiting...")
+            print("\n[MAIN] - Invalid performance settings.")
+            input("Press Enter to exit...")
             return
 
         print(f"\n[MAIN] - ADB Cap: {rate_cap}Hz | Alert Threshold: {pps}PPS.")
@@ -198,8 +204,7 @@ class _Engine:
                     if p is not None
                 ]
 
-                # Signal both to terminate before waiting on either —
-                # worst case is now one ~1s wait, not one per process.
+                # Signal both to terminate before waiting on either.
                 for p in procs:
                     if p.is_alive():
                         p.terminate()
@@ -215,13 +220,14 @@ class _Engine:
 
         profiler_cleanup(profiler)
         print("\n[MAIN] - Shutdown complete. Goodbye.")
+        input("Press Enter to exit...")
         os._exit(0)
 
 
 def profiler_cleanup(profiler: Profile | None):
     if profiler:
         profiler.disable()
-        profiler.dump_stats("touch2key.prof")
+        profiler.dump_stats(PROJECT_ROOT / "touch2key.prof")
         print("\n[MAIN] - Profiling data saved to 'touch2key.prof'.")
 
 
@@ -241,6 +247,7 @@ def run():
 
     if not pre_flight_run():
         profiler_cleanup(profiler)
+        input("Press Enter to exit...")
         sys.exit(1)
 
     try:
@@ -253,6 +260,7 @@ def run():
     except RuntimeError as e:
         print(f"[MAIN] - {e}")
         profiler_cleanup(profiler)
+        input("Press Enter to exit...")
         os._exit(0)
 
     if not success:
@@ -260,13 +268,18 @@ def run():
             "[MAIN] - Another instance of Touch2Key is already running. Exiting this instance."
         )
         profiler_cleanup(profiler)
+        input("Press Enter to exit...")
         os._exit(0)
 
     _app = QApplication(sys.argv)
     _app.setQuitOnLastWindowClosed(True)
-    _engine = _Engine()
+    _engine = Engine()
     try:
         _engine._start()
     except KeyboardInterrupt:
         _app.closeAllWindows()
         _engine._shutdown()
+
+
+if __name__ == "__main__":
+    run()

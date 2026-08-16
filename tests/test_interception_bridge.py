@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from mapper_module.platform.windows.bridge import InterceptionBridge
+from mapper_module.platforms.windows.bridge import InterceptionBridge
 from mapper_module.utils import (
     PACK_KEY,
     PACK_ABS,

@@ -1,5 +1,6 @@
 import os
-
+import sys
+from mapper_module import engine
 
 def _get_display_protocol():
     session = os.environ.get("XDG_SESSION_TYPE", "").lower()
@@ -12,13 +13,14 @@ def _get_display_protocol():
     return None
 
 
-def is_display_protocol_x11():
+def check_display_protocol():
     protocol = _get_display_protocol()
     if not protocol:
-        return False
+        print("\n[MAIN] - Ensure you are on X11.")
+        sys.exit(1)
     else:
-        return protocol == "x11"
+        engine.run()
 
 
 if __name__ == "__main__":
-    is_display_protocol_x11()
+    check_display_protocol()

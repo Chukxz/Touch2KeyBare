@@ -1,5 +1,5 @@
 from __future__ import annotations
-from mapper_module.platform import get_platform, get_specific_mt_key
+from mapper_module.platforms import get_platform, get_specific_mt_key
 
 get_platform().SystemConfig().set_dpi_awareness()
 

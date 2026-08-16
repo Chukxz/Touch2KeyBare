@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import (
     QDialog,
@@ -13,8 +12,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtGui import QFont
 
-from mapper_module.platform import get_platform
-
+from mapper_module.platforms import get_platform
 from mapper_module.utils import WINDOWS_HEADERS
 
 

@@ -158,7 +158,6 @@ def _register_driver():
             print("[+] Driver registered successfully!")
             return True
         else:
-            # Safely decode stderr even if it contains weird characters
             print(
                 f"[!] Failed to register driver (driver may already be installed run 'touch2key-preflight' to confirm)."
             )
@@ -192,7 +191,17 @@ def setup_windows():
             input("Restart PC now (Will restart in 5 seconds)? (y/n): ").strip().lower()
         )
         if choice == "y":
-            os.system('shutdown /r /t 5 /c "Touch2Key driver installation complete."')
+            # os.system('shutdown /r /t 5 /c "Touch2Key driver installation complete."')
+            subprocess.run(
+                [
+                    "shutdown",
+                    "/r",
+                    "/t",
+                    "5",
+                    "/c",
+                    "Touch2Key driver installation complete.",
+                ]
+            )
         else:
             print(
                 "\n[+] Please remember to restart your computer as soon as possible to complete the installation process."

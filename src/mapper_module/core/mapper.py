@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 import time
 import threading
 
-from mapper_module.platform import get_platform
+from mapper_module.platforms import get_platform
 from mapper_module.utils import (
     DEF_DPI,
     LONG_DELAY,
@@ -17,7 +17,7 @@ from mapper_module.utils import (
 if TYPE_CHECKING:
     from .json_loader import JSONLoader
     from .touch_reader import TouchReader
-    from mapper_module.platform.base import AbstractBridge
+    from mapper_module.platforms.base import AbstractBridge
 
 
 class Mapper:

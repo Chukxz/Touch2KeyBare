@@ -3,17 +3,15 @@ from mapper_module.utils import SYSTEM
 
 
 def run():
-    print(f"--- Setting up for {SYSTEM} ---")
-
     if SYSTEM == "Windows":
-        from mapper_module.platform.windows import elevate
+        from mapper_module.platforms.windows import elevate
 
         elevate()
 
     elif SYSTEM == "Linux":
-        from mapper_module.platform.linux import is_display_protocol_x11
+        from mapper_module.platforms.linux import check_display_protocol
 
-        is_display_protocol_x11()
+        check_display_protocol()
 
     else:
         print(f"[!] Unsupported OS: {SYSTEM}")

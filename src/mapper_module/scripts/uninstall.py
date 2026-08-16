@@ -112,8 +112,18 @@ def run():
             )
 
             if choice == "y":
-                os.system(
-                    'shutdown /r /t 5 /c "Touch2Key driver installation complete."'
+                # os.system(
+                #     'shutdown /r /t 5 /c "Touch2Key driver uninstallation complete."'
+                # )
+                subprocess.run(
+                    [
+                        "shutdown",
+                        "/r",
+                        "/t",
+                        "5",
+                        "/c",
+                        "Touch2Key driver uninstallation complete.",
+                    ]
                 )
             else:
                 print(

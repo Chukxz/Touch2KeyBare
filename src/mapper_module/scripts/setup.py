@@ -6,12 +6,12 @@ def run():
     print(f"--- Setting up for {SYSTEM} ---")
 
     if SYSTEM == "Windows":
-        from mapper_module.platform.windows import setup_windows
+        from mapper_module.platforms.windows import setup_windows
 
         setup_windows()
 
     elif SYSTEM == "Linux":
-        from mapper_module.platform.linux import setup_linux
+        from mapper_module.platforms.linux import setup_linux
 
         setup_linux()
 
