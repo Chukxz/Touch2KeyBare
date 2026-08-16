@@ -38,7 +38,9 @@ class AppConfig:
         toml_path = Path(TOML_PATH)
         try:
             if not toml_path.exists():
-                print(f"\n[CONFIG] - Config file {TOML_PATH} not found! Creating default...")
+                print(
+                    f"\n[CONFIG] - Config file {TOML_PATH} not found! Creating default..."
+                )
                 create_default_toml()
 
             with toml_path.open("rb") as f:

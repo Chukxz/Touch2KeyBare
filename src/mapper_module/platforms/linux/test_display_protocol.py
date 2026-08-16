@@ -2,6 +2,7 @@ import os
 import sys
 from mapper_module import engine
 
+
 def _get_display_protocol():
     session = os.environ.get("XDG_SESSION_TYPE", "").lower()
     if session == "wayland":

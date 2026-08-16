@@ -44,7 +44,8 @@ class MockBridge(AbstractBridge):
 
     def release_all(self) -> None:
         pass
-    
+
+
 @pytest.fixture
 def mock_bridge():
     """Provides a fresh MockBridge for every test."""
