@@ -252,7 +252,7 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
                     payload = m_pipe_read.recv_bytes()
                     task_id = payload[0]
                 else:
-                    continue  # buttons live on their own pipe/thread now
+                    continue
 
             if task_id == TASK_REL:
                 _, dx, dy = PACK_REL.unpack(payload)

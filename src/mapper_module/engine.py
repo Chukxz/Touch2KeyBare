@@ -47,12 +47,12 @@ class Engine:
     def __init__(self):
         _Platform = get_platform()
 
-        print("\n[MAIN] - Initializing Touch2Key... Press 'ESC' to Stop.")
-        print(f"\n[MAIN] - ADB Executable File Path: {ADB}.")
+        print("\n[ENGINE] - Initializing Touch2Key... Press 'ESC' to Stop.")
+        print(f"\n[ENGINE] - ADB Executable File Path: {ADB}.")
         keyboard.add_hotkey("esc", self._shutdown)
 
         self.system_config = _Platform.SystemConfig()
-        self.system_config.set_high_priority(os.getpid(), "Main Loop")
+        self.system_config.set_high_priority(os.getpid(), "Main")
         self.system_config.set_dpi_awareness()
         self.system_config.set_timer_resolution()
 
@@ -105,7 +105,7 @@ class Engine:
     def _start(self):
         w_result = select_window()
         if w_result is None:
-            print("\n[MAIN] - No window selected.")
+            print("\n[ENGINE] - No window selected.")
             input("Press Enter to exit...")
             return
         selected_window_id, window_title = w_result
@@ -121,14 +121,14 @@ class Engine:
 
         c_result = capture_keys(preset_name)
         if c_result is None:
-            print("\n[MAIN] - Key configuration cancelled.")
+            print("\n[ENGINE] - Key configuration cancelled.")
             input("Press Enter to exit...")
             return
         toggle_key, sprint_key = c_result
 
         if not toggle_key:
             print(
-                "\n[MAIN] - No toggle key set. Touch zones if disabled by the cursor state can only be re-enabled via the keyboard/mouse."
+                "\n[ENGINE] - No toggle key set. Touch zones if disabled by the cursor state can only be re-enabled via the keyboard/mouse."
             )
 
         emulator = {
@@ -138,17 +138,17 @@ class Engine:
 
         perf_result = capture_performance_settings()
         if perf_result is None:
-            print("\n[MAIN] - Performance configuration cancelled.")
+            print("\n[ENGINE] - Performance configuration cancelled.")
             input("Press Enter to exit...")
             return
         rate_cap, pps = perf_result
 
         if rate_cap is None or pps is None:
-            print("\n[MAIN] - Invalid performance settings.")
+            print("\n[ENGINE] - Invalid performance settings.")
             input("Press Enter to exit...")
             return
 
-        print(f"\n[MAIN] - ADB Cap: {rate_cap}Hz | Alert Threshold: {pps}PPS.")
+        print(f"\n[ENGINE] - ADB Cap: {rate_cap}Hz | Alert Threshold: {pps}PPS.")
 
         mapper_event_dispatcher = MapperEventDispatcher()
         config = AppConfig(mapper_event_dispatcher)
@@ -185,7 +185,7 @@ class Engine:
             return
         self.is_shutting_down = True
 
-        print("\n[MAIN] - 'ESC' detected. Cleaning up...")
+        print("\n[ENGINE] - 'ESC' detected. Cleaning up...")
         try:
             if self.touch_reader is not None:
                 self.touch_reader.stop()
@@ -219,7 +219,7 @@ class Engine:
             pass
 
         profiler_cleanup(profiler)
-        print("\n[MAIN] - Shutdown complete. Goodbye.")
+        print("\n[ENGINE] - Shutdown complete. Goodbye.")
         input("Press Enter to exit...")
         os._exit(0)
 
@@ -228,7 +228,7 @@ def profiler_cleanup(profiler: Profile | None):
     if profiler:
         profiler.disable()
         profiler.dump_stats(PROJECT_ROOT / "touch2key.prof")
-        print("\n[MAIN] - Profiling data saved to 'touch2key.prof'.")
+        print("\n[ENGINE] - Profiling data saved to 'touch2key.prof'.")
 
 
 def run():
@@ -258,14 +258,14 @@ def run():
     try:
         success, _instance_handle = check_single_instance(NAME)
     except RuntimeError as e:
-        print(f"[MAIN] - {e}")
+        print(f"[ENGINE] - {e}")
         profiler_cleanup(profiler)
         input("Press Enter to exit...")
         os._exit(0)
 
     if not success:
         print(
-            "[MAIN] - Another instance of Touch2Key is already running. Exiting this instance."
+            "[ENGINE] - Another instance of Touch2Key is already running. Exiting this instance."
         )
         profiler_cleanup(profiler)
         input("Press Enter to exit...")

@@ -26,6 +26,8 @@ class SystemConfig(AbstractSystemConfig):
             p = psutil.Process(pid)
             p.nice(psutil.HIGH_PRIORITY_CLASS)
             p.cpu_affinity(list(range(psutil.cpu_count() or 1)))
-            print(f"\n[SYSTEM] - {label} set to HIGH (Floating Affinity).")
+            print(
+                f"\n[SYSTEM] - {label} process with PID {pid} set to HIGH (Floating Affinity)."
+            )
         except Exception as e:
             print(f"\n[SYSTEM] - Warning: {e}.")

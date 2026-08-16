@@ -30,14 +30,14 @@ class SystemConfig(AbstractSystemConfig):
                 # Setting negative nice values on Linux requires root/sudo.
                 # If they run the app without sudo, we catch it gracefully.
                 print(
-                    f"\n[SYSTEM] - Notice: {label} priority boost skipped (requires root)."
+                    f"\n[SYSTEM] - Notice: {label} process with PID {pid} priority boost skipped (requires root)."
                 )
 
             p.cpu_affinity(list(range(psutil.cpu_count() or 1)))
 
             if p.nice() < 0:
                 print(
-                    f"\n[SYSTEM] - {label} set to HIGH (Nice: {p.nice()}, Floating Affinity)."
+                    f"\n[SYSTEM] - {label} process with PID {pid} set to HIGH (Nice: {p.nice()}, Floating Affinity)."
                 )
 
         except Exception as e:
