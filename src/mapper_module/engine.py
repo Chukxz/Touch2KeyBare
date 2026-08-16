@@ -15,7 +15,7 @@ from mapper_module.utils import (
     PRESETS,
     ADB,
     SHORT_DELAY,
-    TouchEvent,
+    SYSTEM,
 )
 
 from mapper_module import (
@@ -39,6 +39,7 @@ NAME = "Touch2Key_Engine"
 
 if TYPE_CHECKING:
     from cProfile import Profile
+    from mapper_module.utils import TouchEvent
 
 profiler: Profile | None = None
 
@@ -150,6 +151,22 @@ class Engine:
 
         print(f"\n[ENGINE] - ADB Cap: {rate_cap}Hz | Alert Threshold: {pps}PPS.")
 
+        k_device_handle: int | None = None
+        m_device_handle: int | None = None
+
+        if SYSTEM == "Windows":
+            from mapper_module.platforms.windows import select_keyboard_then_mouse
+
+            s_result = select_keyboard_then_mouse()
+            if s_result is None:
+                print("\n[ENGINE] Interception device querying cancelled.")
+                input("Press Enter to exit...")
+                return
+            k_device_handle, m_device_handle = s_result
+
+            print(f"\nKeyboard device handle: {k_device_handle}")
+            print(f"\nMouse device handle: {m_device_handle}")
+
         mapper_event_dispatcher = MapperEventDispatcher()
         config = AppConfig(mapper_event_dispatcher)
 
@@ -174,7 +191,7 @@ class Engine:
         mapper_event_dispatcher.register_callback(
             "ON_MENU_MODE_TOGGLE", self._set_is_visible
         )
-        self.bridge_class.start_worker_processes()
+        self.bridge_class.start_worker_processes(k_device_handle, m_device_handle)
 
         keyboard.wait()
 

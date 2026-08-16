@@ -23,7 +23,7 @@ def _request_elevation():
 
 
 def elevate():
-    """Handles process registration."""
+    """Handles process elevation."""
     if not _is_admin():
         _request_elevation()
         sys.exit(0)

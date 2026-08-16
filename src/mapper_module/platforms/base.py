@@ -56,7 +56,9 @@ class AbstractWindowManager(ABC):
 
 class AbstractBridge(ABC):
     @abstractmethod
-    def start_worker_processes(self):
+    def start_worker_processes(
+        self, k_device_handle: int | None, m_device_handle: int | None
+    ):
         """Starts the worker processes for keyboard and mouse."""
         pass
 

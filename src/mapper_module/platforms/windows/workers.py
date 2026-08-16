@@ -54,8 +54,14 @@ def _release_all_buttons(
             )
 
 
-def keyboard_worker(k_pipe_read: Connection):
+def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
     """Dedicated process for Windows Interception driver keyboard events."""
+
+    if k_device_handle is None:
+        print(
+            f"\n[WORKER] - Keyboard worker has an invalid Interception keyboard handle."
+        )
+        return
 
     from interception.interception import Interception
     from interception.strokes import KeyStroke
@@ -66,7 +72,6 @@ def keyboard_worker(k_pipe_read: Connection):
     )
 
     k_ctx = Interception()
-    k_handle = k_ctx.keyboard
     pressed_keys = set()
     state = {"running": True}
 
@@ -80,7 +85,7 @@ def keyboard_worker(k_pipe_read: Connection):
                 # timeout=1.0 allows the loop to regularly check the running state and exit if needed
                 code, k_state = key_queue.get(timeout=1.0)
 
-                k_ctx.send(k_handle, KeyStroke(code, k_state))
+                k_ctx.send(k_device_handle, KeyStroke(code, k_state))
 
                 # Emulate human keystroke duration
                 if k_state == 0:  # key down
@@ -127,7 +132,7 @@ def keyboard_worker(k_pipe_read: Connection):
 
             else:
                 _release_all_keys(
-                    k_ctx, k_handle, KeyStroke, pressed_keys, "Keyboard Timeout"
+                    k_ctx, k_device_handle, KeyStroke, pressed_keys, "Keyboard Timeout"
                 )
                 pressed_keys.clear()
                 continue
@@ -145,11 +150,17 @@ def keyboard_worker(k_pipe_read: Connection):
     injector_thread.join(timeout=2.0)
 
 
-def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
+def mouse_worker(
+    m_pipe_read: Connection, mb_pipe_read: Connection, m_device_handle: int | None
+):
     """Movement (REL/ABS) runs on this function's main loop. Buttons run on
     a separate thread with their own pipe, so a button's dwell sleep can
     never block camera-movement delivery. Both share one Interception mouse
     handle behind `send_lock`, which wraps only the send() call, not sleeps."""
+
+    if m_device_handle is None:
+        print(f"\n[WORKER] - Mouse worker has an invalid Interception mouse handle.")
+        return
 
     import ctypes
 
@@ -174,7 +185,6 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
     )
 
     m_ctx = Interception()
-    m_handle = m_ctx.mouse
     send_lock = threading.Lock()
     state = {"running": True}
 
@@ -204,7 +214,8 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
 
                     with send_lock:
                         m_ctx.send(
-                            m_handle, MouseStroke(MOUSE_MOVE_RELATIVE, data, 0, 0, 0)
+                            m_device_handle,
+                            MouseStroke(MOUSE_MOVE_RELATIVE, data, 0, 0, 0),
                         )
 
                     if data in DOWN_TUPLE:
@@ -216,7 +227,7 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
                     with send_lock:
                         _release_all_buttons(
                             m_ctx,
-                            m_handle,
+                            m_device_handle,
                             MouseStroke,
                             left_down,
                             right_down,
@@ -276,7 +287,7 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
                 if acc_dx != 0 or acc_dy != 0:
                     with send_lock:
                         m_ctx.send(
-                            m_handle,
+                            m_device_handle,
                             MouseStroke(MOUSE_MOVE_RELATIVE, 0, 0, acc_dx, acc_dy),
                         )
                     acc_dx, acc_dy = 0, 0
@@ -287,7 +298,7 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
                 _, x, y = PACK_ABS.unpack(payload)
                 with send_lock:
                     m_ctx.send(
-                        m_handle,
+                        m_device_handle,
                         MouseStroke(
                             MOUSE_MOVE_ABSOLUTE | MOUSE_VIRTUAL_DESKTOP,
                             MOUSE_MOVE_ABSOLUTE,
@@ -305,3 +316,6 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
         except Exception as e:
             print(f"\n[WORKER] - Mouse Movement Worker crashed: {e}.")
             state["running"] = False
+
+    state["running"] = False  # no-op if already False; covers normal loop exit too
+    button_thread.join(timeout=16.0)

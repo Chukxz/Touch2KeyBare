@@ -47,22 +47,12 @@ class UInputBridge(AbstractBridge):
 
         # Keyboard: single pipe, one process
         self.k_pipe_read, self.k_pipe_write = multiprocessing.Pipe(duplex=False)
-        self.k_proc = multiprocessing.Process(
-            target=keyboard_worker,
-            name="Keyboard Worker",
-            args=(self.k_pipe_read,),
-            daemon=True,
-        )
+        self.k_proc = None
 
         # Mouse: movement pipe + separate button pipe, one process, two threads (see workers.py)
         self.m_pipe_read, self.m_pipe_write = multiprocessing.Pipe(duplex=False)
         self.mb_pipe_read, self.mb_pipe_write = multiprocessing.Pipe(duplex=False)
-        self.m_proc = multiprocessing.Process(
-            target=mouse_worker,
-            name="Mouse Worker",
-            args=(self.m_pipe_read, self.mb_pipe_read),
-            daemon=True,
-        )
+        self.m_proc = None
 
         self._stop_heartbeat = threading.Event()
         self.heartbeat_thread = threading.Thread(
@@ -70,14 +60,35 @@ class UInputBridge(AbstractBridge):
         )
 
         self._respawn_callback = None
+        self.k_device_handle = None
+        self.m_device_handle = None
 
     def set_respawn_callback(self, callback):
         self._respawn_callback = callback
 
-    def start_worker_processes(self):
+    def start_worker_processes(self, k_device_handle, m_device_handle):
+        self.k_device_handle = (
+            k_device_handle  # No-op; Existing for compatibility purposes.
+        )
+        self.m_device_handle = (
+            m_device_handle  # No-op; Existing for compatibility purposes.
+        )
+
+        self.k_proc = multiprocessing.Process(
+            target=keyboard_worker,
+            name="Keyboard Worker",
+            args=(self.k_pipe_read,),
+            daemon=True,
+        )
         self.k_proc.start()
         self.system_config.set_high_priority(self.k_proc.pid, "Keyboard")
 
+        self.m_proc = multiprocessing.Process(
+            target=mouse_worker,
+            name="Mouse Worker",
+            args=(self.m_pipe_read, self.mb_pipe_read),
+            daemon=True,
+        )
         self.m_proc.start()
         self.system_config.set_high_priority(self.m_proc.pid, "Mouse")
 
@@ -211,9 +222,9 @@ class UInputBridge(AbstractBridge):
 
     # SYSTEM API — async respawn
     def health_check(self):
-        if not self.k_proc.is_alive():
+        if self.k_proc is not None and not self.k_proc.is_alive():
             self._trigger_respawn_keyboard()
-        if not self.m_proc.is_alive():
+        if self.m_proc is not None and not self.m_proc.is_alive():
             self._trigger_respawn_mouse()
 
     def _trigger_respawn_keyboard(self):
@@ -245,7 +256,9 @@ class UInputBridge(AbstractBridge):
                 self.system_config.set_high_priority(
                     self.k_proc.pid, "Revived Keyboard"
                 )
-            old_proc.join(timeout=1.0)
+
+            if old_proc is not None:
+                old_proc.join(timeout=1.0)
 
             if self._respawn_callback:
                 try:
@@ -290,7 +303,9 @@ class UInputBridge(AbstractBridge):
                 )
                 self.m_proc.start()
                 self.system_config.set_high_priority(self.m_proc.pid, "Revived Mouse")
-            old_proc.join(timeout=1.0)
+
+            if old_proc is not None:
+                old_proc.join(timeout=1.0)
 
             if self._respawn_callback:
                 try:

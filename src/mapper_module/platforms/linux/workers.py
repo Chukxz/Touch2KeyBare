@@ -209,7 +209,7 @@ def keyboard_worker(k_pipe_read: Connection):
                 # Linux logic sends state=1 for down, state=0 for up.
                 if k_state == 1:
                     pressed_keys.add(linux_code)
-                elif state == 0:
+                elif k_state == 0:
                     pressed_keys.discard(linux_code)
 
                 # Instantly offload the event to the injection thread

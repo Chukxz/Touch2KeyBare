@@ -36,6 +36,9 @@ KEY_PING = 2
 BUTTON_PING = 0x0000  # doesn't collide with any *_DOWN/*_UP flag
 KEEPALIVE_INTERVAL = 5.0  # seconds; must stay well under the 15s worker poll timeout
 
+MOUSE_DEVICE = 0
+KEYBOARD_DEVICE = 11
+
 if TYPE_CHECKING:
     from multiprocessing import Process
 
