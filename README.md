@@ -65,7 +65,7 @@ After selecting your target window, the engine will prompt you to configure your
 *(Note: Windows requires a system reboot after installation to fully load the driver).*
 
 ## Uninstallation
-Because Touch2Key installs system-level drivers and kernel rules, **simply running `pip uninstall Touch2Key` is not sufficient.** You must also make use of the included uninstaller.
+Because Touch2Key installs system-level drivers and kernel rules, **simply running `pip uninstall Touch2Key` is not sufficient.** You should first run the included uninstaller before uninstalling via pip to avoid any issues or residual files.
 
 | Action | Command | Description |
 | :--- | :--- | :--- |
