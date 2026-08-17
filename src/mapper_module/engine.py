@@ -40,6 +40,7 @@ NAME = "Touch2Key_Engine"
 if TYPE_CHECKING:
     from cProfile import Profile
     from mapper_module.utils import TouchEvent
+    from argparse import ArgumentParser
 
 profiler: Profile | None = None
 
@@ -251,6 +252,7 @@ def profiler_cleanup(profiler: Profile | None):
 def run():
     global profiler
     parser = argparse.ArgumentParser(description="Touch2Key Main")
+
     parser.add_argument(
         "--profile", action="store_true", help="Generate profiling data."
     )

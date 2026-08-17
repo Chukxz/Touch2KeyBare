@@ -11,8 +11,10 @@ from typing import Literal
 import random
 from pathlib import Path
 import colorsys
-
 import struct
+import argparse
+
+PARSER = argparse.ArgumentParser(description="Touch2Key")
 
 # Task IDs
 TASK_BUTTON = 0
