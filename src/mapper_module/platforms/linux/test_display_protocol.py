@@ -16,8 +16,11 @@ def _get_display_protocol():
 
 def check_display_protocol():
     protocol = _get_display_protocol()
-    if not protocol:
-        print("\n[MAIN] - Ensure you are on X11.")
+    if protocol is None:
+        print("\n[!] - Display protocol not found.")
+        sys.exit(1)
+    elif not protocol == "x11":
+        print("\n[!] - Ensure you are on X11.")
         sys.exit(1)
     else:
         engine.run()
