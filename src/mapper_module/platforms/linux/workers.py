@@ -3,7 +3,10 @@ from typing import TYPE_CHECKING
 
 import queue
 import threading
-from time import sleep as _sleep, perf_counter_ns as _perf_counter_ns  # Reset the repeat timer for this new key_counter_ns
+from time import (
+    sleep as _sleep,
+    perf_counter_ns as _perf_counter_ns,
+)  # Reset the repeat timer for this new key_counter_ns
 from random import uniform as _uniform
 
 from mapper_module.utils import KEY_PING, BUTTON_PING, CONSTANT_DWELL
@@ -185,7 +188,7 @@ def keyboard_worker(k_pipe_read: Connection):
                     code, k_state = key_queue.get_nowait()
                     base_code = code & 0xFF
 
-                    if k_state == 0:  # KEY DOWN
+                    if k_state == 1:  # KEY DOWN
                         if code not in active_keys:
                             active_keys.add(code)
 
@@ -193,14 +196,14 @@ def keyboard_worker(k_pipe_read: Connection):
                             # This allows WASD diagonal movement to function flawlessly.
                             if base_code not in NON_SPAMMING_KEYS:
                                 repeat_key = code
-                                repeat_start_time = _perf_counter_ns()  # Reset the repeat timer for this new key
+                                repeat_start_time = _perf_counter_ns()
 
                             # Send the actual physical press to the OS (Interception)
                             ui_device.write(ecodes.EV_KEY, code, 1)
                             ui_device.syn()
                             _sleep(_uniform(MIN_KEY_DWELL, MAX_KEY_DWELL))
 
-                    elif k_state == 1:  # KEY UP
+                    elif k_state == 0:  # KEY UP
                         if code in active_keys:
                             active_keys.discard(code)
 
@@ -221,7 +224,9 @@ def keyboard_worker(k_pipe_read: Connection):
             if repeat_key is not None:
                 # Double-check it's not a modifier/lock key just to be absolutely safe
                 if (repeat_key & 0xFF) not in NON_SPAMMING_KEYS:
-                    current_time = _perf_counter_ns()  # Reset the repeat timer for this new key
+                    current_time = (
+                        _perf_counter_ns()
+                    )  # Reset the repeat timer for this new key
                     if (current_time - repeat_start_time) >= INITIAL_DELAY_NS:
                         try:
                             ui_device.write(ecodes.EV_KEY, repeat_key, 1)  # KEY DOWN
