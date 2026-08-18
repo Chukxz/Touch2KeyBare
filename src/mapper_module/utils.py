@@ -36,8 +36,6 @@ KEY_PING = 2
 BUTTON_PING = 0x0000  # doesn't collide with any *_DOWN/*_UP flag
 KEEPALIVE_INTERVAL = 5.0  # seconds; must stay well under the 15s worker poll timeout
 
-MOUSE_DEVICE = 0
-KEYBOARD_DEVICE = 11
 
 if TYPE_CHECKING:
     from multiprocessing import Process
@@ -88,7 +86,7 @@ LONG_DELAY = 2.0
 WINDOW_UPDATE_INTERVAL = 0.05
 ROTATION_POLL_INTERVAL = 0.5
 
-# Delay (in nanosecond)
+# Delay (in nanoseconds)
 CURSOR_CHECK_DELAY_NS = 100_000_000
 
 # Windows specific constants
