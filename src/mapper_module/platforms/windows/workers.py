@@ -71,6 +71,7 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
         MAX_KEY_DWELL,
         INITIAL_DELAY_NS,
         REPEAT_RATE_NS,
+        NON_SPAMMING_KEYS,
     )
 
     k_ctx = Interception()
@@ -87,11 +88,7 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
         - Correctly filters Modifier and Lock keys (no spamming).
         - Accurately steals typematic focus on new key presses.
         """
-        
-        # Base scancodes that DO NOT spam and DO NOT steal focus
-        # LCtrl/RCtrl(0x1D), LShift(0x2A), RShift(0x36), LAlt/RAlt(0x38)
-        # CapsLock(0x3A), NumLock(0x45), ScrollLock(0x46)
-NON_SPAMMING_KEYS = {0x1D, 0x2A, 0x36, 0x38, 0x3A, 0x45, 0x46}
+        WINDOWS_NON_SPAMMING_KEYS = NON_SPAMMING_KEYS[x] & 0xFF for x in NON_SPAMMING_KEYS)
         
         active_keys = set()
 
@@ -111,7 +108,7 @@ NON_SPAMMING_KEYS = {0x1D, 0x2A, 0x36, 0x38, 0x3A, 0x45, 0x46}
 
                             # TRUE HARDWARE LOGIC: Normal keys steal focus WITHOUT sending KEY_UP to the old key.
                             # This allows WASD diagonal movement to function flawlessly.
-                            if win_code not in NON_SPAMMING_KEYS:
+                            if win_code not in WINDOWS_NON_SPAMMING_KEYS:
                                 repeat_key = win_code
                             else:
                                 repeat_key = None
@@ -141,7 +138,7 @@ NON_SPAMMING_KEYS = {0x1D, 0x2A, 0x36, 0x38, 0x3A, 0x45, 0x46}
             # Process Auto-Repeat for the SINGLE active repeat key
             if repeat_key is not None:
                 # Double-check it's not a modifier/lock key just to be absolutely safe
-                if repeat_key not in NON_SPAMMING_KEYS:
+                if repeat_key not in WINDOWS_NON_SPAMMING_KEYS:
                     current_time = _perf_counter_ns()
                     if (current_time - repeat_start_time) >= INITIAL_DELAY_NS:
                         try:
