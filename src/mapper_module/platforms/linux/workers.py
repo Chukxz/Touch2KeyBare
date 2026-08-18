@@ -48,7 +48,6 @@ def keyboard_worker(k_pipe_read: Connection):
         MAX_KEY_DWELL,
         INITIAL_DELAY_NS,
         REPEAT_RATE_NS,
-        NON_SPAMMING_KEYS,
     )
 
     cap = {ecodes.EV_KEY: list(range(1, 256))}
@@ -172,6 +171,8 @@ def keyboard_worker(k_pipe_read: Connection):
         - Accurately steals typematic focus on new key presses.
         """
 
+        LINUX_NON_SPAMMING_KEYS = {LINUX_KEY_MAP[x] for x in NON_SPAMMING_KEYS}
+
         active_keys = set()
 
         # Typematic state tracking
@@ -182,34 +183,36 @@ def keyboard_worker(k_pipe_read: Connection):
             # Process all immediate state changes (Physical down/up from the bridge)
             while not key_queue.empty():
                 try:
-                    code, k_state = key_queue.get_nowait()
-                    base_code = code & 0xFF
+                    linux_code, k_state = key_queue.get_nowait()
 
-                    if k_state == 0:  # KEY DOWN
-                        if code not in active_keys:
-                            active_keys.add(code)
+                    if k_state == 1:  # KEY DOWN
+                        if linux_code not in active_keys:
+                            active_keys.add(linux_code)
 
                             # TRUE HARDWARE LOGIC: Normal keys steal focus WITHOUT sending KEY_UP to the old key.
                             # This allows WASD diagonal movement to function flawlessly.
-                            if base_code not in NON_SPAMMING_KEYS:
-                                repeat_key = code
-                                repeat_start_time = _perf_counter_ns()  # Reset the repeat timer for this new key
+                            if linux_code not in LINUX_NON_SPAMMING_KEYS:
+                                repeat_key = linux_code
+                            else:
+                                repeat_key = None
 
-                            # Send the actual physical press to the OS (Interception)
-                            ui_device.write(ecodes.EV_KEY, code, 1)
+                            repeat_start_time = _perf_counter_ns()  # Reset the repeat timer for this new key
+
+                            # Send the actual physical press to the OS (UInput)
+                            ui_device.write(ecodes.EV_KEY, linux_code, 1)
                             ui_device.syn()
                             _sleep(_uniform(MIN_KEY_DWELL, MAX_KEY_DWELL))
 
                     elif k_state == 1:  # KEY UP
-                        if code in active_keys:
-                            active_keys.discard(code)
+                        if linux_code in active_keys:
+                            active_keys.discard(linux_code)
 
                             # If the currently repeating key is released, clear focus
                             if repeat_key == code:
                                 repeat_key = None
 
-                            # Send the actual physical release to the OS (Interception)
-                            ui_device.write(ecodes.EV_KEY, code, 0)
+                            # Send the actual physical release to the OS (UInput)
+                            ui_device.write(ecodes.EV_KEY, linux_code, 0)
                             ui_device.syn()
                             _sleep(CONSTANT_DWELL)
 
@@ -220,7 +223,7 @@ def keyboard_worker(k_pipe_read: Connection):
             # Process Auto-Repeat for the SINGLE active repeat key
             if repeat_key is not None:
                 # Double-check it's not a modifier/lock key just to be absolutely safe
-                if (repeat_key & 0xFF) not in NON_SPAMMING_KEYS:
+                if repeat_key not in LINUX_NON_SPAMMING_KEYS:
                     current_time = _perf_counter_ns()  # Reset the repeat timer for this new key
                     if (current_time - repeat_start_time) >= INITIAL_DELAY_NS:
                         try:
@@ -231,7 +234,6 @@ def keyboard_worker(k_pipe_read: Connection):
 
             # Sleep at the repeat rate to prevent overwhelming the CPU and pipe
             _sleep(REPEAT_RATE_NS)
-            NON_SPAMMING_KEYS,
 
     # Start the injection thread
     injector_thread = threading.Thread(
