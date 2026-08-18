@@ -88,7 +88,7 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
         - Correctly filters Modifier and Lock keys (no spamming).
         - Accurately steals typematic focus on new key presses.
         """
-        WINDOWS_NON_SPAMMING_KEYS = {NON_SPAMMING_KEYS[x] & 0xFF for x in NON_SPAMMING_KEYS}
+        WINDOWS_NON_SPAMMING_KEYS = {NON_SPAMMING_KEYS[x] &= 0xFF for x in NON_SPAMMING_KEYS}
         
         active_keys = set()
 
@@ -108,10 +108,10 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
 
                             # TRUE HARDWARE LOGIC: Normal keys steal focus WITHOUT sending KEY_UP to the old key.
                             # This allows WASD diagonal movement to function flawlessly.
-                            if win_code not in WINDOWS_NON_SPAMMING_KEYS:
-                                repeat_key = win_code
-                            else:
+                            if win_code in WINDOWS_NON_SPAMMING_KEYS:
                                 repeat_key = None
+                            else:
+                                repeat_key = win_code
 
                             repeat_start_time = _perf_counter_ns()
 
