@@ -189,9 +189,9 @@ base_sens = max(0.1, min(base_sens, 10.0))  # Sensitivity guardrail
         calc_dx = (raw_dx * self.scaling_factor) + acc_x
         calc_dy = (raw_dy * self.scaling_factor) + acc_y
 
-        # Truncate to Integer (Actual pixels to move)
+        # Truncate to integer (actual pixels to move)
         final_dx = int(calc_dx)
-        final_dy = int(calc_dy)
+        final_dy = int(calc_dy)   
 
         # Fast-Exit for Noise
         # If the delta is less than 1 physical pixel, just keep the remainder and exit.
@@ -203,6 +203,10 @@ base_sens = max(0.1, min(base_sens, 10.0))  # Sensitivity guardrail
         # Save remainders for next packet
         acc_x = calc_dx - final_dx
         acc_y = calc_dy - final_dy
+        
+        # Clamp values
+        final_dx = max(-32000, min(32000, final_dx))
+        final_dy = max(-32000, min(32000, final_dy))
 
         # Physical movement execution
         self.bridge.mouse_move_rel(final_dx, final_dy)
