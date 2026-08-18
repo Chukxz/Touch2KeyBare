@@ -47,7 +47,7 @@ def keyboard_worker(k_pipe_read: Connection):
         MIN_KEY_DWELL,
         MAX_KEY_DWELL,
         INITIAL_DELAY_NS,
-        REPEAT_RATE_NS,
+        REPEAT_RATE,
         NON_SPAMMING_KEYS,
     )
 
@@ -207,7 +207,7 @@ def keyboard_worker(k_pipe_read: Connection):
                             active_keys.discard(linux_code)
 
                             # If the currently repeating key is released, clear focus
-                            if repeat_key == code:
+                            if repeat_key == linux_code:
                                 repeat_key = None
 
                             # Send the actual physical release to the OS (UInput)
@@ -232,7 +232,7 @@ def keyboard_worker(k_pipe_read: Connection):
                             pass
 
             # Sleep at the repeat rate to prevent overwhelming the CPU and pipe
-            _sleep(REPEAT_RATE_NS)
+            _sleep(REPEAT_RATE)
 
     # Start the injection thread
     injector_thread = threading.Thread(
