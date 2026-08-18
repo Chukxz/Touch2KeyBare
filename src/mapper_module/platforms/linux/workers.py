@@ -172,7 +172,6 @@ def keyboard_worker(k_pipe_read: Connection):
         """
 
         LINUX_NON_SPAMMING_KEYS = {LINUX_KEY_MAP[x] for x in NON_SPAMMING_KEYS}
-
         active_keys = set()
 
         # Typematic state tracking
