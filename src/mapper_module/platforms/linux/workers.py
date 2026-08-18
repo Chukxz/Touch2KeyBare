@@ -191,10 +191,10 @@ def keyboard_worker(k_pipe_read: Connection):
 
                             # TRUE HARDWARE LOGIC: Normal keys steal focus WITHOUT sending KEY_UP to the old key.
                             # This allows WASD diagonal movement to function flawlessly.
-                            if linux_code not in LINUX_NON_SPAMMING_KEYS:
-                                repeat_key = linux_code
-                            else:
+                            if linux_code in LINUX_NON_SPAMMING_KEYS:
                                 repeat_key = None
+                            else:
+                                repeat_key = linux_code
 
                             repeat_start_time = _perf_counter_ns()  # Reset the repeat timer for this new key
 
@@ -203,7 +203,7 @@ def keyboard_worker(k_pipe_read: Connection):
                             ui_device.syn()
                             _sleep(_uniform(MIN_KEY_DWELL, MAX_KEY_DWELL))
 
-                    elif k_state == 1:  # KEY UP
+                    elif k_state == 0:  # KEY UP
                         if linux_code in active_keys:
                             active_keys.discard(linux_code)
 
