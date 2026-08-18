@@ -71,7 +71,6 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
         MAX_KEY_DWELL,
         INITIAL_DELAY_NS,
         REPEAT_RATE_NS,
-        NON_SPAMMING_KEYS,
     )
 
     k_ctx = Interception()
@@ -88,7 +87,12 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
         - Correctly filters Modifier and Lock keys (no spamming).
         - Accurately steals typematic focus on new key presses.
         """
-
+        
+        # Base scancodes that DO NOT spam and DO NOT steal focus
+        # LCtrl/RCtrl(0x1D), LShift(0x2A), RShift(0x36), LAlt/RAlt(0x38)
+        # CapsLock(0x3A), NumLock(0x45), ScrollLock(0x46)
+NON_SPAMMING_KEYS = {0x1D, 0x2A, 0x36, 0x38, 0x3A, 0x45, 0x46}
+        
         active_keys = set()
 
         # Typematic state tracking
