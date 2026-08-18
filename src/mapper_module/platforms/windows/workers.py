@@ -129,7 +129,6 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
 
                     elif k_state in (1, 3): # KEY UP / E0_KEY UP
                         if win_code in active_keys:
-                            k_state = active_keys[win_code]
                             del active_keys[win_code]
 
                             # If the currently repeating key is released, clear focus
