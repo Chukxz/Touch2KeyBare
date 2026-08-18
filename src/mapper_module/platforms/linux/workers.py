@@ -48,6 +48,7 @@ def keyboard_worker(k_pipe_read: Connection):
         MAX_KEY_DWELL,
         INITIAL_DELAY_NS,
         REPEAT_RATE_NS,
+        NON_SPAMMING_KEYS,
     )
 
     cap = {ecodes.EV_KEY: list(range(1, 256))}
