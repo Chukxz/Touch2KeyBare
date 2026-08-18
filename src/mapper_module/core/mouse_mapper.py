@@ -49,7 +49,7 @@ class MouseMapper:
             with self.config.config_lock:
                 mouse_cfg = self.config.config_data.get("mouse", {})
                 base_sens = mouse_cfg.get("sensitivity", 1.0)
-base_sens = max(0.1, min(base_sens, 10.0))  # Sensitivity guardrail
+                base_sens = max(0.1, min(base_sens, 10.0))  # Sensitivity guardrail
 
             with self.mapper.lock:
                 pc_w = self.mapper.screen_w
