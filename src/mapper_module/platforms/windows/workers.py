@@ -99,33 +99,32 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
             # Process all immediate state changes (Physical down/up from the bridge)
             while not key_queue.empty():
                 try:
-                    code, k_state = key_queue.get_nowait()
-                    base_code = code & 0xFF
+                    win_code, k_state = key_queue.get_nowait()
 
                     if k_state == 0:  # KEY DOWN
-                        if code not in active_keys:
-                            active_keys.add(code)
+                        if win_code not in active_keys:
+                            active_keys.add(win_code)
 
                             # TRUE HARDWARE LOGIC: Normal keys steal focus WITHOUT sending KEY_UP to the old key.
                             # This allows WASD diagonal movement to function flawlessly.
-                            if base_code not in NON_SPAMMING_KEYS:
-                                repeat_key = code
+                            if win_code not in NON_SPAMMING_KEYS:
+                                repeat_key = win_code
                                 repeat_start_time = _perf_counter_ns()
 
                             # Send the actual physical press to the OS (Interception)
-                            k_ctx.send(k_device_handle, KeyStroke(code, 0))
+                            k_ctx.send(k_device_handle, KeyStroke(win_code, 0))
                             _sleep(_uniform(MIN_KEY_DWELL, MAX_KEY_DWELL))
 
                     elif k_state == 1:  # KEY UP
-                        if code in active_keys:
-                            active_keys.discard(code)
+                        if win_code in active_keys:
+                            active_keys.discard(win_code)
 
                             # If the currently repeating key is released, clear focus
-                            if repeat_key == code:
+                            if repeat_key == win_code:
                                 repeat_key = None
 
                             # Send the actual physical release to the OS (Interception)
-                            k_ctx.send(k_device_handle, KeyStroke(code, 1))
+                            k_ctx.send(k_device_handle, KeyStroke(win_code, 1))
                             _sleep(CONSTANT_DWELL)
 
                     key_queue.task_done()
@@ -135,7 +134,7 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
             # Process Auto-Repeat for the SINGLE active repeat key
             if repeat_key is not None:
                 # Double-check it's not a modifier/lock key just to be absolutely safe
-                if (repeat_key & 0xFF) not in NON_SPAMMING_KEYS:
+                if repeat_key not in NON_SPAMMING_KEYS:
                     current_time = _perf_counter_ns()
                     if (current_time - repeat_start_time) >= INITIAL_DELAY_NS:
                         try:
@@ -147,7 +146,6 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
 
             # Sleep at the repeat rate to prevent overwhelming the CPU and pipe
             _sleep(REPEAT_RATE_NS)
-            NON_SPAMMING_KEYS,
 
         # Start the injection thread
         injector_thread = threading.Thread(
