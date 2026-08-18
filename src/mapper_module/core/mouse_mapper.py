@@ -5,7 +5,7 @@ from time import sleep as _sleep
 from random import uniform as _uniform
 import threading
 
-from mapper_module.utils import UP, DOWN, PRESSED, TAP_SLOP_DP, TAP_MAX_TIME
+from mapper_module.utils import UP, DOWN, PRESSED, TAP_SLOP_DP, TAP_MAX_TIME_NS
 
 if TYPE_CHECKING:
     from .mapper import Mapper
@@ -142,7 +142,7 @@ class MouseMapper:
                 tap_slop_px_squared = self.mapper.dp_to_px(TAP_SLOP_DP) ** 2
 
                 if (
-                    temporal_diff <= TAP_MAX_TIME
+                    temporal_diff <= TAP_MAX_TIME_NS
                     and spatial_diff_squared <= tap_slop_px_squared
                 ):
                     threading.Thread(
