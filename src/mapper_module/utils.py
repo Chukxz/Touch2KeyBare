@@ -77,7 +77,7 @@ SPRINT_DISTANCE_CODE = "LEFT_BRACKET"
 MOUSE_WHEEL_CODE = "RIGHT_BRACKET"
 
 TAP_SLOP_DP = 5  # Dependent pixels allowed for tap
-TAP_MAX_TIME = 0.1  # Maximum time allowed for touch
+TAP_MAX_TIME_NS = 100_000_000 # (100ms in ns) - Maximum time allowed for touch
 
 # Delays (in seconds)
 RELOAD_DELAY = 0.5
