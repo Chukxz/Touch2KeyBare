@@ -109,7 +109,10 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
                             # This allows WASD diagonal movement to function flawlessly.
                             if win_code not in NON_SPAMMING_KEYS:
                                 repeat_key = win_code
-                                repeat_start_time = _perf_counter_ns()
+                            else:
+                                repeat_key = None
+
+                            repeat_start_time = _perf_counter_ns()
 
                             # Send the actual physical press to the OS (Interception)
                             k_ctx.send(k_device_handle, KeyStroke(win_code, 0))
