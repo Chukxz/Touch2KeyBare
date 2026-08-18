@@ -318,12 +318,11 @@ MAX_KEY_DWELL = 0.070
 
 # Standard Hardware Keyboard Repeat Specifications
 INITIAL_DELAY_NS = 500_000_000  # 500ms pause before spamming starts
-REPEAT_RATE_NS = 33_333_333  # ~30 spam events per second
+REPEAT_RATE = 0.33  # ~30 spam events per second
 # Base scancodes that DO NOT spam and DO NOT steal focus
 # LCtrl(0x1D), RCtrl(0xE01D), LShift(0x2A), RShift(0x36), LAlt(0x38), RAlt(0xE038)
 # CapsLock(0x3A), NumLock(0x45), ScrollLock(0x46)
 NON_SPAMMING_KEYS = {0x2A, 0x36, 0x1D, 0xE01D, 0x38, 0xE038, 0x3A, 0x45, 0x46}
-NS_TO_S = 1_000_000_000
 
 
 class TouchEvent:
