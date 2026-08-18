@@ -16,8 +16,8 @@ def _release_all_keys(ui_device, ecodes, keys_set, reason=""):
     print(f"\n[WORKER] - {reason}.")
     if keys_set:
         print(f"\n[WORKER] - Releasing {len(keys_set)} keys.")
-        for code in list(keys_set):
-            ui_device.write(ecodes.EV_KEY, code, 0)  # 0 = UP
+        for linux_code in list(keys_set):
+            ui_device.write(ecodes.EV_KEY, linux_code, 0)  # KEY UP
         ui_device.syn()
         keys_set.clear()
 
