@@ -1,6 +1,4 @@
 import os
-import sys
-from mapper_module import engine
 
 
 def _get_display_protocol():
@@ -18,13 +16,9 @@ def check_display_protocol():
     protocol = _get_display_protocol()
     if protocol is None:
         print("\n[!] - Display protocol not found.")
-        sys.exit(1)
+        return False
     elif not protocol == "x11":
         print("\n[!] - Ensure you are on X11.")
-        sys.exit(1)
+        return False
     else:
-        engine.run()
-
-
-if __name__ == "__main__":
-    check_display_protocol()
+        return True

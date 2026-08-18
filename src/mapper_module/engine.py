@@ -7,7 +7,6 @@ import os
 import threading
 import time
 import sys
-import argparse
 from PySide6.QtWidgets import QApplication
 from mapper_module.platforms import check_single_instance, get_platform
 
@@ -108,7 +107,7 @@ class Engine:
         w_result = select_window()
         if w_result is None:
             print("\n[ENGINE] - No window selected.")
-            input("Press Enter to exit...")
+
             return
         selected_window_id, window_title = w_result
 
@@ -124,7 +123,7 @@ class Engine:
         c_result = capture_keys(preset_name)
         if c_result is None:
             print("\n[ENGINE] - Key configuration cancelled.")
-            input("Press Enter to exit...")
+
             return
         toggle_key, sprint_key = c_result
 
@@ -141,13 +140,13 @@ class Engine:
         perf_result = capture_performance_settings()
         if perf_result is None:
             print("\n[ENGINE] - Performance configuration cancelled.")
-            input("Press Enter to exit...")
+
             return
         rate_cap, pps = perf_result
 
         if rate_cap is None or pps is None:
             print("\n[ENGINE] - Invalid performance settings.")
-            input("Press Enter to exit...")
+
             return
 
         print(f"\n[ENGINE] - ADB Cap: {rate_cap}Hz | Alert Threshold: {pps}PPS.")
@@ -161,7 +160,7 @@ class Engine:
             s_result = select_keyboard_then_mouse()
             if s_result is None:
                 print("\n[ENGINE] Interception device querying cancelled.")
-                input("Press Enter to exit...")
+
                 return
             k_device_handle, m_device_handle = s_result
 
@@ -238,7 +237,6 @@ class Engine:
 
         profiler_cleanup(profiler)
         print("\n[ENGINE] - Shutdown complete. Goodbye.")
-        input("Press Enter to exit...")
         os._exit(0)
 
 
@@ -249,13 +247,8 @@ def profiler_cleanup(profiler: Profile | None):
         print("\n[ENGINE] - Profiling data saved to 'touch2key.prof'.")
 
 
-def run():
+def run(parser: ArgumentParser):
     global profiler
-    parser = argparse.ArgumentParser(description="Touch2Key Main")
-
-    parser.add_argument(
-        "--profile", action="store_true", help="Generate profiling data."
-    )
     args = parser.parse_args()
 
     if args.profile:
@@ -266,7 +259,6 @@ def run():
 
     if not pre_flight_run():
         profiler_cleanup(profiler)
-        input("Press Enter to exit...")
         sys.exit(1)
 
     try:
@@ -279,7 +271,6 @@ def run():
     except RuntimeError as e:
         print(f"[ENGINE] - {e}")
         profiler_cleanup(profiler)
-        input("Press Enter to exit...")
         os._exit(0)
 
     if not success:
@@ -287,7 +278,6 @@ def run():
             "[ENGINE] - Another instance of Touch2Key is already running. Exiting this instance."
         )
         profiler_cleanup(profiler)
-        input("Press Enter to exit...")
         os._exit(0)
 
     _app = QApplication(sys.argv)
@@ -298,7 +288,3 @@ def run():
     except KeyboardInterrupt:
         _app.closeAllWindows()
         _engine._shutdown()
-
-
-if __name__ == "__main__":
-    run()

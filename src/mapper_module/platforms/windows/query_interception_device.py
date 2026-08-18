@@ -110,8 +110,10 @@ class DeviceListenerThread(QThread):
                     continue
 
                 if self._qualifies(stroke):
-                    hwid = self.context.devices[device].get_HWID() or ""
-                    self.device_detected.emit(device, hwid)
+                    raw_hwid = self.context.devices[device].get_HWID() or ""
+                    # Sanitize the C-buffer string to remove trailing junk/null bytes
+                    clean_hwid = raw_hwid.split("\x00")[0].strip()
+                    self.device_detected.emit(device, clean_hwid)
         except Exception as exc:
             self.error.emit(str(exc))
         finally:
@@ -217,10 +219,12 @@ class DeviceListDialog(QDialog):
         self.table.setRowCount(0)
         self._device_row.clear()
         for device_num in self.device_range:
-            hwid = self.context.devices[device_num].get_HWID()
-            if hwid is None:
+            raw_hwid = self.context.devices[device_num].get_HWID()
+            if raw_hwid is None:
                 continue
-            self._add_row(device_num, hwid)
+            # Sanitize the C-buffer string
+            clean_hwid = raw_hwid.split("\x00")[0].strip()
+            self._add_row(device_num, clean_hwid)
 
     def _add_row(self, device_num: int, hwid: str) -> int:
         row = self.table.rowCount()
