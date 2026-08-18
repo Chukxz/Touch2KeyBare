@@ -70,7 +70,7 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
         MIN_KEY_DWELL,
         MAX_KEY_DWELL,
         INITIAL_DELAY_NS,
-        REPEAT_RATE_NS,
+        REPEAT_RATE,
         NON_SPAMMING_KEYS,
     )
 
@@ -89,7 +89,7 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
         - Accurately steals typematic focus on new key presses.
         """
 
-        WINDOWS_NON_SPAMMING_KEYS = {NON_SPAMMING_KEYS[x] &= 0xFF for x in NON_SPAMMING_KEYS}   
+        WINDOWS_NON_SPAMMING_KEYS = {code & 0xFF for code in NON_SPAMMING_KEYS}
         active_keys = set()
 
         # Typematic state tracking
@@ -149,13 +149,13 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
                             pass
 
             # Sleep at the repeat rate to prevent overwhelming the CPU and pipe
-            _sleep(REPEAT_RATE_NS)
+            _sleep(REPEAT_RATE)
 
-        # Start the injection thread
-        injector_thread = threading.Thread(
+    # Start the injection thread
+    injector_thread = threading.Thread(
             target=key_injection_loop, name="Keyboard-Injection-Loop", daemon=True
         )
-        injector_thread.start()
+    injector_thread.start()
 
     while state["running"]:
         try:
