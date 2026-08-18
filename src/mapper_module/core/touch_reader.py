@@ -469,7 +469,7 @@ class TouchReader:
                                         "state": DOWN,
                                         "start_x": None,
                                         "start_y": None,
-                                        "timestamp": time.monotonic_ns(),
+                                        "timestamp": time.perf_counter_ns(),
                                     }
                                 )
                                 self.active_touches += 1

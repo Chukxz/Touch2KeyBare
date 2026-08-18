@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 import queue
 import threading
-from time import sleep as _sleep
+from time import sleep as _sleep, perf_counter_ns as _perf_counter_ns
 from random import uniform as _uniform
 
 from mapper_module.utils import (
@@ -69,6 +69,9 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
         PACK_KEY,
         MIN_KEY_DWELL,
         MAX_KEY_DWELL,
+        INITIAL_DELAY_NS,
+        REPEAT_RATE_NS,
+        NON_SPAMMING_KEYS,
     )
 
     k_ctx = Interception()
@@ -79,32 +82,78 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
     key_queue = queue.Queue()
 
     def key_injection_loop():
-        """Dedicated thread for executing keystrokes with hardware-like dwell times."""
+        """
+        Dedicated thread for executing keystrokes with strict Typematic auto-repeat.
+        - Supports True Diagonal WASD movement (no artificial KEY_UPs).
+        - Correctly filters Modifier and Lock keys (no spamming).
+        - Accurately steals typematic focus on new key presses.
+        """
+
+        active_keys = set()
+
+        # Typematic state tracking
+        repeat_key = None
+        repeat_start_time = 0.0
+
         while state["running"]:
-            try:
-                # timeout=1.0 allows the loop to regularly check the running state and exit if needed
-                code, k_state = key_queue.get(timeout=1.0)
+            # Process all immediate state changes (Physical down/up from the bridge)
+            while not key_queue.empty():
+                try:
+                    code, k_state = key_queue.get_nowait()
+                    base_code = code & 0xFF
 
-                k_ctx.send(k_device_handle, KeyStroke(code, k_state))
+                    if k_state == 0:  # KEY DOWN
+                        if code not in active_keys:
+                            active_keys.add(code)
 
-                # Emulate human keystroke duration
-                if k_state == 0:  # key down
-                    _sleep(_uniform(MIN_KEY_DWELL, MAX_KEY_DWELL))
-                else:  # key up
-                    _sleep(CONSTANT_DWELL)
+                            # TRUE HARDWARE LOGIC: Normal keys steal focus WITHOUT sending KEY_UP to the old key.
+                            # This allows WASD diagonal movement to function flawlessly.
+                            if base_code not in NON_SPAMMING_KEYS:
+                                repeat_key = code
+                                repeat_start_time = _perf_counter_ns()
 
-                key_queue.task_done()
+                            # Send the actual physical press to the OS (Interception)
+                            k_ctx.send(k_device_handle, KeyStroke(code, 0))
+                            _sleep(_uniform(MIN_KEY_DWELL, MAX_KEY_DWELL))
 
-            except queue.Empty:
-                continue
-            except Exception as e:
-                print(f"\n[WORKER] - Key Injection Thread crashed: {e}.")
+                    elif k_state == 1:  # KEY UP
+                        if code in active_keys:
+                            active_keys.discard(code)
 
-    # Start the injection thread
-    injector_thread = threading.Thread(
-        target=key_injection_loop, name="Keyboard-Injection-Loop", daemon=True
-    )
-    injector_thread.start()
+                            # If the currently repeating key is released, clear focus
+                            if repeat_key == code:
+                                repeat_key = None
+
+                            # Send the actual physical release to the OS (Interception)
+                            k_ctx.send(k_device_handle, KeyStroke(code, 1))
+                            _sleep(CONSTANT_DWELL)
+
+                    key_queue.task_done()
+                except Exception as e:
+                    print(f"\n[WORKER] - Key Injection Error (Queue): {e}.")
+
+            # Process Auto-Repeat for the SINGLE active repeat key
+            if repeat_key is not None:
+                # Double-check it's not a modifier/lock key just to be absolutely safe
+                if (repeat_key & 0xFF) not in NON_SPAMMING_KEYS:
+                    current_time = _perf_counter_ns()
+                    if (current_time - repeat_start_time) >= INITIAL_DELAY_NS:
+                        try:
+                            k_ctx.send(
+                                k_device_handle, KeyStroke(repeat_key, 0)
+                            )  # KEY DOWN
+                        except Exception:
+                            pass
+
+            # Sleep at the repeat rate to prevent overwhelming the CPU and pipe
+            _sleep(REPEAT_RATE_NS)
+            NON_SPAMMING_KEYS,
+
+        # Start the injection thread
+        injector_thread = threading.Thread(
+            target=key_injection_loop, name="Keyboard-Injection-Loop", daemon=True
+        )
+        injector_thread.start()
 
     while state["running"]:
         try:
