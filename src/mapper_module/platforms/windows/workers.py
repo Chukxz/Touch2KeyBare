@@ -88,7 +88,7 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
         - Correctly filters Modifier and Lock keys (no spamming).
         - Accurately steals typematic focus on new key presses.
         """
-        WINDOWS_NON_SPAMMING_KEYS = NON_SPAMMING_KEYS[x] & 0xFF for x in NON_SPAMMING_KEYS)
+        WINDOWS_NON_SPAMMING_KEYS = {NON_SPAMMING_KEYS[x] & 0xFF for x in NON_SPAMMING_KEYS}
         
         active_keys = set()
 
