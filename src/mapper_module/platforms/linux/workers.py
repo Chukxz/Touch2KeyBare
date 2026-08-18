@@ -195,8 +195,7 @@ def keyboard_worker(k_pipe_read: Connection):
                             else:
                                 repeat_key = linux_code
 
-                            repeat_start_time = _perf_counter_ns()  # Reset the repeat timer for this new key
-
+                            repeat_start_time = _perf_counter_ns()
                             # Send the actual physical press to the OS (UInput)
                             ui_device.write(ecodes.EV_KEY, linux_code, 1)
                             ui_device.syn()
