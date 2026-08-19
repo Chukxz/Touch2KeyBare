@@ -12,9 +12,7 @@ import random
 from pathlib import Path
 import colorsys
 import struct
-import argparse
 
-PARSER = argparse.ArgumentParser(description="Touch2Key")
 
 # Task IDs
 TASK_BUTTON = 0
@@ -38,8 +36,6 @@ KEY_PING = 2
 BUTTON_PING = 0x0000  # doesn't collide with any *_DOWN/*_UP flag
 KEEPALIVE_INTERVAL = 5.0  # seconds; must stay well under the 15s worker poll timeout
 
-MOUSE_DEVICE = 0
-KEYBOARD_DEVICE = 11
 
 if TYPE_CHECKING:
     from multiprocessing import Process
@@ -81,7 +77,7 @@ SPRINT_DISTANCE_CODE = "LEFT_BRACKET"
 MOUSE_WHEEL_CODE = "RIGHT_BRACKET"
 
 TAP_SLOP_DP = 5  # Dependent pixels allowed for tap
-TAP_MAX_TIME = 0.1  # Maximum time allowed for touch
+TAP_MAX_TIME_NS = 100_000_000 # (100ms in ns) - Maximum time allowed for touch
 
 # Delays (in seconds)
 RELOAD_DELAY = 0.5
@@ -90,7 +86,7 @@ LONG_DELAY = 2.0
 WINDOW_UPDATE_INTERVAL = 0.05
 ROTATION_POLL_INTERVAL = 0.5
 
-# Delay (in nanosecond)
+# Delay (in nanoseconds)
 CURSOR_CHECK_DELAY_NS = 100_000_000
 
 # Windows specific constants
@@ -318,13 +314,13 @@ MAX_KEY_DWELL = 0.070
 
 # Standard Hardware Keyboard Repeat Specifications
 INITIAL_DELAY_NS = 500_000_000  # 500ms pause before spamming starts
-REPEAT_RATE_NS = 33_333_333  # ~30 spam events per second
-        
+REPEAT_RATE = 0.0333  # ~30 spam events per second
 # Base scancodes that DO NOT spam and DO NOT steal focus
-# LCtrl/RCtrl(0x1D), LShift(0x2A), RShift(0x36), LAlt/RAlt(0x38)
+# LCtrl(0x1D), RCtrl(0xE01D), LShift(0x2A), RShift(0x36), LAlt(0x38), RAlt(0xE038)
 # CapsLock(0x3A), NumLock(0x45), ScrollLock(0x46)
 NON_SPAMMING_KEYS = {0x2A, 0x36, 0x1D, 0xE01D, 0x38, 0xE038, 0x3A, 0x45, 0x46}
-        
+
+
 class TouchEvent:
     def __init__(
         self,

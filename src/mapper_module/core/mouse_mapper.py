@@ -5,7 +5,7 @@ from time import sleep as _sleep
 from random import uniform as _uniform
 import threading
 
-from mapper_module.utils import UP, DOWN, PRESSED, TAP_SLOP_DP, TAP_MAX_TIME
+from mapper_module.utils import UP, DOWN, PRESSED, TAP_SLOP_DP, TAP_MAX_TIME_NS
 
 if TYPE_CHECKING:
     from .mapper import Mapper
@@ -49,6 +49,7 @@ class MouseMapper:
             with self.config.config_lock:
                 mouse_cfg = self.config.config_data.get("mouse", {})
                 base_sens = mouse_cfg.get("sensitivity", 1.0)
+                base_sens = max(0.1, min(base_sens, 10.0))  # Sensitivity guardrail
 
             with self.mapper.lock:
                 pc_w = self.mapper.screen_w
@@ -142,7 +143,7 @@ class MouseMapper:
                 tap_slop_px_squared = self.mapper.dp_to_px(TAP_SLOP_DP) ** 2
 
                 if (
-                    temporal_diff <= TAP_MAX_TIME
+                    temporal_diff <= TAP_MAX_TIME_NS
                     and spatial_diff_squared <= tap_slop_px_squared
                 ):
                     threading.Thread(
@@ -188,9 +189,9 @@ class MouseMapper:
         calc_dx = (raw_dx * self.scaling_factor) + acc_x
         calc_dy = (raw_dy * self.scaling_factor) + acc_y
 
-        # Truncate to Integer (Actual pixels to move)
+        # Truncate to integer (actual pixels to move)
         final_dx = int(calc_dx)
-        final_dy = int(calc_dy)
+        final_dy = int(calc_dy)   
 
         # Fast-Exit for Noise
         # If the delta is less than 1 physical pixel, just keep the remainder and exit.
@@ -202,6 +203,10 @@ class MouseMapper:
         # Save remainders for next packet
         acc_x = calc_dx - final_dx
         acc_y = calc_dy - final_dy
+        
+        # Clamp values
+        final_dx = max(-32000, min(32000, final_dx))
+        final_dy = max(-32000, min(32000, final_dy))
 
         # Physical movement execution
         self.bridge.mouse_move_rel(final_dx, final_dy)

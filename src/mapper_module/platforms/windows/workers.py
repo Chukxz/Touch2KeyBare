@@ -30,8 +30,16 @@ def _release_all_keys(k_ctx, k_handle, K_Stroke, keys_set, reason=""):
     print(f"\n[WORKER] - {reason}.")
     if keys_set:
         print(f"\n[WORKER] - Releasing {len(keys_set)} keys.")
-        for code in list(keys_set):
-            k_ctx.send(k_handle, K_Stroke(code, 1))  # 1 = UP
+        for win_code in list(keys_set):
+            k_state = 1
+
+            # Handle extended keys: Interception driver uses a single byte for the key code, so we need to set the extended bit for non-ASCII keys.
+            # E0_UP = 3
+            if win_code > 0xFF:
+                k_state = 3 # set extended bit for non-ASCII keys
+                win_code &= 0xFF  # strip extended bit for Interception driver
+
+            k_ctx.send(k_handle, K_Stroke(win_code, k_state))  # KEY UP
         keys_set.clear()
 
 
@@ -70,7 +78,7 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
         MIN_KEY_DWELL,
         MAX_KEY_DWELL,
         INITIAL_DELAY_NS,
-        REPEAT_RATE_NS,
+        REPEAT_RATE,
         NON_SPAMMING_KEYS,
     )
 
@@ -89,7 +97,8 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
         - Accurately steals typematic focus on new key presses.
         """
 
-        active_keys = set()
+        WINDOWS_NON_SPAMMING_KEYS = {code & 0xFF for code in NON_SPAMMING_KEYS}
+        active_keys = {}
 
         # Typematic state tracking
         repeat_key = None
@@ -99,33 +108,35 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
             # Process all immediate state changes (Physical down/up from the bridge)
             while not key_queue.empty():
                 try:
-                    code, k_state = key_queue.get_nowait()
-                    base_code = code & 0xFF
+                    win_code, k_state = key_queue.get_nowait()
 
-                    if k_state == 0:  # KEY DOWN
-                        if code not in active_keys:
-                            active_keys.add(code)
+                    if k_state in (0, 2): # KEY DOWN / E0_KEY DOWN
+                        if win_code not in active_keys:
+                            active_keys[win_code] = k_state
 
                             # TRUE HARDWARE LOGIC: Normal keys steal focus WITHOUT sending KEY_UP to the old key.
                             # This allows WASD diagonal movement to function flawlessly.
-                            if base_code not in NON_SPAMMING_KEYS:
-                                repeat_key = code
-                                repeat_start_time = _perf_counter_ns()
+                            if win_code in WINDOWS_NON_SPAMMING_KEYS:
+                                repeat_key = None
+                            else:
+                                repeat_key = win_code
+
+                            repeat_start_time = _perf_counter_ns()
 
                             # Send the actual physical press to the OS (Interception)
-                            k_ctx.send(k_device_handle, KeyStroke(code, 0))
+                            k_ctx.send(k_device_handle, KeyStroke(win_code, k_state))
                             _sleep(_uniform(MIN_KEY_DWELL, MAX_KEY_DWELL))
 
-                    elif k_state == 1:  # KEY UP
-                        if code in active_keys:
-                            active_keys.discard(code)
+                    elif k_state in (1, 3): # KEY UP / E0_KEY UP
+                        if win_code in active_keys:
+                            del active_keys[win_code]
 
                             # If the currently repeating key is released, clear focus
-                            if repeat_key == code:
+                            if repeat_key == win_code:
                                 repeat_key = None
 
                             # Send the actual physical release to the OS (Interception)
-                            k_ctx.send(k_device_handle, KeyStroke(code, 1))
+                            k_ctx.send(k_device_handle, KeyStroke(win_code, k_state))
                             _sleep(CONSTANT_DWELL)
 
                     key_queue.task_done()
@@ -135,25 +146,25 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
             # Process Auto-Repeat for the SINGLE active repeat key
             if repeat_key is not None:
                 # Double-check it's not a modifier/lock key just to be absolutely safe
-                if (repeat_key & 0xFF) not in NON_SPAMMING_KEYS:
+                if repeat_key not in WINDOWS_NON_SPAMMING_KEYS:
                     current_time = _perf_counter_ns()
                     if (current_time - repeat_start_time) >= INITIAL_DELAY_NS:
+                        k_state = active_keys[repeat_key]
                         try:
                             k_ctx.send(
-                                k_device_handle, KeyStroke(repeat_key, 0)
-                            )  # KEY DOWN
+                                k_device_handle, KeyStroke(repeat_key, k_state)
+                            )  # KEY DOWN / E0_KEY DOWN
                         except Exception:
                             pass
 
             # Sleep at the repeat rate to prevent overwhelming the CPU and pipe
-            _sleep(REPEAT_RATE_NS)
-            NON_SPAMMING_KEYS,
+            _sleep(REPEAT_RATE)
 
-        # Start the injection thread
-        injector_thread = threading.Thread(
+    # Start the injection thread
+    injector_thread = threading.Thread(
             target=key_injection_loop, name="Keyboard-Injection-Loop", daemon=True
         )
-        injector_thread.start()
+    injector_thread.start()
 
     while state["running"]:
         try:
@@ -164,17 +175,17 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
                 if k_state == KEY_PING:
                     continue  # keepalive only: resets poll() timer, no driver write
 
-                # Handle extended keys: Interception driver uses a single byte for the key code, so we need to set the extended bit for non-ASCII keys.
-                # E0_DOWN = 2, E0_UP = 3
-                if win_code > 0xFF:
-                    k_state |= 2  # set extended bit for non-ASCII keys
-                    win_code &= 0xFF  # strip extended bit for Interception driver
-
                 # Windows logic sends state=0 for down, state=1 for up.
                 if k_state == 0:
                     pressed_keys.add(win_code)
                 elif k_state == 1:
                     pressed_keys.discard(win_code)
+
+                # Handle extended keys: Interception driver uses a single byte for the key code, so we need to set the extended bit for non-ASCII keys.
+                # E0_DOWN = 2, E0_UP = 3
+                if win_code > 0xFF:
+                    k_state |= 2  # set extended bit for non-ASCII keys
+                    win_code &= 0xFF  # strip extended bit for Interception driver             
 
                 # Instantly offload the event to the injection thread
                 key_queue.put((win_code, k_state))
