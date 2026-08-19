@@ -36,7 +36,7 @@ def _release_all_keys(k_ctx, k_handle, K_Stroke, keys_set, reason=""):
             # Handle extended keys: Interception driver uses a single byte for the key code, so we need to set the extended bit for non-ASCII keys.
             # E0_UP = 3
             if win_code > 0xFF:
-                k_state = 3 # set extended bit for non-ASCII keys
+                k_state = 3  # set extended bit for non-ASCII keys
                 win_code &= 0xFF  # strip extended bit for Interception driver
 
             k_ctx.send(k_handle, K_Stroke(win_code, k_state))  # KEY UP
@@ -110,7 +110,7 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
                 try:
                     win_code, k_state = key_queue.get_nowait()
 
-                    if k_state in (0, 2): # KEY DOWN / E0_KEY DOWN
+                    if k_state in (0, 2):  # KEY DOWN / E0_KEY DOWN
                         if win_code not in active_keys:
                             active_keys[win_code] = k_state
 
@@ -127,7 +127,7 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
                             k_ctx.send(k_device_handle, KeyStroke(win_code, k_state))
                             _sleep(_uniform(MIN_KEY_DWELL, MAX_KEY_DWELL))
 
-                    elif k_state in (1, 3): # KEY UP / E0_KEY UP
+                    elif k_state in (1, 3):  # KEY UP / E0_KEY UP
                         if win_code in active_keys:
                             del active_keys[win_code]
 
@@ -162,8 +162,8 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
 
     # Start the injection thread
     injector_thread = threading.Thread(
-            target=key_injection_loop, name="Keyboard-Injection-Loop", daemon=True
-        )
+        target=key_injection_loop, name="Keyboard-Injection-Loop", daemon=True
+    )
     injector_thread.start()
 
     while state["running"]:
@@ -185,7 +185,7 @@ def keyboard_worker(k_pipe_read: Connection, k_device_handle: int | None):
                 # E0_DOWN = 2, E0_UP = 3
                 if win_code > 0xFF:
                     k_state |= 2  # set extended bit for non-ASCII keys
-                    win_code &= 0xFF  # strip extended bit for Interception driver             
+                    win_code &= 0xFF  # strip extended bit for Interception driver
 
                 # Instantly offload the event to the injection thread
                 key_queue.put((win_code, k_state))

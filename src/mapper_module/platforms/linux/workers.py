@@ -3,10 +3,7 @@ from typing import TYPE_CHECKING
 
 import queue
 import threading
-from time import (
-    sleep as _sleep,
-    perf_counter_ns as _perf_counter_ns,
-)  # Reset the repeat timer for this new key_counter_ns
+from time import sleep as _sleep, perf_counter_ns as _perf_counter_ns
 from random import uniform as _uniform
 
 from mapper_module.utils import KEY_PING, BUTTON_PING, CONSTANT_DWELL
@@ -33,11 +30,11 @@ def _release_all_buttons(
     if buttons_set_sum > 0:
         print(f"\n[WORKER] - Releasing {buttons_set_sum} buttons.")
         if left_down:
-            ui_device.write(ecodes.EV_KEY, ecodes.BTN_LEFT, 0)
+            ui_device.write(ecodes.EV_KEY, ecodes.BTN_LEFT, 1)
         if right_down:
-            ui_device.write(ecodes.EV_KEY, ecodes.BTN_RIGHT, 0)
+            ui_device.write(ecodes.EV_KEY, ecodes.BTN_RIGHT, 1)
         if middle_down:
-            ui_device.write(ecodes.EV_KEY, ecodes.BTN_MIDDLE, 0)
+            ui_device.write(ecodes.EV_KEY, ecodes.BTN_MIDDLE, 1)
         ui_device.syn()
 
 
@@ -226,9 +223,7 @@ def keyboard_worker(k_pipe_read: Connection):
             if repeat_key is not None:
                 # Double-check it's not a modifier/lock key just to be absolutely safe
                 if repeat_key not in LINUX_NON_SPAMMING_KEYS:
-                    current_time = (
-                        _perf_counter_ns()
-                    )  # Reset the repeat timer for this new key
+                    current_time = _perf_counter_ns()
                     if (current_time - repeat_start_time) >= INITIAL_DELAY_NS:
                         try:
                             ui_device.write(ecodes.EV_KEY, repeat_key, 1)  # KEY DOWN

@@ -49,7 +49,7 @@ class UInputBridge(AbstractBridge):
         self.k_pipe_read, self.k_pipe_write = multiprocessing.Pipe(duplex=False)
         self.k_proc = None
 
-        # Mouse: movement pipe + separate button pipe, one process, two threads (see workers.py)
+        # Mouse: movement pipe + separate button pipe, one process, two threads
         self.m_pipe_read, self.m_pipe_write = multiprocessing.Pipe(duplex=False)
         self.mb_pipe_read, self.mb_pipe_write = multiprocessing.Pipe(duplex=False)
         self.m_proc = None
