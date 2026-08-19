@@ -13,7 +13,6 @@ from pathlib import Path
 import colorsys
 import struct
 
-
 # Task IDs
 TASK_BUTTON = 0
 TASK_REL = 1
@@ -75,9 +74,6 @@ M_RIGHT = 0x9902
 M_MIDDLE = 0x9903
 SPRINT_DISTANCE_CODE = "LEFT_BRACKET"
 MOUSE_WHEEL_CODE = "RIGHT_BRACKET"
-
-TAP_SLOP_DP = 5  # Dependent pixels allowed for tap
-TAP_MAX_TIME_NS = 100_000_000 # (100ms in ns) - Maximum time allowed for touch
 
 # Delays (in seconds)
 RELOAD_DELAY = 0.5

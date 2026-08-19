@@ -126,6 +126,9 @@ class Mapper:
 
         self._pulse_status()
 
+        # Check cursor visibility
+        # GAME MODE - cursor hidden
+        # MENU MODE - cursor visible
         is_visible, self.last_cursor_check_time = self.window_manager.is_cursor_visible(
             self.last_cursor_state, self.last_cursor_check_time
         )

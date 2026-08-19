@@ -1,11 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-
-from time import sleep as _sleep
-from random import uniform as _uniform
 import threading
 
-from mapper_module.utils import UP, DOWN, PRESSED, TAP_SLOP_DP, TAP_MAX_TIME_NS
+from mapper_module.utils import UP, DOWN, PRESSED
 
 if TYPE_CHECKING:
     from .mapper import Mapper
@@ -83,7 +80,7 @@ class MouseMapper:
         self.acc_x = 0.0
         self.acc_y = 0.0
 
-        if is_visible:
+        if is_visible:  # Only execute in MENU MODE
             _x, _y = self.mapper.device_to_game_abs(self.prev_x, self.prev_y)
             self.bridge.mouse_move_abs(_x, _y)
             with self.click_lock:
@@ -116,12 +113,7 @@ class MouseMapper:
             raw_dx, raw_dy, self.acc_x, self.acc_y
         )
 
-    def touch_up(
-        self,
-        touchevent: TouchEvent | None,
-        is_visible: bool,
-        activate_mouse_sequence: bool,
-    ):
+    def touch_up(self):
         self.prev_x = None
         self.prev_y = None
         self.acc_x = 0.0
@@ -131,52 +123,6 @@ class MouseMapper:
             if self.left_down:
                 self.bridge.left_click_up()
                 self.left_down = False
-
-        if activate_mouse_sequence and touchevent is not None and not is_visible:
-            if not self.tap_in_progress:
-                self.tap_in_progress = True
-                now = touchevent.timestamp
-                temporal_diff = now - self.timestamp
-                spatial_diff_squared = (touchevent.sx - touchevent.x) ** 2 + (
-                    touchevent.sy - touchevent.y
-                ) ** 2
-                tap_slop_px_squared = self.mapper.dp_to_px(TAP_SLOP_DP) ** 2
-
-                if (
-                    temporal_diff <= TAP_MAX_TIME_NS
-                    and spatial_diff_squared <= tap_slop_px_squared
-                ):
-                    threading.Thread(
-                        target=self._toggle_key_mouse_sequence,
-                        args=(touchevent,),
-                        daemon=True,
-                    ).start()
-                else:
-                    self.tap_in_progress = False
-
-        self.timestamp = 0.0
-
-    def _toggle_key_mouse_sequence(self, touchevent: TouchEvent):
-        self._tap_toggle_key()
-        _sleep(_uniform(0.04, 0.12))
-        self._left_click_mouse(touchevent)
-        _sleep(_uniform(0.06, 0.18))
-        self._tap_toggle_key()
-        self.tap_in_progress = False
-
-    def _tap_toggle_key(self):
-        if self.mapper.toggle_key_scancode:
-            self.bridge.key_down(self.mapper.toggle_key_scancode)
-            _sleep(_uniform(0.02, 0.09))
-            self.bridge.key_up(self.mapper.toggle_key_scancode)
-
-    def _left_click_mouse(self, touchevent: TouchEvent):
-        _x, _y = self.mapper.device_to_game_abs(touchevent.x, touchevent.y)
-        self.bridge.mouse_move_abs(_x, _y)
-        _sleep(_uniform(0.016, 0.04))
-        self.bridge.left_click_down()
-        _sleep(_uniform(0.02, 0.07))
-        self.bridge.left_click_up()
 
     def _aggregate(self, raw_dx: float, raw_dy: float, acc_x: float, acc_y: float):
         self.mapper.acc_x, self.mapper.acc_y = self._process_deltas(
@@ -191,7 +137,7 @@ class MouseMapper:
 
         # Truncate to integer (actual pixels to move)
         final_dx = int(calc_dx)
-        final_dy = int(calc_dy)   
+        final_dy = int(calc_dy)
 
         # Fast-Exit for Noise
         # If the delta is less than 1 physical pixel, just keep the remainder and exit.
@@ -203,7 +149,7 @@ class MouseMapper:
         # Save remainders for next packet
         acc_x = calc_dx - final_dx
         acc_y = calc_dy - final_dy
-        
+
         # Clamp values
         final_dx = max(-32000, min(32000, final_dx))
         final_dy = max(-32000, min(32000, final_dy))
@@ -217,7 +163,6 @@ class MouseMapper:
         action,
         touch_event: TouchEvent,
         is_visible: bool,
-        activate_mouse_sequence: bool,
     ):
         if action == PRESSED:
             self._touch_pressed(touch_event, is_visible)
@@ -226,7 +171,7 @@ class MouseMapper:
             self._touch_down(touch_event, is_visible)
 
         elif action == UP:
-            self.touch_up(touch_event, is_visible, activate_mouse_sequence)
+            self.touch_up()
 
     def _on_worker_respawn(self, worker_type: str):
         if worker_type != "mouse":

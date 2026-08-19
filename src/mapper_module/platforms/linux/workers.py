@@ -30,11 +30,11 @@ def _release_all_buttons(
     if buttons_set_sum > 0:
         print(f"\n[WORKER] - Releasing {buttons_set_sum} buttons.")
         if left_down:
-            ui_device.write(ecodes.EV_KEY, ecodes.BTN_LEFT, 1)
+            ui_device.write(ecodes.EV_KEY, ecodes.BTN_LEFT, 0)
         if right_down:
-            ui_device.write(ecodes.EV_KEY, ecodes.BTN_RIGHT, 1)
+            ui_device.write(ecodes.EV_KEY, ecodes.BTN_RIGHT, 0)
         if middle_down:
-            ui_device.write(ecodes.EV_KEY, ecodes.BTN_MIDDLE, 1)
+            ui_device.write(ecodes.EV_KEY, ecodes.BTN_MIDDLE, 0)
         ui_device.syn()
 
 

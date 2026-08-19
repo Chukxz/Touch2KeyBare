@@ -78,7 +78,7 @@ class Engine:
             assert self.key_mapper is not None
             assert self.wasd_mapper is not None
             self.bridge_class.health_check()
-            self.mouse_mapper.touch_up(None, self.is_visible, False)
+            self.mouse_mapper.touch_up()
             self.key_mapper.release_all()
             self.wasd_mapper.touch_up()
 
@@ -91,14 +91,10 @@ class Engine:
         local_visible = self.is_visible
         self.mapper.event_count += 1
 
-        activate_mouse_sequence = self.key_mapper.process_touch(
-            action, touch_event, local_visible
-        )
+        self.key_mapper.process_touch(action, touch_event, local_visible)
 
         if touch_event.is_mouse:
-            self.mouse_mapper.process_touch(
-                action, touch_event, local_visible, activate_mouse_sequence
-            )
+            self.mouse_mapper.process_touch(action, touch_event, local_visible)
 
         if touch_event.is_wasd:
             self.wasd_mapper.process_touch(action, touch_event, self.is_visible)
