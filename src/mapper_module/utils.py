@@ -106,19 +106,6 @@ MIDDLE_BUTTON_DOWN, MIDDLE_BUTTON_UP = 0x0010, 0x0020
 # Window Selection
 WINDOWS_HEADERS = ["Window ID", "Title", "Class Name", "Left", "Top", "Width", "Height"]
 
-PRESETS = {
-    "GameLoop": {
-        "window_title": "Gameloop(64beta)",
-        "toggle_key": "LCTRL",
-        "sprint_key": None,
-    },
-    "Tenstore Android Connect": {
-        "window_title": "Call of Duty",
-        "toggle_key": "LCTRL",
-        "sprint_key": "LSHIFT",
-    },
-}
-
 PORT = "5555"
 
 EVENT_TYPE = Literal[

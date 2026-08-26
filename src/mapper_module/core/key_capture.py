@@ -1,5 +1,4 @@
 from mapper_module.utils import (
-    PRESETS,
     get_keys_from_toml,
     update_toml_keys,
     get_scancode_and_bridge_key_from_key,
@@ -199,14 +198,8 @@ class NumericCaptureDialog(QDialog):
         self.done(QDialog.DialogCode.Accepted)
 
 
-def capture_keys(
-    preset_name: str | None = None,
-) -> tuple[str | None, str | None] | None:
-    preset = PRESETS.get(preset_name, {}) if preset_name else {}
-    last_toggle, last_sprint = get_keys_from_toml()
-
-    default_toggle = last_toggle or preset.get("toggle_key")
-    default_sprint = last_sprint or preset.get("sprint_key")
+def capture_keys() -> tuple[str | None, str | None] | None:
+    default_toggle, default_sprint = get_keys_from_toml()
 
     toggle_dialog = KeyCaptureDialog(
         "Press the key to use as the TOGGLE key\nfor Camera/Menu mode toggle\n(or click Skip to use the default)",

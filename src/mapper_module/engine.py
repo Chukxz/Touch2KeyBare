@@ -11,7 +11,6 @@ from PySide6.QtWidgets import QApplication
 from mapper_module.platforms import check_single_instance, get_platform
 
 from mapper_module.utils import (
-    PRESETS,
     ADB,
     SHORT_DELAY,
     SYSTEM,
@@ -105,18 +104,11 @@ class Engine:
             print("\n[ENGINE] - No window selected.")
 
             return
-        selected_window_id, window_title = w_result
+        
+        selected_window_id, selected_window_title = w_result
+        print(f"\n[ENGINE] - Selected window ID: {selected_window_id}, Selected window title: {selected_window_title}.")
 
-        preset_name = next(
-            (
-                name
-                for name, data in PRESETS.items()
-                if data.get("window_title") == window_title
-            ),
-            None,
-        )
-
-        c_result = capture_keys(preset_name)
+        c_result = capture_keys()
         if c_result is None:
             print("\n[ENGINE] - Key configuration cancelled.")
 
@@ -127,6 +119,13 @@ class Engine:
             print(
                 "\n[ENGINE] - No toggle key set. Touch zones if disabled by the cursor state can only be re-enabled via the keyboard/mouse."
             )
+        else:
+            print(f"\n[ENGINE] - Selected toggle key: {toggle_key}.")
+        
+        if not sprint_key:
+            print("\n[ENGINE] - No sprint key set.")
+        else:
+            print(f"\n[ENGINE] - Selected sprint key: {sprint_key}.")
 
         emulator = {
             "toggle_key": toggle_key,
