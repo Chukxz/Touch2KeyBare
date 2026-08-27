@@ -47,7 +47,7 @@ def _check_single_instance_linux(instance_name: str) -> tuple[bool, object | Non
     try:
         fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
         return True, handle
-    except (IOError, OSError):
+    except (IOError, OSError, PermissionError):
         return False, None
 
 
