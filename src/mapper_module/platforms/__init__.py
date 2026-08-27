@@ -42,12 +42,12 @@ def _check_single_instance_linux(instance_name: str) -> tuple[bool, object | Non
     import fcntl
 
     lock_file = f"/tmp/{instance_name}.lock"
-    # 'a' mode creates the file if it doesn't exist
-    handle = open(lock_file, "a")
     try:
+        # 'a' mode creates the file if it doesn't exist
+        handle = open(lock_file, "a")
         fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
         return True, handle
-    except (IOError, OSError, PermissionError):
+    except (IOError, OSError):
         return False, None
 
 
