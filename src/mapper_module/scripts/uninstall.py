@@ -136,7 +136,7 @@ def run():
 
     elif SYSTEM == "Linux":
         print(f"\n--- Removing Udev Rules ---")
-        udev_rule = Path("/etc/udev/rules.d/99-touch2key-uinput.rules")
+        udev_rule = Path("/etc/udev/rules.d/99-touch2key.rules")
         if udev_rule.exists():
             udev_rule.unlink()
             subprocess.run(["udevadm", "control", "--reload-rules"])
