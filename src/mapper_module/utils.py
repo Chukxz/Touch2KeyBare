@@ -54,6 +54,7 @@ SYSTEM = platform.system()
 # Path Assignments
 ADB_NAME = "adb.exe" if SYSTEM == "Windows" else "adb"
 ADB = PROJECT_ROOT / "bin" / "platform-tools" / ADB_NAME
+UDEV_RULE_PATH = Path("/etc/udev/rules.d/99-touch2key.rules")
 
 TOML_PATH = PROJECT_ROOT / "settings.toml"
 IMAGES_FOLDER = SRC_DIR / "resources" / "images"

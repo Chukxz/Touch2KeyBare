@@ -8,7 +8,13 @@ import ctypes
 from tkinter import messagebox
 from pathlib import Path
 
-from mapper_module.utils import PROJECT_ROOT, SYSTEM, IMAGES_FOLDER, JSONS_FOLDER
+from mapper_module.utils import (
+    PROJECT_ROOT,
+    SYSTEM,
+    IMAGES_FOLDER,
+    JSONS_FOLDER,
+    UDEV_RULE_PATH,
+)
 
 BIN_DIR = PROJECT_ROOT / "bin"
 
@@ -136,9 +142,8 @@ def run():
 
     elif SYSTEM == "Linux":
         print(f"\n--- Removing Udev Rules ---")
-        udev_rule = Path("/etc/udev/rules.d/99-touch2key.rules")
-        if udev_rule.exists():
-            udev_rule.unlink()
+        if UDEV_RULE_PATH.exists():
+            UDEV_RULE_PATH.unlink()
             subprocess.run(["udevadm", "control", "--reload-rules"])
             print("[+] Udev rules removed.")
         else:

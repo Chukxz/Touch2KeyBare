@@ -4,13 +4,11 @@ import subprocess
 import shutil
 import requests
 import zipfile
-from pathlib import Path
-from mapper_module.utils import PROJECT_ROOT
+from mapper_module.utils import PROJECT_ROOT, UDEV_RULE_PATH
 
 # --- Configuration ---
 BIN_DIR = PROJECT_ROOT / "bin"
 ADB_URL = "https://dl.google.com/android/repository/platform-tools-latest-linux.zip"
-UDEV_RULE_PATH = Path("/etc/udev/rules.d/99-touch2key.rules")
 
 
 def _is_root() -> bool:
