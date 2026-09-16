@@ -72,6 +72,19 @@ def _kill_adb():
         print(f"[!] Note: Could not kill ADB (might not be running): {e}")
 
 
+def purge_func():
+    if IMAGES_FOLDER.exists():
+        shutil.rmtree(IMAGES_FOLDER)
+    if JSONS_FOLDER.exists():
+        shutil.rmtree(JSONS_FOLDER)
+    print("    - User data purged.")
+
+def purge_profs():
+    for prof_file in PROJECT_ROOT.glob("*.prof"):
+        prof_file.unlink(missing_ok=True)
+    print("    -  Profiling file(s) purged."
+
+
 def run():
     # Admin Check First
     if not _is_admin():
@@ -83,6 +96,9 @@ def run():
         description="Touch2KeyBare Driver/Rules Uninstaller"
     )
     parser.add_argument(
+        "-y", "--yes", action="store_true", help="Skip confirmation prompt"
+    )
+    parser.add_argument(
         "--purge",
         action="store_true",
         help="Delete entire data directory (images, jsons, settings)",
@@ -91,6 +107,9 @@ def run():
         "--purge-all",
         action="store_true",
         help="Delete entire data directory and profiling file(s)",
+    )
+    parser.add_argument(
+        "--no-restart", action="store_true", help="Skip system reboot prompt"
     )
     args = parser.parse_args()
 
@@ -164,24 +183,16 @@ def run():
 
     if args.purge:
         purge_func()
-        print("    - User data purged.")
 
     if args.purge_all:
         purge_func()
-        for prof_file in PROJECT_ROOT.glob("*.prof"):
-            prof_file.unlink(missing_ok=True)
-        print("    - User data and profiling  file(s) purged.")
+        purge_profs()
 
     print("\n[+] Uninstall complete.")
 
     input("\nPress Enter to exit...")
 
 
-def purge_func():
-    if IMAGES_FOLDER.exists():
-        shutil.rmtree(IMAGES_FOLDER)
-    if JSONS_FOLDER.exists():
-        shutil.rmtree(JSONS_FOLDER)
 
 if __name__ == "__main__":
     run()
