@@ -90,7 +90,7 @@ def run():
     parser.add_argument(
         "--purge-all",
         action="store_true",
-        help="Delete entire data directory, diagnostics files and log files",
+        help="Delete entire data directory and profiling file(s)",
     )
     args = parser.parse_args()
 
@@ -164,11 +164,13 @@ def run():
 
     if args.purge:
         purge_func()
+        print("    - User data purged.")
 
     if args.purge_all:
         purge_func()
         for prof_file in PROJECT_ROOT.glob("*.prof"):
             prof_file.unlink(missing_ok=True)
+        print("    - User data and profiling  file(s) purged.")
 
     print("\n[+] Uninstall complete.")
 
@@ -180,8 +182,6 @@ def purge_func():
         shutil.rmtree(IMAGES_FOLDER)
     if JSONS_FOLDER.exists():
         shutil.rmtree(JSONS_FOLDER)
-    print("    - User data purged.")
-
 
 if __name__ == "__main__":
     run()
