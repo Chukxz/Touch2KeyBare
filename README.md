@@ -56,24 +56,33 @@ After selecting your target window, the engine will prompt you to configure your
 * **Wired & Wireless Support:** The connection is managed by a background daemon that supports both direct USB and wireless ADB. **Note:** Wireless mode typically requires an initial wired connection to toggle your device into TCP/IP mode (`adb tcpip 5555`) before it can be used wirelessly, unless your device is already configured in wireless mode. 
 * **Self-Healing Stream:** If your connection drops—due to cable removal or wireless instability—the engine automatically detects the loss, pauses input mapping, and transparently resumes as soon as the device is available again, with no restart required.
 
+
 ## Installation
-1. **Prerequisites:** Python 3.10+.
-2. **Install:**
+
+### Prerequisites
+* Python 3.10+
+* Android device with USB/Wireless Debugging enabled
+* Linux users: X11 session with `sudo` access for `uinput`/`udev` rules
+
+### Setup
+* **Install: Remember to create a virtual environment on your machine by using the appropiate `venv` command and activating it (depending on your OS), after navigating to the `Touch2KeyBare` directory on your machine before running the `pip install .` command as it is the standard python practice to avoid package conflicts and ensure isolation.**
+
    ```bash
    git clone https://github.com/Chukxz/Touch2KeyBare.git
    cd Touch2KeyBare
    pip install .
-3. **Setup:** Run setup (Usually requires an internet connection).
+* **Setup:** Run setup (Usually requires an internet connection).
 
 *(Note: Windows requires a system reboot after installation to fully load the driver).*
 
 ## Uninstallation
-Because Touch2KeyBare installs system-level drivers and kernel rules, **simply running `pip uninstall touch2keybare` is not sufficient.** You should first run the included uninstaller before uninstalling via pip to avoid any issues or residual files.
+Because Touch2KeyBare installs system-level drivers and kernel rules, **simply running `pip uninstall Touch2KeyBare` is not sufficient.** You should first run the included uninstaller before uninstalling via pip to avoid any issues or residual files.
 
 | Action | Command | Description |
 | :--- | :--- | :--- |
-| **Standard** | `touch2keybare-uninstall` | Removes drivers/rules/binaries; preserves your custom mappings/images. |
-| **Purge** | `touch2keybare-uninstall --purge` | Removes drivers/rules/binaries **AND** deletes all saved mappings/images. |
+| **Standard** | `touch2keybare-uninstall` | Removes drivers/rules/binaries; preserves all user data. |
+| **Purge** | `touch2keybare-uninstall --purge` | Removes drivers/rules/binaries **AND** deletes all user data — all saved jsons/images files and the settings toml file. |
+| **Purge-All** | `touch2keybare-uninstall --purge-all` | Removes drivers/rules/binaries **AND** deletes all user and diagnostic data — all saved jsons/images files, the settings toml file **AND** the .prof (profiling) file. |
 
 *(Note: Windows requires a system reboot after uninstallation to fully release the driver).*
 
@@ -82,19 +91,24 @@ Because Touch2KeyBare installs system-level drivers and kernel rules, **simply r
 | :--- | :--- |
 | `touch2keybare` | Launches the main engine. |
 | `touch2keybare --profile` | Launches and also runs profiling. | 
+| `touch2keybare-adb` | Displays full ADB executable path if found.|
 | `touch2keybare-capture` | ADB screen capture. |
 | `touch2keybare-plot` | Mapping visualizer. |
 | `touch2keybare-preflight` | Diagnostic checks. |
 | `touch2keybare-reset` | Resets configuration settings.|
 | `touch2keybare-select` | JSON selector.|
 | `touch2keybare-setup` | OS configuration wizard. |
-| `touch2keybare-show` | Displays full ADB executable path if found.|
 | `touch2keybare-uninstall` | Safely removes drivers, rules and binaries. |
-| `touch2keybare-uninstall --purge` | Uninstalls and removes mappings/images. | 
+| `touch2keybare-uninstall --purge` | Uninstalls and removes jsons/images and the settings toml file. |
+| `touch2keybare-uninstall --purge-all` | Purges and removes the .prof (profiling) file. |
 | `touch2keybare-wireless` | Forces ADB wireless connection. |
 
 ## Contributing
 Please use `black` for formatting (recommended), `pytest` for unit testing (optional), and `snakeviz` for visual view of the profile (optional).
+
+Install these via running `pip install .[dev]` during installation.
+
+To support editable mode run `pip install -e .[dev]` (add the `-e` flag) during installation, but note that contributions to the Touch2KeyBare's github repository would likely require permissions from the author(s).
 
 ## License
 MIT License.

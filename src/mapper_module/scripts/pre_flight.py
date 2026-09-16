@@ -3,20 +3,19 @@ from pathlib import Path
 from mapper_module.utils import SYSTEM, ADB
 
 
-def _check_adb():
-    """Verify ADB is available."""
-    # Check system PATH or local bin folder
-    if shutil.which("adb") == ADB.as_posix():
+def _check_adb() -> bool:
+    """Verify ADB binary is available in project bin folder or system PATH."""
+    if ADB.exists():
         return True
 
-    # Check custom bin directory
-    if ADB.exists():
+    system_adb = shutil.which("adb")
+    if system_adb and Path(system_adb).exists():
         return True
 
     return False
 
 
-def _check_driver():
+def _check_driver() -> bool:
     """Verify system driver (Platform specific)."""
     if SYSTEM == "Windows":
         # Interception typically doesn't have a simple 'which' check.

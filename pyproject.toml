@@ -50,13 +50,13 @@ dev = [
 
 [project.scripts]
 touch2keybare = "mapper_module.main:run"
+touch2keybare-adb = "mapper_module.scripts.check_adb:run"
 touch2keybare-capture = "mapper_module.scripts.adb_screen_capture:run"
 touch2keybare-plot = "mapper_module.scripts.plotting:run"
 touch2keybare-preflight = "mapper_module.scripts.pre_flight:run"
 touch2keybare-reset = "mapper_module.scripts.hard_reset_toml:run"
 touch2keybare-select = "mapper_module.scripts.select_json:run"
 touch2keybare-setup = "mapper_module.scripts.setup:run"
-touch2keybare-show = "mapper_module.scripts.show:run"
 touch2keybare-uninstall = "mapper_module.scripts.uninstall:run"
 touch2keybare-wireless = "mapper_module.scripts.force_wireless:run"
 

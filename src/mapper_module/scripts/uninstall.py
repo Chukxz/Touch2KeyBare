@@ -79,8 +79,19 @@ def run():
         _request_elevation()
         return
 
-    parser = argparse.ArgumentParser(description="Touch2KeyBare Driver/Rules Uninstaller")
-    parser.add_argument("--purge", action="store_true", help="Delete JSON/Images.")
+    parser = argparse.ArgumentParser(
+        description="Touch2KeyBare Driver/Rules Uninstaller"
+    )
+    parser.add_argument(
+        "--purge",
+        action="store_true",
+        help="Delete entire data directory (images, jsons, settings)",
+    )
+    parser.add_argument(
+        "--purge-all",
+        action="store_true",
+        help="Delete entire data directory, diagnostics files and log files",
+    )
     args = parser.parse_args()
 
     # Confirm
@@ -152,15 +163,24 @@ def run():
         print("    - Binaries deleted.")
 
     if args.purge:
-        if IMAGES_FOLDER.exists():
-            shutil.rmtree(IMAGES_FOLDER)
-        if JSONS_FOLDER.exists():
-            shutil.rmtree(JSONS_FOLDER)
-        print("    - User data purged.")
+        purge_func()
+
+    if args.purge_all:
+        purge_func()
+        for prof_file in PROJECT_ROOT.glob("*.prof"):
+            prof_file.unlink(missing_ok=True)
 
     print("\n[+] Uninstall complete.")
 
     input("\nPress Enter to exit...")
+
+
+def purge_func():
+    if IMAGES_FOLDER.exists():
+        shutil.rmtree(IMAGES_FOLDER)
+    if JSONS_FOLDER.exists():
+        shutil.rmtree(JSONS_FOLDER)
+    print("    - User data purged.")
 
 
 if __name__ == "__main__":
