@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 from mapper_module.utils import (
-    BIN_DIR,
+    BIN_FOLDER,
     DATA_FOLDER,
     PROJECT_ROOT,
     SYSTEM,
@@ -111,7 +111,9 @@ def run() -> None:
     # 3. Confirmation
     if not args.yes:
         confirm = (
-            input("Are you sure you want to uninstall drivers/rules and local binaries? (y/N): ")
+            input(
+                "Are you sure you want to uninstall drivers/rules and local binaries? (y/N): "
+            )
             .strip()
             .lower()
         )
@@ -129,13 +131,15 @@ def run() -> None:
     if SYSTEM == "Windows":
         print("\n--- Uninstalling Interception Driver ---")
         installer_exe = (
-            BIN_DIR
+            BIN_FOLDER
             / "Interception"
             / "command line installer"
             / "install-interception.exe"
         )
         if installer_exe.exists():
-            res = subprocess.run([str(installer_exe), "/uninstall"], capture_output=True)
+            res = subprocess.run(
+                [str(installer_exe), "/uninstall"], capture_output=True
+            )
             if res.returncode == 0:
                 needs_reboot = True
                 print("[+] Interception driver uninstalled successfully.")
@@ -155,8 +159,8 @@ def run() -> None:
             print(f"[!] Udev rule file not found at {UDEV_RULE_PATH}.")
 
     # 6. Delete Binaries
-    if BIN_DIR.exists():
-        shutil.rmtree(BIN_DIR, ignore_errors=True)
+    if BIN_FOLDER.exists():
+        shutil.rmtree(BIN_FOLDER, ignore_errors=True)
         print("    - Local binaries deleted.")
 
     # 7. Purge Files
@@ -174,7 +178,11 @@ def run() -> None:
             print("\n" + "=" * 55)
             print(" SYSTEM RESTART REQUIRED ".center(55, "="))
             print("=" * 55)
-            choice = input("Restart PC now (Will restart in 5 seconds)? (y/N): ").strip().lower()
+            choice = (
+                input("Restart PC now (Will restart in 5 seconds)? (y/N): ")
+                .strip()
+                .lower()
+            )
             if choice == "y":
                 subprocess.run(
                     [
@@ -188,7 +196,9 @@ def run() -> None:
                 )
                 return
             else:
-                print("[!] Please remember to restart your computer to complete removal.")
+                print(
+                    "[!] Please remember to restart your computer to complete removal."
+                )
         input("\nPress Enter to exit...")
 
 

@@ -4,10 +4,9 @@ import subprocess
 import shutil
 import requests
 import zipfile
-from mapper_module.utils import PROJECT_ROOT, UDEV_RULE_PATH
+from mapper_module.utils import BIN_FOLDER, UDEV_RULE_PATH
 
 # --- Configuration ---
-BIN_DIR = PROJECT_ROOT / "bin"
 ADB_URL = "https://dl.google.com/android/repository/platform-tools-latest-linux.zip"
 
 
@@ -29,10 +28,10 @@ def _kill_adb():
 def _download_adb():
     """Downloads and extracts Android platform-tools for Linux."""
     print("[+] Checking if ADB is available...")
-    BIN_DIR.mkdir(parents=True, exist_ok=True)
+    BIN_FOLDER.mkdir(parents=True, exist_ok=True)
 
-    platform_tools_dir = BIN_DIR / "platform-tools"
-    zip_path = BIN_DIR / "adb.zip"
+    platform_tools_dir = BIN_FOLDER / "platform-tools"
+    zip_path = BIN_FOLDER / "adb.zip"
 
     if (platform_tools_dir / "adb").exists():
         print("[+] ADB is already present.")
@@ -56,7 +55,7 @@ def _download_adb():
 
         print("[+] Extracting ADB...")
         with zipfile.ZipFile(zip_path, "r") as z:
-            z.extractall(BIN_DIR)
+            z.extractall(BIN_FOLDER)
 
         # Ensure adb is executable on Linux
         (platform_tools_dir / "adb").chmod(0o755)

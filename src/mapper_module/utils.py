@@ -51,9 +51,10 @@ PROJECT_ROOT = SRC_DIR.parent
 # OS environment
 SYSTEM = platform.system()
 
-# Path Assignments
+# Binaries & Driver Rules
+BIN_FOLDER = PROJECT_ROOT / "bin"
 ADB_NAME = "adb.exe" if SYSTEM == "Windows" else "adb"
-ADB = PROJECT_ROOT / "bin" / "platform-tools" / ADB_NAME
+ADB = BIN_FOLDER / "platform-tools" / ADB_NAME
 UDEV_RULE_PATH = Path("/etc/udev/rules.d/99-touch2keybare.rules")
 
 # Centralized Data Directory
@@ -63,6 +64,7 @@ IMAGES_FOLDER = DATA_FOLDER / "images"
 JSONS_FOLDER = DATA_FOLDER / "jsons"
 
 # Auto-create runtime directories on module import
+BIN_FOLDER.mkdir(parents=True, exist_ok=True)
 DATA_FOLDER.mkdir(parents=True, exist_ok=True)
 IMAGES_FOLDER.mkdir(parents=True, exist_ok=True)
 JSONS_FOLDER.mkdir(parents=True, exist_ok=True)

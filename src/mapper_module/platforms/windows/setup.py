@@ -7,16 +7,15 @@ import requests
 import zipfile
 import shlex
 from pathlib import Path
-from mapper_module.utils import PROJECT_ROOT
+from mapper_module.utils import BIN_FOLDER
 
 # --- Configuration ---
-BIN_DIR = PROJECT_ROOT / "bin"
 ADB_URL = "https://dl.google.com/android/repository/platform-tools-latest-windows.zip"
 INTERCEPTION_API_URL = (
     "https://api.github.com/repos/oblitum/Interception/releases/latest"
 )
 INTERCEPTION_EXE = (
-    BIN_DIR / "Interception" / "command line installer" / "install-interception.exe"
+    BIN_FOLDER / "Interception" / "command line installer" / "install-interception.exe"
 )
 
 
@@ -48,10 +47,10 @@ def _kill_adb():
 def _download_adb():
     """Downloads and extracts Android platform-tools for Windows."""
     print("[+] Checking if ADB is available...")
-    BIN_DIR.mkdir(parents=True, exist_ok=True)
+    BIN_FOLDER.mkdir(parents=True, exist_ok=True)
 
-    platform_tools_dir = BIN_DIR / "platform-tools"
-    zip_path = BIN_DIR / "adb.zip"
+    platform_tools_dir = BIN_FOLDER / "platform-tools"
+    zip_path = BIN_FOLDER / "adb.zip"
 
     if (platform_tools_dir / "adb.exe").exists():
         print("[+] ADB is already present.")
@@ -75,7 +74,7 @@ def _download_adb():
 
         print("[+] Extracting ADB...")
         with zipfile.ZipFile(zip_path, "r") as z:
-            z.extractall(BIN_DIR)
+            z.extractall(BIN_FOLDER)
         print("[+] ADB setup complete.")
 
     except Exception as e:
@@ -91,11 +90,11 @@ def _download_adb():
 def _download_interception():
     """Fetches and extracts the latest Interception release for Windows."""
     print("[+] Checking if Interception driver files are available...")
-    interception_dir = BIN_DIR / "Interception"
+    interception_dir = BIN_FOLDER / "Interception"
     installer_exe = (
         interception_dir / "command line installer" / "install-interception.exe"
     )
-    zip_path = BIN_DIR / "interception.zip"
+    zip_path = BIN_FOLDER / "interception.zip"
 
     if installer_exe.exists():
         print("[+] Interception files are already present.")
@@ -127,7 +126,7 @@ def _download_interception():
             f.write(zip_response.content)
 
         with zipfile.ZipFile(zip_path, "r") as z:
-            z.extractall(BIN_DIR)
+            z.extractall(BIN_FOLDER)
 
         print("[+] Interception download complete.")
     except Exception as e:
