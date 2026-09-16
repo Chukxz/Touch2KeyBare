@@ -83,6 +83,8 @@ Because Touch2KeyBare installs system-level drivers and kernel rules, **simply r
 | **Standard** | `touch2keybare-uninstall` | Removes drivers/rules/binaries; preserves all user data. |
 | **Purge** | `touch2keybare-uninstall --purge` | Removes drivers/rules/binaries **AND** deletes all user data — all saved jsons/images files and the settings toml file. |
 | **Purge-All** | `touch2keybare-uninstall --purge-all` | Removes drivers/rules/binaries **AND** deletes all user and diagnostic data — all saved jsons/images files, the settings toml file **AND** the .prof (profiling) file. |
+| **Skip Confirmation** | `touch2keybare-uninstall [--yes, -y]` | Skip confirmation prompt. |
+| **Skip Reboot** | `touch2keybare-uninstall --no-restart` | Skip reboot prompt (Windows). |
 
 *(Note: Windows requires a system reboot after uninstallation to fully release the driver).*
 
