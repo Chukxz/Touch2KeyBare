@@ -1,11 +1,14 @@
-# Touch2Key
+# Touch2KeyBare
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![OS: Windows](https://img.shields.io/badge/os-Windows-blue.svg)](https://www.microsoft.com/en-us/windows)
 [![OS: Linux](https://img.shields.io/badge/os-Linux-yellow.svg)](https://www.linuxfoundation.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-**Touch2Key** is a high-performance, cross-platform input mapper designed to seamlessly translate touch interactions (via Android/ADB) into zero-latency keyboard and mouse inputs on your PC.
+**Touch2KeyBare** is a high-performance, cross-platform input mapper designed to seamlessly translate touch interactions (via Android/ADB) into zero-latency keyboard and mouse inputs on your PC.
+
+This is the First Touch2Key Published Implementation with only CLI support + Basic GUI windows.
+The second version with full GUI and CLI support, can be accessed [here.]("https://github.com/Chukxz/Touch2Key")
 
 It is recommended to enable `Developer Options` on Android and `Wireless Debugging` (especially if you want to use WIFI - 5GHz recommended) and if there's a popup window grant permissions.
 
@@ -57,38 +60,38 @@ After selecting your target window, the engine will prompt you to configure your
 1. **Prerequisites:** Python 3.10+.
 2. **Install:**
    ```bash
-   git clone https://github.com/Chukxz/Touch2Key.git
-   cd Touch2Key
+   git clone https://github.com/Chukxz/Touch2KeyBare.git
+   cd Touch2KeyBare
    pip install .
 3. **Setup:** Run setup (Usually requires an internet connection).
 
 *(Note: Windows requires a system reboot after installation to fully load the driver).*
 
 ## Uninstallation
-Because Touch2Key installs system-level drivers and kernel rules, **simply running `pip uninstall Touch2Key` is not sufficient.** You should first run the included uninstaller before uninstalling via pip to avoid any issues or residual files.
+Because Touch2KeyBare installs system-level drivers and kernel rules, **simply running `pip uninstall touch2keybare` is not sufficient.** You should first run the included uninstaller before uninstalling via pip to avoid any issues or residual files.
 
 | Action | Command | Description |
 | :--- | :--- | :--- |
-| **Standard** | `touch2key-uninstall` | Removes drivers/rules/binaries; preserves your custom mappings/images. |
-| **Purge** | `touch2key-uninstall --purge` | Removes drivers/rules/binaries **AND** deletes all saved mappings/images. |
+| **Standard** | `touch2keybare-uninstall` | Removes drivers/rules/binaries; preserves your custom mappings/images. |
+| **Purge** | `touch2keybare-uninstall --purge` | Removes drivers/rules/binaries **AND** deletes all saved mappings/images. |
 
 *(Note: Windows requires a system reboot after uninstallation to fully release the driver).*
 
 ## Command Line Interface (CLI)
 | Command | Description |
 | :--- | :--- |
-| `touch2key` | Launches the main engine. |
-| `touch2key --profile` | Launches and also runs profiling. | 
-| `touch2key-capture` | ADB screen capture. |
-| `touch2key-plot` | Mapping visualizer. |
-| `touch2key-preflight` | Diagnostic checks. |
-| `touch2key-reset` | Resets configuration settings.|
-| `touch2key-select` | JSON selector.|
-| `touch2key-setup` | OS configuration wizard. |
-| `touch2key-show` | Displays full ADB executable path if found.|
-| `touch2key-uninstall` | Safely removes drivers, rules and binaries. |
-| `touch2key-uninstall --purge` | Uninstalls and removes mappings/images. | 
-| `touch2key-wireless` | Forces ADB wireless connection. |
+| `touch2keybare` | Launches the main engine. |
+| `touch2keybare --profile` | Launches and also runs profiling. | 
+| `touch2keybare-capture` | ADB screen capture. |
+| `touch2keybare-plot` | Mapping visualizer. |
+| `touch2keybare-preflight` | Diagnostic checks. |
+| `touch2keybare-reset` | Resets configuration settings.|
+| `touch2keybare-select` | JSON selector.|
+| `touch2keybare-setup` | OS configuration wizard. |
+| `touch2keybare-show` | Displays full ADB executable path if found.|
+| `touch2keybare-uninstall` | Safely removes drivers, rules and binaries. |
+| `touch2keybare-uninstall --purge` | Uninstalls and removes mappings/images. | 
+| `touch2keybare-wireless` | Forces ADB wireless connection. |
 
 ## Contributing
 Please use `black` for formatting (recommended), `pytest` for unit testing (optional), and `snakeviz` for visual view of the profile (optional).

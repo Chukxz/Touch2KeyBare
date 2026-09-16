@@ -18,22 +18,24 @@ dependencies = [
   "matplotlib>=3.10.8",
   "pillow>=12.1.0",
   "psutil>=7.2.1",
-  "PySide6>=6.11.1 ",
+  "PySide6>=6.11.1",
   "requests>=2.34.2",
-  "tomlkit>=0.14.0", # --- Windows Only Dependencies ---
+  "tomlkit>=0.14.0",
+  # --- Windows Only Dependencies ---
   "pywin32>=311 ; sys_platform == 'win32'",
-  "interception-python>=1.13.6 ; sys_platform == 'win32'", # --- Linux Only Dependencies ---
+  "interception-python>=1.13.6 ; sys_platform == 'win32'",
+  # --- Linux Only Dependencies ---
   "python-xlib>=0.31 ; sys_platform == 'linux'",
   "evdev>=1.7.0 ; sys_platform == 'linux'",
 ]
 description = "A high-performance touch-to-keyboard/mouse mapper for PC gaming."
-name = "Touch2Key"
+name = "Touch2KeyBare"
 readme = "README.md"
 requires-python = ">=3.10"
 version = "0.1.0"
 
 [project.urls]
-Homepage = "https://github.com/Chukxz/Touch2Key"
+Homepage = "https://github.com/Chukxz/Touch2KeyBare"
 
 # --- Optional Development Dependencies ---
 # Install these by running: pip install -e .[dev]
@@ -47,16 +49,16 @@ dev = [
 ]
 
 [project.scripts]
-touch2key = "mapper_module.main:run"
-touch2key-capture = "mapper_module.scripts.adb_screen_capture:run"
-touch2key-plot = "mapper_module.scripts.plotting:run"
-touch2key-preflight = "mapper_module.scripts.pre_flight:run"
-touch2key-reset = "mapper_module.scripts.hard_reset_toml:run"
-touch2key-select = "mapper_module.scripts.select_json:run"
-touch2key-setup = "mapper_module.scripts.setup:run"
-touch2key-show = "mapper_module.scripts.show:run"
-touch2key-uninstall = "mapper_module.scripts.uninstall:run"
-touch2key-wireless = "mapper_module.scripts.force_wireless:run"
+touch2keybare = "mapper_module.main:run"
+touch2keybare-capture = "mapper_module.scripts.adb_screen_capture:run"
+touch2keybare-plot = "mapper_module.scripts.plotting:run"
+touch2keybare-preflight = "mapper_module.scripts.pre_flight:run"
+touch2keybare-reset = "mapper_module.scripts.hard_reset_toml:run"
+touch2keybare-select = "mapper_module.scripts.select_json:run"
+touch2keybare-setup = "mapper_module.scripts.setup:run"
+touch2keybare-show = "mapper_module.scripts.show:run"
+touch2keybare-uninstall = "mapper_module.scripts.uninstall:run"
+touch2keybare-wireless = "mapper_module.scripts.force_wireless:run"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -94,7 +94,7 @@ def _setup_udev_rules():
 
 
 def setup_linux():
-    print("--- Touch2Key Linux Setup Wizard ---")
+    print("--- Touch2KeyBare Linux Setup Wizard ---")
 
     # Prepare Environment
     _kill_adb()
@@ -103,7 +103,7 @@ def setup_linux():
     # Setup Linux-specific permissions
     _setup_udev_rules()
 
-    print("\n[+] Setup complete! You are ready to use Touch2Key.")
+    print("\n[+] Setup complete! You are ready to use Touch2KeyBare.")
     input("\nPress Enter to exit...")
 
 

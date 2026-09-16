@@ -3,7 +3,7 @@ from mapper_module.utils import SYSTEM
 import argparse
 from mapper_module import engine
 
-parser = argparse.ArgumentParser(description="Touch2Key Main")
+parser = argparse.ArgumentParser(description="Touch2KeyBare Main")
 
 parser.add_argument(
     "--profile", action="store_true", help="Generate profiling data."

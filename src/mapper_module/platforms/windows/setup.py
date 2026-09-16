@@ -159,7 +159,7 @@ def _register_driver():
             return True
         else:
             print(
-                f"[!] Failed to register driver (driver may already be installed run 'touch2key-preflight' to confirm)."
+                f"[!] Failed to register driver (driver may already be installed run 'touch2keybare-preflight' to confirm)."
             )
             return False
 
@@ -172,7 +172,7 @@ def _register_driver():
 
 
 def setup_windows():
-    print("--- Touch2Key Windows Setup Wizard ---")
+    print("--- Touch2KeyBare Windows Setup Wizard ---")
 
     # Prepare Environment
     _kill_adb()
@@ -191,7 +191,6 @@ def setup_windows():
             input("Restart PC now (Will restart in 5 seconds)? (y/n): ").strip().lower()
         )
         if choice == "y":
-            # os.system('shutdown /r /t 5 /c "Touch2Key driver installation complete."')
             subprocess.run(
                 [
                     "shutdown",
@@ -199,7 +198,7 @@ def setup_windows():
                     "/t",
                     "5",
                     "/c",
-                    "Touch2Key driver installation complete.",
+                    "Touch2KeyBare driver installation complete.",
                 ]
             )
         else:
@@ -207,7 +206,7 @@ def setup_windows():
                 "\n[+] Please remember to restart your computer as soon as possible to complete the installation process."
             )
     else:
-        print("\n[+] Setup complete! You are ready to use Touch2Key.")
+        print("\n[+] Setup complete! You are ready to use Touch2KeyBare.")
 
     input("\nPress Enter to exit...")
 

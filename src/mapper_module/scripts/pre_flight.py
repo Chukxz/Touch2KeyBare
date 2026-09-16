@@ -41,14 +41,14 @@ def run():
     if failed:
         print(f"[!] Pre-flight failed:")
         if "ADB" in failed:
-            print("    - ADB not found. Run 'touch2key-setup' to download it.")
+            print("    - ADB not found. Run 'touch2keybare-setup' to download it.")
         if SYSTEM == "Windows" and "Driver" in failed:
             print(
-                "    - Driver not found. Run 'touch2key-setup' to configure environment or restart the system if the driver is installed."
+                "    - Driver not found. Run 'touch2keybare-setup' to configure environment or restart the system if the driver is installed."
             )
         elif SYSTEM == "Linux" and "Driver" in failed:
             print(
-                "    - Driver not found. Run 'sudo touch2key-setup' to configure environment."
+                "    - Driver not found. Run 'sudo touch2keybare-setup' to configure environment."
             )
         return False
 

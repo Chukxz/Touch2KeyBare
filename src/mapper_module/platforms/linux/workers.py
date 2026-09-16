@@ -52,7 +52,7 @@ def keyboard_worker(k_pipe_read: Connection):
     )
 
     cap = {ecodes.EV_KEY: list(range(1, 256))}
-    ui_device = UInput(cap, name="Touch2Key-Keyboard")
+    ui_device = UInput(cap, name="Touch2KeyBare-Keyboard")
 
     # Maps Windows/DOS Scancodes to Linux evdev ecodes
     LINUX_KEY_MAP = {
@@ -325,7 +325,7 @@ def mouse_worker(m_pipe_read: Connection, mb_pipe_read: Connection):
             ),
         ],
     }
-    ui_device = UInput(cap, name="Touch2Key-Mouse")
+    ui_device = UInput(cap, name="Touch2KeyBare-Mouse")
 
     BTN_MAP = {
         LEFT_BUTTON_DOWN: (ecodes.BTN_LEFT, 1),

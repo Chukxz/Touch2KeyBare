@@ -33,7 +33,7 @@ from mapper_module.core.key_capture import capture_keys, capture_performance_set
 
 from mapper_module.utils import PROJECT_ROOT
 
-NAME = "Touch2Key_Engine"
+NAME = "Touch2KeyBare_Engine"
 
 if TYPE_CHECKING:
     from cProfile import Profile
@@ -47,7 +47,7 @@ class Engine:
     def __init__(self):
         _Platform = get_platform()
 
-        print("\n[ENGINE] - Initializing Touch2Key... Press 'ESC' to Stop.")
+        print("\n[ENGINE] - Initializing Touch2KeyBare... Press 'ESC' to Stop.")
         print(f"\n[ENGINE] - ADB Executable File Path: {ADB}.")
         keyboard.add_hotkey("esc", self._shutdown)
 
@@ -238,8 +238,8 @@ class Engine:
 def profiler_cleanup(profiler: Profile | None):
     if profiler:
         profiler.disable()
-        profiler.dump_stats(PROJECT_ROOT / "touch2key.prof")
-        print("\n[ENGINE] - Profiling data saved to 'touch2key.prof'.")
+        profiler.dump_stats(PROJECT_ROOT / "Touch2KeyBare.prof")
+        print("\n[ENGINE] - Profiling data saved to 'Touch2KeyBare.prof'.")
 
 
 def run(parser: ArgumentParser):
@@ -270,7 +270,7 @@ def run(parser: ArgumentParser):
 
     if not success:
         print(
-            "[ENGINE] - Another instance of Touch2Key is already running. Exiting this instance."
+            "[ENGINE] - Another instance of Touch2KeyBare is already running. Exiting this instance."
         )
         profiler_cleanup(profiler)
         os._exit(0)

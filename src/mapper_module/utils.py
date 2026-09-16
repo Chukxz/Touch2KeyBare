@@ -54,11 +54,18 @@ SYSTEM = platform.system()
 # Path Assignments
 ADB_NAME = "adb.exe" if SYSTEM == "Windows" else "adb"
 ADB = PROJECT_ROOT / "bin" / "platform-tools" / ADB_NAME
-UDEV_RULE_PATH = Path("/etc/udev/rules.d/99-touch2key.rules")
+UDEV_RULE_PATH = Path("/etc/udev/rules.d/99-touch2keybare.rules")
 
-TOML_PATH = PROJECT_ROOT / "settings.toml"
-IMAGES_FOLDER = SRC_DIR / "resources" / "images"
-JSONS_FOLDER = SRC_DIR / "resources" / "jsons"
+# Centralized Data Directory
+DATA_FOLDER = PROJECT_ROOT / "data"
+TOML_PATH = DATA_FOLDER / "settings.toml"
+IMAGES_FOLDER = DATA_FOLDER / "images"
+JSONS_FOLDER = DATA_FOLDER / "jsons"
+
+# Auto-create runtime directories on module import
+DATA_FOLDER.mkdir(parents=True, exist_ok=True)
+IMAGES_FOLDER.mkdir(parents=True, exist_ok=True)
+JSONS_FOLDER.mkdir(parents=True, exist_ok=True)
 
 # Constants
 DEF_DPI = 160

@@ -50,7 +50,7 @@ def _confirm_uninstall(message):
         root = tk.Tk()
         root.withdraw()
         root.attributes("-topmost", True)
-        return messagebox.askyesno("Touch2Key Uninstall", message, parent=root)
+        return messagebox.askyesno("Touch2KeyBare Uninstall", message, parent=root)
     except Exception:
         return input(f"{message} (y/n): ").lower() == "y"
     finally:
@@ -79,12 +79,12 @@ def run():
         _request_elevation()
         return
 
-    parser = argparse.ArgumentParser(description="Touch2Key Driver/Rules Uninstaller")
+    parser = argparse.ArgumentParser(description="Touch2KeyBare Driver/Rules Uninstaller")
     parser.add_argument("--purge", action="store_true", help="Delete JSON/Images.")
     args = parser.parse_args()
 
     # Confirm
-    msg = "Are you sure you want to uninstall Touch2Key Driver/Rules?"
+    msg = "Are you sure you want to uninstall Touch2KeyBare Driver/Rules?"
     if not _confirm_uninstall(msg):
         print("[!] Aborted.")
 
@@ -118,9 +118,6 @@ def run():
             )
 
             if choice == "y":
-                # os.system(
-                #     'shutdown /r /t 5 /c "Touch2Key driver uninstallation complete."'
-                # )
                 subprocess.run(
                     [
                         "shutdown",
@@ -128,7 +125,7 @@ def run():
                         "/t",
                         "5",
                         "/c",
-                        "Touch2Key driver uninstallation complete.",
+                        "Touch2KeyBare driver uninstallation complete.",
                     ]
                 )
             else:
