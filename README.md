@@ -8,7 +8,7 @@
 **Touch2KeyBare** is a high-performance, cross-platform input mapper designed to seamlessly translate touch interactions (via Android/ADB) into zero-latency keyboard and mouse inputs on your PC.
 
 This is the First Touch2Key Published Implementation with only CLI support + Basic GUI windows.
-The second version with full GUI and CLI support, can be accessed [here.]("https://github.com/Chukxz/Touch2Key")
+The second version with full GUI, CLI support and improved functionality, can be accessed [here](https://github.com/Chukxz/touch2key).
 
 It is recommended to enable `Developer Options` on Android and `Wireless Debugging` (especially if you want to use WIFI - 5GHz recommended) and if there's a popup window grant permissions.
 
